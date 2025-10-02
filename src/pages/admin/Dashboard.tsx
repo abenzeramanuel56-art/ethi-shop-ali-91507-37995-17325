@@ -1,0 +1,573 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Navbar } from "@/components/Navbar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { DollarSign, Package, ShoppingCart, Users, Plus } from "lucide-react";
+
+interface Stats {
+  pendingQuotes: number;
+  pendingPayments: number;
+  activeOrders: number;
+  totalRevenue: number;
+}
+
+interface QuoteRequest {
+  id: string;
+  product_name: string;
+  aliexpress_url: string;
+  quantity: number;
+  photo_url: string;
+  notes: string | null;
+  status: string;
+  quoted_price_etb: number | null;
+  created_at: string;
+  customer_id: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price_etb: number;
+  cost_usd: number | null;
+  image_url: string | null;
+  category: string;
+  stock_status: boolean;
+}
+
+const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [stats, setStats] = useState<Stats>({
+    pendingQuotes: 0,
+    pendingPayments: 0,
+    activeOrders: 0,
+    totalRevenue: 0,
+  });
+  const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
+  const [selectedQuote, setSelectedQuote] = useState<QuoteRequest | null>(null);
+  const [quotedPrice, setQuotedPrice] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    description: "",
+    price_etb: "",
+    cost_usd: "",
+    category: "other",
+    stock_status: true,
+  });
+  const [productImage, setProductImage] = useState<File | null>(null);
+
+  useEffect(() => {
+    checkAdminAccess();
+  }, []);
+
+  const checkAdminAccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data: roleData } = await (supabase as any)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData) {
+      toast.error("Access denied. Admin privileges required.");
+      navigate("/");
+      return;
+    }
+
+    setIsAdmin(true);
+    fetchData();
+  };
+
+  const fetchData = async () => {
+    try {
+      const [quotesResponse, ordersResponse, productsResponse] = await Promise.all([
+        (supabase as any)
+          .from("quote_requests")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        (supabase as any)
+          .from("orders")
+          .select("*"),
+        (supabase as any)
+          .from("products")
+          .select("*")
+          .order("created_at", { ascending: false }),
+      ]);
+
+      if (quotesResponse.error) throw quotesResponse.error;
+      if (ordersResponse.error) throw ordersResponse.error;
+      if (productsResponse.error) throw productsResponse.error;
+
+      const quotes = quotesResponse.data || [];
+      const orders = ordersResponse.data || [];
+      const productsList = productsResponse.data || [];
+
+      setQuoteRequests(quotes);
+      setProducts(productsList);
+
+      setStats({
+        pendingQuotes: quotes.filter((q) => q.status === "pending").length,
+        pendingPayments: orders.filter((o) => o.status === "pending_payment").length,
+        activeOrders: orders.filter((o) => 
+          !["delivered", "cancelled"].includes(o.status)
+        ).length,
+        totalRevenue: orders
+          .filter((o) => o.status === "delivered")
+          .reduce((sum, o) => sum + parseFloat(String(o.total_etb)), 0),
+      });
+    } catch (error: any) {
+      toast.error("Failed to load admin data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendQuote = async () => {
+    if (!selectedQuote || !quotedPrice) {
+      toast.error("Please enter a price");
+      return;
+    }
+
+    try {
+      const { error } = await (supabase as any)
+        .from("quote_requests")
+        .update({
+          status: "quoted",
+          quoted_price_etb: parseFloat(quotedPrice),
+          admin_notes: adminNotes || null,
+        })
+        .eq("id", selectedQuote.id);
+
+      if (error) throw error;
+
+      toast.success("Quote sent successfully!");
+      setSelectedQuote(null);
+      setQuotedPrice("");
+      setAdminNotes("");
+      fetchData();
+    } catch (error: any) {
+      toast.error("Failed to send quote");
+    }
+  };
+
+  const handleAddProduct = async () => {
+    if (!newProduct.name || !newProduct.price_etb) {
+      toast.error("Please fill in required fields");
+      return;
+    }
+
+    try {
+      let imageUrl = null;
+
+      // Upload image if provided
+      if (productImage) {
+        const fileExt = productImage.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, productImage);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+        
+        imageUrl = publicUrl;
+      }
+
+      const { error } = await (supabase as any)
+        .from("products")
+        .insert([{
+          name: newProduct.name,
+          description: newProduct.description || null,
+          price_etb: parseFloat(newProduct.price_etb),
+          cost_usd: newProduct.cost_usd ? parseFloat(newProduct.cost_usd) : null,
+          category: newProduct.category as any,
+          stock_status: newProduct.stock_status,
+          image_url: imageUrl,
+        }]);
+
+      if (error) throw error;
+
+      toast.success("Product added successfully!");
+      setShowProductForm(false);
+      setNewProduct({
+        name: "",
+        description: "",
+        price_etb: "",
+        cost_usd: "",
+        category: "other",
+        stock_status: true,
+      });
+      setProductImage(null);
+      fetchData();
+    } catch (error: any) {
+      toast.error("Failed to add product");
+      console.error(error);
+    }
+  };
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="mb-8 text-4xl font-bold text-foreground">Admin Dashboard</h1>
+
+        {/* Stats Cards */}
+        <div className="mb-8 grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Quotes</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingQuotes}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingPayments}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeOrders}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.totalRevenue.toLocaleString()} ETB
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs for different sections */}
+        <Tabs defaultValue="quotes" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
+            <TabsTrigger value="products">Products</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="quotes">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quote Requests</CardTitle>
+                <CardDescription>Manage customer quote requests</CardDescription>
+              </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center text-muted-foreground">Loading...</div>
+            ) : quoteRequests.length === 0 ? (
+              <p className="text-center text-muted-foreground">No quote requests</p>
+            ) : (
+              <div className="space-y-4">
+                {quoteRequests.map((quote) => (
+                  <Card key={quote.id}>
+                    <CardContent className="pt-6">
+                      <div className="flex gap-4">
+                        <img
+                          src={quote.photo_url}
+                          alt={quote.product_name}
+                          className="h-24 w-24 rounded-lg border object-cover"
+                        />
+                        <div className="flex-1">
+                          <div className="mb-2 flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold">{quote.product_name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                Quantity: {quote.quantity}
+                              </p>
+                            </div>
+                            <Badge className={
+                              quote.status === "pending" 
+                                ? "bg-warning text-warning-foreground"
+                                : "bg-info text-info-foreground"
+                            }>
+                              {quote.status}
+                            </Badge>
+                          </div>
+                          
+                          {quote.notes && (
+                            <p className="mb-2 text-sm">Notes: {quote.notes}</p>
+                          )}
+                          
+                          <a
+                            href={quote.aliexpress_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            View on AliExpress →
+                          </a>
+
+                          {quote.status === "pending" && (
+                            <div className="mt-4 space-y-3 rounded-lg border bg-muted/30 p-4">
+                              <div className="space-y-2">
+                                <Label htmlFor={`price-${quote.id}`}>
+                                  Quoted Price (ETB)
+                                </Label>
+                                <Input
+                                  id={`price-${quote.id}`}
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Enter price in ETB"
+                                  value={selectedQuote?.id === quote.id ? quotedPrice : ""}
+                                  onChange={(e) => {
+                                    setSelectedQuote(quote);
+                                    setQuotedPrice(e.target.value);
+                                  }}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`notes-${quote.id}`}>
+                                  Admin Notes (Optional)
+                                </Label>
+                                <Textarea
+                                  id={`notes-${quote.id}`}
+                                  placeholder="Internal notes..."
+                                  value={selectedQuote?.id === quote.id ? adminNotes : ""}
+                                  onChange={(e) => {
+                                    setSelectedQuote(quote);
+                                    setAdminNotes(e.target.value);
+                                  }}
+                                />
+                              </div>
+                              <Button
+                                onClick={() => {
+                                  setSelectedQuote(quote);
+                                  handleSendQuote();
+                                }}
+                                disabled={!quotedPrice}
+                              >
+                                Send Quote
+                              </Button>
+                            </div>
+                          )}
+
+                          {quote.quoted_price_etb && (
+                            <div className="mt-2">
+                              <p className="text-lg font-bold text-primary">
+                                Quoted: {quote.quoted_price_etb.toLocaleString()} ETB
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+          </TabsContent>
+
+          <TabsContent value="products">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Products</CardTitle>
+                    <CardDescription>Manage your product catalog</CardDescription>
+                  </div>
+                  <Button onClick={() => setShowProductForm(!showProductForm)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Product
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {showProductForm && (
+                  <Card className="mb-6">
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="product-name">Product Name *</Label>
+                            <Input
+                              id="product-name"
+                              placeholder="Enter product name"
+                              value={newProduct.name}
+                              onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="product-category">Category</Label>
+                            <select
+                              id="product-category"
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              value={newProduct.category}
+                              onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                            >
+                              <option value="electronics">Electronics</option>
+                              <option value="fashion">Fashion</option>
+                              <option value="home">Home & Garden</option>
+                              <option value="sports">Sports & Outdoors</option>
+                              <option value="toys">Toys & Games</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="product-description">Description</Label>
+                          <Textarea
+                            id="product-description"
+                            placeholder="Enter product description"
+                            value={newProduct.description}
+                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="product-image">Product Image</Label>
+                          <Input
+                            id="product-image"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setProductImage(e.target.files?.[0] || null)}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="product-price">Price (ETB) *</Label>
+                            <Input
+                              id="product-price"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={newProduct.price_etb}
+                              onChange={(e) => setNewProduct({ ...newProduct, price_etb: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="product-cost">Cost (USD)</Label>
+                            <Input
+                              id="product-cost"
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              value={newProduct.cost_usd}
+                              onChange={(e) => setNewProduct({ ...newProduct, cost_usd: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="product-stock"
+                            checked={newProduct.stock_status}
+                            onChange={(e) => setNewProduct({ ...newProduct, stock_status: e.target.checked })}
+                            className="h-4 w-4 rounded border-input"
+                          />
+                          <Label htmlFor="product-stock" className="cursor-pointer">In Stock</Label>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button onClick={handleAddProduct}>Add Product</Button>
+                          <Button variant="outline" onClick={() => setShowProductForm(false)}>Cancel</Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {loading ? (
+                  <div className="text-center text-muted-foreground">Loading...</div>
+                ) : products.length === 0 ? (
+                  <p className="text-center text-muted-foreground">No products yet</p>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {products.map((product) => (
+                      <Card key={product.id}>
+                        <CardContent className="pt-6">
+                          <div className="space-y-2">
+                            {product.image_url && (
+                              <img
+                                src={product.image_url}
+                                alt={product.name}
+                                className="mb-4 h-48 w-full rounded-lg object-cover"
+                              />
+                            )}
+                            <div className="flex items-start justify-between">
+                              <h3 className="font-semibold">{product.name}</h3>
+                              <Badge variant={product.stock_status ? "default" : "secondary"}>
+                                {product.stock_status ? "In Stock" : "Out of Stock"}
+                              </Badge>
+                            </div>
+                            {product.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {product.description}
+                              </p>
+                            )}
+                            <div className="flex items-center justify-between pt-2">
+                              <span className="text-lg font-bold text-primary">
+                                {product.price_etb.toLocaleString()} ETB
+                              </span>
+                              {product.cost_usd && (
+                                <span className="text-sm text-muted-foreground">
+                                  Cost: ${product.cost_usd}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
