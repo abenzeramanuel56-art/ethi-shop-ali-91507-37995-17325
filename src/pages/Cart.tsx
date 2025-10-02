@@ -28,6 +28,7 @@ const Cart = () => {
   const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"cbe" | "telebirr" | "">("");
 
   useEffect(() => {
     checkAuth();
@@ -96,6 +97,11 @@ const Cart = () => {
       return;
     }
 
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+
     if (cartItems.length === 0) {
       toast.error("Your cart is empty");
       return;
@@ -131,6 +137,7 @@ const Cart = () => {
           phone: phone,
           total_etb: calculateTotal(),
           payment_proof_url: paymentProofUrl,
+          payment_method: paymentMethod,
           status: "pending_payment"
         })
         .select()
@@ -289,6 +296,45 @@ const Cart = () => {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="payment-method">Payment Method *</Label>
+                    <select
+                      id="payment-method"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as "cbe" | "telebirr" | "")}
+                    >
+                      <option value="">Select payment method</option>
+                      <option value="cbe">CBE (Commercial Bank of Ethiopia)</option>
+                      <option value="telebirr">Telebirr</option>
+                    </select>
+                  </div>
+
+                  {paymentMethod && (
+                    <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                      <p className="font-semibold text-foreground">Payment Instructions:</p>
+                      {paymentMethod === "telebirr" ? (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            Transfer the total amount to:
+                          </p>
+                          <p className="text-lg font-bold text-foreground">+251998265025</p>
+                          <p className="text-sm text-muted-foreground">via Telebirr</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            Transfer the total amount to:
+                          </p>
+                          <p className="text-lg font-bold text-foreground">1000036292017</p>
+                          <p className="text-sm text-muted-foreground">
+                            Commercial Bank of Ethiopia (CBE)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
                     <Label htmlFor="payment-proof">Payment Proof (Optional)</Label>
                     <Input
                       id="payment-proof"
@@ -296,6 +342,9 @@ const Cart = () => {
                       accept="image/*"
                       onChange={(e) => setPaymentProof(e.target.files?.[0] || null)}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Upload a screenshot of your payment confirmation
+                    </p>
                   </div>
 
                   <div className="border-t pt-4">

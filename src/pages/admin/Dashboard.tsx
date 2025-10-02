@@ -43,6 +43,22 @@ interface Product {
   stock_status: boolean;
 }
 
+interface Order {
+  id: string;
+  customer_id: string;
+  shipping_address: string;
+  city: string;
+  phone: string;
+  total_etb: number;
+  payment_method: string | null;
+  payment_proof_url: string | null;
+  status: string;
+  tracking_number: string | null;
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -58,6 +74,7 @@ const AdminDashboard = () => {
   const [quotedPrice, setQuotedPrice] = useState("");
   const [adminNotes, setAdminNotes] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -68,6 +85,12 @@ const AdminDashboard = () => {
     stock_status: true,
   });
   const [productImage, setProductImage] = useState<File | null>(null);
+  const [editingOrder, setEditingOrder] = useState<string | null>(null);
+  const [orderUpdates, setOrderUpdates] = useState<{
+    status: string;
+    tracking_number: string;
+    admin_notes: string;
+  }>({ status: "", tracking_number: "", admin_notes: "" });
 
   useEffect(() => {
     checkAdminAccess();
@@ -118,19 +141,22 @@ const AdminDashboard = () => {
       if (productsResponse.error) throw productsResponse.error;
 
       const quotes = quotesResponse.data || [];
-      const orders = ordersResponse.data || [];
+      const ordersList = ordersResponse.data || [];
       const productsList = productsResponse.data || [];
 
       setQuoteRequests(quotes);
       setProducts(productsList);
+      setOrders(ordersList.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
 
       setStats({
         pendingQuotes: quotes.filter((q) => q.status === "pending").length,
-        pendingPayments: orders.filter((o) => o.status === "pending_payment").length,
-        activeOrders: orders.filter((o) => 
+        pendingPayments: ordersList.filter((o) => o.status === "pending_payment").length,
+        activeOrders: ordersList.filter((o) => 
           !["delivered", "cancelled"].includes(o.status)
         ).length,
-        totalRevenue: orders
+        totalRevenue: ordersList
           .filter((o) => o.status === "delivered")
           .reduce((sum, o) => sum + parseFloat(String(o.total_etb)), 0),
       });
@@ -167,6 +193,44 @@ const AdminDashboard = () => {
     } catch (error: any) {
       toast.error("Failed to send quote");
     }
+  };
+
+  const handleUpdateOrder = async (orderId: string) => {
+    if (!orderUpdates.status) {
+      toast.error("Please select a status");
+      return;
+    }
+
+    try {
+      const { error } = await (supabase as any)
+        .from("orders")
+        .update({
+          status: orderUpdates.status,
+          tracking_number: orderUpdates.tracking_number || null,
+          admin_notes: orderUpdates.admin_notes || null,
+        })
+        .eq("id", orderId);
+
+      if (error) throw error;
+
+      toast.success("Order updated successfully!");
+      setEditingOrder(null);
+      setOrderUpdates({ status: "", tracking_number: "", admin_notes: "" });
+      fetchData();
+    } catch (error: any) {
+      toast.error("Failed to update order");
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      pending_payment: "bg-warning text-warning-foreground",
+      payment_verified: "bg-info text-info-foreground",
+      ordered_on_aliexpress: "bg-primary text-primary-foreground",
+      shipped: "bg-info text-info-foreground",
+      delivered: "bg-success text-success-foreground",
+    };
+    return colors[status] || "bg-muted text-muted-foreground";
   };
 
   const handleAddProduct = async () => {
@@ -288,6 +352,7 @@ const AdminDashboard = () => {
         <Tabs defaultValue="quotes" className="space-y-4">
           <TabsList>
             <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
           </TabsList>
 
@@ -403,6 +468,158 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="orders">
+            <Card>
+              <CardHeader>
+                <CardTitle>Orders</CardTitle>
+                <CardDescription>Manage customer orders and tracking</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center text-muted-foreground">Loading...</div>
+                ) : orders.length === 0 ? (
+                  <p className="text-center text-muted-foreground">No orders yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.map((order) => (
+                      <Card key={order.id}>
+                        <CardContent className="pt-6">
+                          <div className="space-y-4">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-semibold">Order #{order.id.slice(0, 8)}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(order.created_at).toLocaleString()}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  City: {order.city} • Phone: {order.phone}
+                                </p>
+                              </div>
+                              <Badge className={getStatusColor(order.status)}>
+                                {order.status.replace("_", " ")}
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-2">
+                              <p className="text-sm">
+                                <span className="font-medium">Shipping Address:</span> {order.shipping_address}
+                              </p>
+                              <p className="text-lg font-bold text-primary">
+                                Total: {order.total_etb.toLocaleString()} ETB
+                              </p>
+                              {order.payment_method && (
+                                <p className="text-sm">
+                                  <span className="font-medium">Payment Method:</span>{" "}
+                                  {order.payment_method.toUpperCase()}
+                                </p>
+                              )}
+                              {order.payment_proof_url && (
+                                <a
+                                  href={order.payment_proof_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-primary hover:underline"
+                                >
+                                  View Payment Proof →
+                                </a>
+                              )}
+                              {order.tracking_number && (
+                                <p className="text-sm">
+                                  <span className="font-medium">Tracking:</span> {order.tracking_number}
+                                </p>
+                              )}
+                              {order.admin_notes && (
+                                <p className="text-sm">
+                                  <span className="font-medium">Admin Notes:</span> {order.admin_notes}
+                                </p>
+                              )}
+                            </div>
+
+                            {editingOrder === order.id ? (
+                              <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                                <div className="space-y-2">
+                                  <Label>Status</Label>
+                                  <select
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    value={orderUpdates.status}
+                                    onChange={(e) =>
+                                      setOrderUpdates({ ...orderUpdates, status: e.target.value })
+                                    }
+                                  >
+                                    <option value="">Select status</option>
+                                    <option value="pending_payment">Pending Payment</option>
+                                    <option value="payment_verified">Payment Verified</option>
+                                    <option value="ordered_on_aliexpress">Ordered on AliExpress</option>
+                                    <option value="shipped">Shipped</option>
+                                    <option value="delivered">Delivered</option>
+                                  </select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Tracking Number</Label>
+                                  <Input
+                                    placeholder="Enter tracking number"
+                                    value={orderUpdates.tracking_number}
+                                    onChange={(e) =>
+                                      setOrderUpdates({
+                                        ...orderUpdates,
+                                        tracking_number: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Admin Notes</Label>
+                                  <Textarea
+                                    placeholder="Internal notes..."
+                                    value={orderUpdates.admin_notes}
+                                    onChange={(e) =>
+                                      setOrderUpdates({ ...orderUpdates, admin_notes: e.target.value })
+                                    }
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button onClick={() => handleUpdateOrder(order.id)}>
+                                    Update Order
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingOrder(null);
+                                      setOrderUpdates({
+                                        status: "",
+                                        tracking_number: "",
+                                        admin_notes: "",
+                                      });
+                                    }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={() => {
+                                  setEditingOrder(order.id);
+                                  setOrderUpdates({
+                                    status: order.status,
+                                    tracking_number: order.tracking_number || "",
+                                    admin_notes: order.admin_notes || "",
+                                  });
+                                }}
+                              >
+                                Manage Order
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="products">
