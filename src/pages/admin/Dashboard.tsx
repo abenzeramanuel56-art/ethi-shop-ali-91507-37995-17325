@@ -202,6 +202,11 @@ const AdminDashboard = () => {
     }
 
     try {
+      // Get current order to check if status is changing to payment_verified
+      const currentOrder = orders.find(o => o.id === orderId);
+      const isPaymentJustVerified = orderUpdates.status === "payment_verified" && 
+                                   currentOrder?.status !== "payment_verified";
+
       const { error } = await (supabase as any)
         .from("orders")
         .update({
@@ -212,6 +217,19 @@ const AdminDashboard = () => {
         .eq("id", orderId);
 
       if (error) throw error;
+
+      // Send confirmation email if payment was just verified
+      if (isPaymentJustVerified) {
+        try {
+          await supabase.functions.invoke("send-order-confirmation", {
+            body: { orderId },
+          });
+          console.log("Confirmation email sent successfully");
+        } catch (emailError) {
+          console.error("Failed to send confirmation email:", emailError);
+          // Don't throw - order was still updated successfully
+        }
+      }
 
       toast.success("Order updated successfully!");
       setEditingOrder(null);
