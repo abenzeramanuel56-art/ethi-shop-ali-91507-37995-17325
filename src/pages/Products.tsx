@@ -5,7 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ShoppingCart, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface Product {
@@ -20,6 +21,8 @@ interface Product {
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -37,12 +40,22 @@ const Products = () => {
 
       if (error) throw error;
       setProducts(data || []);
+      setFilteredProducts(data || []);
     } catch (error: any) {
       toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const filtered = products.filter((product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredProducts(filtered);
+  }, [searchQuery, products]);
 
   const handleAddToCart = (product: Product) => {
     const saved = localStorage.getItem("cart");
@@ -81,6 +94,19 @@ const Products = () => {
           </p>
         </div>
 
+        <div className="mb-8">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
         {loading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -93,15 +119,17 @@ const Products = () => {
               </Card>
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <Card className="p-12 text-center">
             <p className="text-lg text-muted-foreground">
-              No products available yet. Check back soon or request an item!
+              {searchQuery 
+                ? `No products found matching "${searchQuery}"`
+                : "No products available yet. Check back soon or request an item!"}
             </p>
           </Card>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <Card key={product.id} className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg">
                 <div className="relative h-48 overflow-hidden bg-muted">
                   {product.image_url ? (

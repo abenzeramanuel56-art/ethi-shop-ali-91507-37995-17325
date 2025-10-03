@@ -174,7 +174,8 @@ const AdminDashboard = () => {
     }
 
     try {
-      const { error } = await (supabase as any)
+      // Update quote request status
+      const { error: quoteError } = await (supabase as any)
         .from("quote_requests")
         .update({
           status: "quoted",
@@ -183,9 +184,26 @@ const AdminDashboard = () => {
         })
         .eq("id", selectedQuote.id);
 
-      if (error) throw error;
+      if (quoteError) throw quoteError;
 
-      toast.success("Quote sent successfully!");
+      // Automatically add quoted item as a product
+      const { error: productError } = await (supabase as any)
+        .from("products")
+        .insert([{
+          name: selectedQuote.product_name,
+          description: `Customer requested item - ${selectedQuote.notes || ""}`,
+          price_etb: parseFloat(quotedPrice),
+          image_url: selectedQuote.photo_url,
+          category: "other",
+          stock_status: true,
+        }]);
+
+      if (productError) {
+        console.error("Failed to auto-add product:", productError);
+        // Don't throw - quote was still sent successfully
+      }
+
+      toast.success("Quote sent and product added successfully!");
       setSelectedQuote(null);
       setQuotedPrice("");
       setAdminNotes("");
@@ -202,10 +220,11 @@ const AdminDashboard = () => {
     }
 
     try {
-      // Get current order to check if status is changing to payment_verified
       const currentOrder = orders.find(o => o.id === orderId);
       const isPaymentJustVerified = orderUpdates.status === "payment_verified" && 
                                    currentOrder?.status !== "payment_verified";
+      const isTrackingAdded = orderUpdates.tracking_number && 
+                             currentOrder?.tracking_number !== orderUpdates.tracking_number;
 
       const { error } = await (supabase as any)
         .from("orders")
@@ -227,7 +246,18 @@ const AdminDashboard = () => {
           console.log("Confirmation email sent successfully");
         } catch (emailError) {
           console.error("Failed to send confirmation email:", emailError);
-          // Don't throw - order was still updated successfully
+        }
+      }
+
+      // Send tracking notification if tracking number was added/updated
+      if (isTrackingAdded) {
+        try {
+          await supabase.functions.invoke("send-tracking-notification", {
+            body: { orderId, trackingNumber: orderUpdates.tracking_number },
+          });
+          console.log("Tracking notification sent successfully");
+        } catch (emailError) {
+          console.error("Failed to send tracking notification:", emailError);
         }
       }
 
