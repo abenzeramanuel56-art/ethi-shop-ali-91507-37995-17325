@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DollarSign, Package, ShoppingCart, Users, Plus } from "lucide-react";
+import { DollarSign, Package, ShoppingCart, Users, Plus, Image as ImageIcon } from "lucide-react";
 
 interface Stats {
   pendingQuotes: number;
@@ -564,14 +564,27 @@ const AdminDashboard = () => {
                                 </p>
                               )}
                               {order.payment_proof_url && (
-                                <a
-                                  href={order.payment_proof_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-primary hover:underline"
-                                >
-                                  View Payment Proof →
-                                </a>
+                                <div className="rounded-lg border bg-muted/30 p-3">
+                                  <div className="mb-2 flex items-center gap-2">
+                                    <ImageIcon className="h-4 w-4 text-primary" />
+                                    <span className="font-medium text-sm">Payment Proof:</span>
+                                  </div>
+                                  <a
+                                    href={order.payment_proof_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block"
+                                  >
+                                    <img
+                                      src={order.payment_proof_url}
+                                      alt="Payment Proof"
+                                      className="max-h-48 w-full rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                                    />
+                                    <p className="mt-2 text-sm text-primary hover:underline">
+                                      Click to view full size →
+                                    </p>
+                                  </a>
+                                </div>
                               )}
                               {order.tracking_number && (
                                 <p className="text-sm">
