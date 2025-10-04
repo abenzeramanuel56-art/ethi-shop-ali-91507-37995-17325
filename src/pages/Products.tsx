@@ -86,26 +86,41 @@ const Products = () => {
     <div className="min-h-screen">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-10 text-center">
-          <h1 className="mb-3 text-5xl font-bold text-foreground">Browse Products</h1>
-          <p className="text-xl text-muted-foreground">
-            Curated selection of popular AliExpress products
-          </p>
-        </div>
+      {/* Header with gradient background */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 py-16 mb-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_hsl(173_80%_40%_/_0.1),_transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,_hsl(280_65%_55%_/_0.1),_transparent_50%)]" />
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center mb-8">
+            <h1 className="mb-4 text-6xl font-bold">
+              <span className="bg-gradient-primary bg-clip-text text-transparent">Browse</span>
+              {" "}Products
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Discover curated AliExpress products with Ethiopian Birr pricing
+            </p>
+          </div>
 
-        <div className="mb-10 flex justify-center">
-          <div className="relative w-full max-w-xl">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search products by name, description, or category..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 py-6 text-lg shadow-soft focus:shadow-glow transition-all"
-            />
+          {/* Enhanced search bar */}
+          <div className="flex justify-center">
+            <div className="relative w-full max-w-2xl">
+              <div className="absolute inset-0 bg-gradient-primary opacity-20 blur-xl rounded-full" />
+              <div className="relative bg-card/80 backdrop-blur-sm rounded-2xl shadow-glow border-2 border-primary/20">
+                <Search className="absolute left-5 top-1/2 h-6 w-6 -translate-y-1/2 text-primary" />
+                <Input
+                  type="text"
+                  placeholder="Search for anything... (name, description, category)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-14 pr-6 py-7 text-lg border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="container mx-auto px-4 pb-16">
 
         {loading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -128,49 +143,68 @@ const Products = () => {
             </p>
           </Card>
         ) : (
-           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <Card key={product.id} className="group flex flex-col overflow-hidden shadow-soft hover:shadow-glow transition-all hover:-translate-y-1">
-                <div className="relative h-56 overflow-hidden bg-gradient-to-br from-muted to-muted/50">
+           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {filteredProducts.map((product, index) => (
+              <Card 
+                key={product.id} 
+                className="group relative flex flex-col overflow-hidden border-2 shadow-soft hover:shadow-hover transition-all duration-500 hover:-translate-y-2"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                {/* Gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                
+                <div className="relative h-64 overflow-hidden">
+                  {/* Animated gradient background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10" />
+                  
                   {product.image_url ? (
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="relative h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground">
-                      No image
+                    <div className="relative flex h-full items-center justify-center text-muted-foreground">
+                      <ShoppingCart className="h-16 w-16 opacity-20" />
                     </div>
                   )}
-                  <Badge className="absolute right-3 top-3 shadow-lg" variant="secondary">
-                    {product.category}
-                  </Badge>
+                  
+                  {/* Category badge with gradient */}
+                  <div className="absolute right-4 top-4">
+                    <Badge className="gradient-accent shadow-lg border-0 text-white px-4 py-1.5 text-sm font-semibold">
+                      {product.category}
+                    </Badge>
+                  </div>
                 </div>
                 
-                <CardHeader className="flex-grow">
-                  <CardTitle className="line-clamp-2 text-lg">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-3 text-sm">
+                <CardHeader className="flex-grow relative z-10 pb-4">
+                  <CardTitle className="line-clamp-2 text-xl mb-2 group-hover:text-primary transition-colors">
+                    {product.name}
+                  </CardTitle>
+                  <CardDescription className="line-clamp-3 text-base leading-relaxed">
                     {product.description}
                   </CardDescription>
                 </CardHeader>
                 
-                <CardContent>
-                  <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                    {product.price_etb.toLocaleString()} ETB
+                <CardContent className="relative z-10 pb-4">
+                  <div className="inline-block">
+                    <div className="text-4xl font-extrabold bg-gradient-primary bg-clip-text text-transparent mb-1">
+                      {product.price_etb.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-muted-foreground font-medium">Ethiopian Birr</div>
                   </div>
                 </CardContent>
                 
-                <CardFooter className="flex gap-2">
+                <CardFooter className="flex gap-3 relative z-10 pt-0">
                   <Button 
-                    className="w-1/2 gap-2 shadow-sm hover:shadow-md transition-all" 
+                    className="flex-1 gap-2 shadow-glow hover:shadow-hover transition-all duration-300 font-semibold" 
                     onClick={() => handleAddToCart(product)}
                   >
                     <ShoppingCart className="h-4 w-4" />
-                    Add
+                    Add to Cart
                   </Button>
                   <Button 
-                    className="w-1/2 shadow-sm hover:shadow-md transition-all" 
+                    className="flex-1 shadow-soft hover:shadow-glow transition-all duration-300 border-2 font-semibold" 
                     variant="outline"
                     onClick={() => handleBuyNow(product)}
                   >
