@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 220 25% 97%;
     --foreground: 222.2 47.4% 11.2%;
 
     --card: 0 0% 100%;
@@ -19,21 +19,22 @@ All colors MUST be HSL.
 
     --primary: 173 80% 40%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 173 90% 60%;
 
     --secondary: 45 93% 47%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 220 20% 94%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 45 93% 47%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 280 70% 60%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 220 20% 90%;
+    --input: 220 20% 95%;
     --ring: 173 80% 40%;
 
     --radius: 0.75rem;
@@ -46,21 +47,22 @@ All colors MUST be HSL.
     
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(173 80% 40%), hsl(173 90% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(45 93% 47%), hsl(30 90% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(280 70% 60%), hsl(250 70% 65%));
+    --gradient-bg: linear-gradient(180deg, hsl(220 25% 97%), hsl(220 30% 95%));
+    
+    --shadow-soft: 0 2px 8px -2px hsl(220 20% 80% / 0.3);
+    --shadow-glow: 0 0 30px hsl(173 80% 40% / 0.15);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -76,6 +78,7 @@ All colors MUST be HSL.
 
     --primary: 173 80% 40%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 173 90% 60%;
 
     --secondary: 45 93% 47%;
     --secondary-foreground: 0 0% 100%;
@@ -83,14 +86,14 @@ All colors MUST be HSL.
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 45 93% 47%;
+    --accent: 280 70% 60%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 22%;
+    --input: 217.2 32.6% 20%;
     --ring: 173 80% 40%;
     
     --success: 142 71% 45%;
@@ -101,6 +104,15 @@ All colors MUST be HSL.
     
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
+    
+    --gradient-primary: linear-gradient(135deg, hsl(173 80% 40%), hsl(173 90% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(45 93% 47%), hsl(30 90% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(280 70% 60%), hsl(250 70% 65%));
+    --gradient-bg: linear-gradient(180deg, hsl(222.2 47.4% 11.2%), hsl(222.2 47.4% 15%));
+    
+    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 30px hsl(173 80% 40% / 0.25);
+    
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -119,5 +131,29 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    background: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
   }
 }

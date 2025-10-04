@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DollarSign, Package, ShoppingCart, Users, Plus, Image as ImageIcon } from "lucide-react";
+import { DollarSign, Package, ShoppingCart, Users, Plus, Image as ImageIcon, ArrowRight } from "lucide-react";
 
 interface Stats {
   pendingQuotes: number;
@@ -564,25 +564,30 @@ const AdminDashboard = () => {
                                 </p>
                               )}
                               {order.payment_proof_url && (
-                                <div className="rounded-lg border bg-muted/30 p-3">
-                                  <div className="mb-2 flex items-center gap-2">
-                                    <ImageIcon className="h-4 w-4 text-primary" />
-                                    <span className="font-medium text-sm">Payment Proof:</span>
+                                <div className="mt-4 rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 p-4 shadow-lg">
+                                  <div className="mb-3 flex items-center gap-2">
+                                    <div className="rounded-lg bg-gradient-primary p-2">
+                                      <ImageIcon className="h-5 w-5 text-white" />
+                                    </div>
+                                    <span className="font-semibold text-lg text-foreground">Payment Proof Submitted</span>
                                   </div>
                                   <a
                                     href={order.payment_proof_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="block"
+                                    className="block group"
                                   >
-                                    <img
-                                      src={order.payment_proof_url}
-                                      alt="Payment Proof"
-                                      className="max-h-48 w-full rounded-md object-contain cursor-pointer hover:opacity-80 transition-opacity"
-                                    />
-                                    <p className="mt-2 text-sm text-primary hover:underline">
-                                      Click to view full size →
-                                    </p>
+                                    <div className="rounded-lg overflow-hidden border-2 border-border shadow-md group-hover:shadow-xl transition-all">
+                                      <img
+                                        src={order.payment_proof_url}
+                                        alt="Payment Proof"
+                                        className="w-full max-h-64 object-contain bg-white group-hover:scale-105 transition-transform duration-300"
+                                      />
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-center gap-2 text-primary font-medium group-hover:text-primary-glow transition-colors">
+                                      <span>Click to view full size</span>
+                                      <ArrowRight className="h-4 w-4" />
+                                    </div>
                                   </a>
                                 </div>
                               )}

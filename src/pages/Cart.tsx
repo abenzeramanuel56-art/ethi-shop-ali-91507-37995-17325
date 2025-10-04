@@ -113,12 +113,15 @@ const Cart = () => {
       // Upload payment proof if provided
       if (paymentProof) {
         const fileExt = paymentProof.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage
           .from('payment-proofs')
           .upload(fileName, paymentProof);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          throw uploadError;
+        }
 
         const { data: { publicUrl } } = supabase.storage
           .from('payment-proofs')

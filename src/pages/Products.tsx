@@ -83,26 +83,26 @@ const Products = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Navbar />
       
       <div className="container mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h1 className="mb-2 text-4xl font-bold text-foreground">Browse Products</h1>
-          <p className="text-lg text-muted-foreground">
+        <div className="mb-10 text-center">
+          <h1 className="mb-3 text-5xl font-bold text-foreground">Browse Products</h1>
+          <p className="text-xl text-muted-foreground">
             Curated selection of popular AliExpress products
           </p>
         </div>
 
-        <div className="mb-8">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="mb-10 flex justify-center">
+          <div className="relative w-full max-w-xl">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search products by name, description, or category..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-12 py-6 text-lg shadow-soft focus:shadow-glow transition-all"
             />
           </div>
         </div>
@@ -128,50 +128,50 @@ const Products = () => {
             </p>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg">
-                <div className="relative h-48 overflow-hidden bg-muted">
+              <Card key={product.id} className="group flex flex-col overflow-hidden shadow-soft hover:shadow-glow transition-all hover:-translate-y-1">
+                <div className="relative h-56 overflow-hidden bg-gradient-to-br from-muted to-muted/50">
                   {product.image_url ? (
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">
                       No image
                     </div>
                   )}
-                  <Badge className="absolute right-2 top-2" variant="secondary">
+                  <Badge className="absolute right-3 top-3 shadow-lg" variant="secondary">
                     {product.category}
                   </Badge>
                 </div>
                 
                 <CardHeader className="flex-grow">
-                  <CardTitle className="line-clamp-2">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-3">
+                  <CardTitle className="line-clamp-2 text-lg">{product.name}</CardTitle>
+                  <CardDescription className="line-clamp-3 text-sm">
                     {product.description}
                   </CardDescription>
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="text-3xl font-bold text-primary">
+                  <div className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                     {product.price_etb.toLocaleString()} ETB
                   </div>
                 </CardContent>
                 
                 <CardFooter className="flex gap-2">
                   <Button 
-                    className="w-1/2 gap-2" 
+                    className="w-1/2 gap-2 shadow-sm hover:shadow-md transition-all" 
                     onClick={() => handleAddToCart(product)}
                   >
                     <ShoppingCart className="h-4 w-4" />
-                    Add to Cart
+                    Add
                   </Button>
                   <Button 
-                    className="w-1/2" 
-                    variant="secondary"
+                    className="w-1/2 shadow-sm hover:shadow-md transition-all" 
+                    variant="outline"
                     onClick={() => handleBuyNow(product)}
                   >
                     Buy Now
