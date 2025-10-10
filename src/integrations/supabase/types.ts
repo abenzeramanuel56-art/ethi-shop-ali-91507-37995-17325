@@ -24,6 +24,7 @@ export type Database = {
           product_name: string
           quantity: number
           quote_request_id: string | null
+          reseller_profit_etb: number | null
         }
         Insert: {
           created_at?: string | null
@@ -34,6 +35,7 @@ export type Database = {
           product_name: string
           quantity?: number
           quote_request_id?: string | null
+          reseller_profit_etb?: number | null
         }
         Update: {
           created_at?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           product_name?: string
           quantity?: number
           quote_request_id?: string | null
+          reseller_profit_etb?: number | null
         }
         Relationships: [
           {
@@ -79,8 +82,10 @@ export type Database = {
           payment_method: string | null
           payment_proof_url: string | null
           phone: string
+          reseller_id: string | null
           shipping_address: string
           status: Database["public"]["Enums"]["order_status"] | null
+          store_type: string | null
           total_etb: number
           tracking_number: string | null
           updated_at: string | null
@@ -94,8 +99,10 @@ export type Database = {
           payment_method?: string | null
           payment_proof_url?: string | null
           phone: string
+          reseller_id?: string | null
           shipping_address: string
           status?: Database["public"]["Enums"]["order_status"] | null
+          store_type?: string | null
           total_etb: number
           tracking_number?: string | null
           updated_at?: string | null
@@ -109,13 +116,23 @@ export type Database = {
           payment_method?: string | null
           payment_proof_url?: string | null
           phone?: string
+          reseller_id?: string | null
           shipping_address?: string
           status?: Database["public"]["Enums"]["order_status"] | null
+          store_type?: string | null
           total_etb?: number
           tracking_number?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -128,6 +145,7 @@ export type Database = {
           name: string
           price_etb: number
           stock_status: boolean | null
+          unique_product_code: string | null
           updated_at: string | null
         }
         Insert: {
@@ -140,6 +158,7 @@ export type Database = {
           name: string
           price_etb: number
           stock_status?: boolean | null
+          unique_product_code?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -152,6 +171,7 @@ export type Database = {
           name?: string
           price_etb?: number
           stock_status?: boolean | null
+          unique_product_code?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -231,6 +251,111 @@ export type Database = {
         }
         Relationships: []
       }
+      reseller_products: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          product_id: string
+          reseller_price_etb: number
+          store_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          product_id: string
+          reseller_price_etb: number
+          store_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          product_id?: string
+          reseller_price_etb?: number
+          store_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reseller_stores: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          id: string
+          store_name: string
+          store_slug: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          store_name: string
+          store_slug: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          store_name?: string
+          store_slug?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reseller_wallets: {
+        Row: {
+          created_at: string | null
+          current_balance_etb: number
+          id: string
+          total_earned_etb: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_balance_etb?: number
+          id?: string
+          total_earned_etb?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_balance_etb?: number
+          id?: string
+          total_earned_etb?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
@@ -273,6 +398,45 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          account_detail_1: string
+          account_detail_2: string | null
+          admin_notes: string | null
+          amount_etb: number
+          created_at: string | null
+          id: string
+          payment_method: string
+          processed_at: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          account_detail_1: string
+          account_detail_2?: string | null
+          admin_notes?: string | null
+          amount_etb: number
+          created_at?: string | null
+          id?: string
+          payment_method: string
+          processed_at?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          account_detail_1?: string
+          account_detail_2?: string | null
+          admin_notes?: string | null
+          amount_etb?: number
+          created_at?: string | null
+          id?: string
+          payment_method?: string
+          processed_at?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -287,7 +451,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer"
+      app_role: "admin" | "customer" | "reseller"
       order_status:
         | "pending_payment"
         | "payment_verified"
@@ -433,7 +597,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer"],
+      app_role: ["admin", "customer", "reseller"],
       order_status: [
         "pending_payment",
         "payment_verified",
