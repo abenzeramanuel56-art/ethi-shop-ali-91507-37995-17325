@@ -9,12 +9,14 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isReseller, setIsReseller] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkResellerStatus(session.user.id);
       }
     });
 
@@ -23,8 +25,10 @@ export const Navbar = () => {
         setUser(session?.user ?? null);
         if (session?.user) {
           checkAdminStatus(session.user.id);
+          checkResellerStatus(session.user.id);
         } else {
           setIsAdmin(false);
+          setIsReseller(false);
         }
       }
     );
@@ -41,6 +45,17 @@ export const Navbar = () => {
       .maybeSingle();
     
     setIsAdmin(!!data);
+  };
+
+  const checkResellerStatus = async (userId: string) => {
+    const { data } = await (supabase as any)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "reseller")
+      .maybeSingle();
+    
+    setIsReseller(!!data);
   };
 
   const handleSignOut = async () => {
@@ -70,6 +85,11 @@ export const Navbar = () => {
                 {isAdmin && (
                   <Link to="/admin">
                     <Button variant="secondary">Admin Panel</Button>
+                  </Link>
+                )}
+                {isReseller && (
+                  <Link to="/reseller">
+                    <Button variant="secondary">Reseller Dashboard</Button>
                   </Link>
                 )}
                 <Link to="/cart">

@@ -10,6 +10,12 @@ import RequestItem from "./pages/RequestItem";
 import Account from "./pages/Account";
 import Cart from "./pages/Cart";
 import AdminDashboard from "./pages/admin/Dashboard";
+import ResellerDashboard from "./pages/reseller/Dashboard";
+import ResellerSetup from "./pages/reseller/Setup";
+import ResellerProducts from "./pages/reseller/Products";
+import ResellerOrders from "./pages/reseller/Orders";
+import ResellerWallet from "./pages/reseller/Wallet";
+import Store from "./pages/Store";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +34,12 @@ const App = () => (
           <Route path="/account" element={<Account />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/reseller" element={<ResellerDashboard />} />
+          <Route path="/reseller/setup" element={<ResellerSetup />} />
+          <Route path="/reseller/products" element={<ResellerProducts />} />
+          <Route path="/reseller/orders" element={<ResellerOrders />} />
+          <Route path="/reseller/wallet" element={<ResellerWallet />} />
+          <Route path="/store/:storeSlug" element={<Store />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
