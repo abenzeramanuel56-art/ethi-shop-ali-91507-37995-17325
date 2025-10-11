@@ -17,9 +17,9 @@ interface Order {
   phone: string;
   payment_proof_url: string;
   tracking_number: string;
-  profiles: {
+  profiles?: {
     full_name: string;
-  };
+  } | null;
 }
 
 export default function ResellerOrders() {
@@ -53,12 +53,12 @@ export default function ResellerOrders() {
       .from("orders")
       .select(`
         *,
-        profiles (full_name)
+        profiles!orders_customer_id_fkey (full_name)
       `)
       .eq("reseller_id", store.id)
       .order("created_at", { ascending: false });
 
-    setOrders(data || []);
+    setOrders((data as any) || []);
     setLoading(false);
   };
 
