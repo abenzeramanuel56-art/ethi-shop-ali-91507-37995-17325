@@ -30,7 +30,7 @@ export default function ResellerProducts() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [storeId, setStoreId] = useState<string>("");
-  const [searchUPC, setSearchUPC] = useState("");
+  const [searchName, setSearchName] = useState("");
   const [searchedProduct, setSearchedProduct] = useState<Product | null>(null);
   const [resellerPrice, setResellerPrice] = useState("");
   const [myProducts, setMyProducts] = useState<ResellerProduct[]>([]);
@@ -76,10 +76,10 @@ export default function ResellerProducts() {
   };
 
   const handleSearchProduct = async () => {
-    if (!searchUPC.trim()) {
+    if (!searchName.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a product code",
+        description: "Please enter a product name",
         variant: "destructive"
       });
       return;
@@ -88,13 +88,13 @@ export default function ResellerProducts() {
     const { data, error } = await supabase
       .from("products")
       .select("*")
-      .eq("unique_product_code", searchUPC.toUpperCase())
+      .ilike("name", `%${searchName}%`)
       .single();
 
     if (error || !data) {
       toast({
         title: "Not Found",
-        description: "No product found with this code",
+        description: "No product found with this name",
         variant: "destructive"
       });
       setSearchedProduct(null);
@@ -142,7 +142,7 @@ export default function ResellerProducts() {
     });
 
     setSearchedProduct(null);
-    setSearchUPC("");
+    setSearchName("");
     setResellerPrice("");
     await fetchMyProducts(storeId);
   };
@@ -188,16 +188,16 @@ export default function ResellerProducts() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              Add Product by UPC
+              Add Product by Name
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter Product Code (e.g., AX-12345)"
-                  value={searchUPC}
-                  onChange={(e) => setSearchUPC(e.target.value)}
+                  placeholder="Enter Product Name"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
                 />
                 <Button onClick={handleSearchProduct}>
                   <Search className="h-4 w-4 mr-2" />
