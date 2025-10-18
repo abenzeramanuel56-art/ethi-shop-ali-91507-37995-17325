@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -448,6 +478,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      send_notification_to_all: {
+        Args: {
+          notification_message: string
+          notification_title: string
+          notification_type?: string
+        }
+        Returns: number
       }
     }
     Enums: {

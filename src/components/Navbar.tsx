@@ -4,6 +4,7 @@ import { ShoppingCart, User, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import NotificationBell from "./NotificationBell";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -97,6 +98,7 @@ export const Navbar = () => {
                     <ShoppingCart className="h-5 w-5" />
                   </Button>
                 </Link>
+                <NotificationBell />
                 <Link to="/account">
                   <Button variant="ghost" size="icon">
                     <User className="h-5 w-5" />

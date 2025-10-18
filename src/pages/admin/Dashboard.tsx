@@ -11,6 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DollarSign, Package, ShoppingCart, Users, Plus } from "lucide-react";
+import AdminResellers from "./Resellers";
+import AdminWithdrawals from "./Withdrawals";
+import AdminMessaging from "./Messaging";
 
 interface Stats {
   pendingQuotes: number;
@@ -402,6 +405,9 @@ const AdminDashboard = () => {
             <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="resellers">Resellers</TabsTrigger>
+            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+            <TabsTrigger value="messaging">Messaging</TabsTrigger>
           </TabsList>
 
           <TabsContent value="quotes">
@@ -825,13 +831,25 @@ const AdminDashboard = () => {
                       </Card>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="resellers">
+        <AdminResellers />
+      </TabsContent>
+
+      <TabsContent value="withdrawals">
+        <AdminWithdrawals />
+      </TabsContent>
+
+      <TabsContent value="messaging">
+        <AdminMessaging />
+      </TabsContent>
+    </Tabs>
+  </div>
+</div>
   );
 };
 
