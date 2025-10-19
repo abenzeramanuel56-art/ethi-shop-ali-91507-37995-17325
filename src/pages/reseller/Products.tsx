@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { Navbar } from "@/components/Navbar";
+import { Plus, Trash2, Store } from "lucide-react";
 
 interface Product {
   id: string;
@@ -16,6 +17,7 @@ interface Product {
   unique_product_code: string;
   price_etb: number;
   image_url: string;
+  category: string;
 }
 
 interface ResellerProduct {
@@ -28,21 +30,21 @@ interface ResellerProduct {
 
 export default function ResellerProducts() {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [storeId, setStoreId] = useState<string>("");
-  const [searchName, setSearchName] = useState("");
-  const [searchedProduct, setSearchedProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [categoryProducts, setCategoryProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [resellerPrice, setResellerPrice] = useState("");
   const [myProducts, setMyProducts] = useState<ResellerProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [storeId, setStoreId] = useState<string>("");
 
   useEffect(() => {
     checkAccess();
   }, []);
 
   const checkAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) {
       navigate("/auth");
       return;
     }
@@ -50,7 +52,7 @@ export default function ResellerProducts() {
     const { data: store } = await supabase
       .from("reseller_stores")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", session.session.user.id)
       .single();
 
     if (!store) {
@@ -59,7 +61,7 @@ export default function ResellerProducts() {
     }
 
     setStoreId(store.id);
-    await fetchMyProducts(store.id);
+    fetchMyProducts(store.id);
     setLoading(false);
   };
 
@@ -75,99 +77,98 @@ export default function ResellerProducts() {
     setMyProducts(data || []);
   };
 
-  const handleSearchProduct = async () => {
-    if (!searchName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a product name",
-        variant: "destructive"
-      });
-      return;
+  const handleCategoryChange = async (category: string) => {
+    setSelectedCategory(category);
+    setSelectedProduct(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("category", category as any)
+        .eq("stock_status", true);
+
+      if (error) throw error;
+      setCategoryProducts(data || []);
+      
+      if (data && data.length === 0) {
+        toast.info("No products found in this category");
+      }
+    } catch (error) {
+      toast.error("Failed to load products");
+      setCategoryProducts([]);
     }
-
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .ilike("name", `%${searchName}%`)
-      .single();
-
-    if (error || !data) {
-      toast({
-        title: "Not Found",
-        description: "No product found with this name",
-        variant: "destructive"
-      });
-      setSearchedProduct(null);
-      return;
-    }
-
-    setSearchedProduct(data);
-    setResellerPrice(data.price_etb.toString());
   };
 
   const handleAddProduct = async () => {
-    if (!searchedProduct) return;
-
-    const priceNum = parseFloat(resellerPrice);
-    if (priceNum < searchedProduct.price_etb) {
-      toast({
-        title: "Error",
-        description: "Your price must be >= admin base price",
-        variant: "destructive"
-      });
+    if (!selectedProduct) {
+      toast.error("Please select a product first");
       return;
     }
 
-    const { error } = await supabase
-      .from("reseller_products")
-      .insert({
-        store_id: storeId,
-        product_id: searchedProduct.id,
-        reseller_price_etb: priceNum,
-        is_active: true
-      });
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+    if (!resellerPrice || parseFloat(resellerPrice) <= 0) {
+      toast.error("Please enter a valid reseller price");
       return;
     }
 
-    toast({
-      title: "Success",
-      description: "Product added to your store"
-    });
+    const resellerPriceNum = parseFloat(resellerPrice);
+    if (resellerPriceNum <= selectedProduct.price_etb) {
+      toast.error("Reseller price must be higher than the base price");
+      return;
+    }
 
-    setSearchedProduct(null);
-    setSearchName("");
-    setResellerPrice("");
-    await fetchMyProducts(storeId);
+    try {
+      // Check if already added
+      const { data: existing } = await supabase
+        .from("reseller_products")
+        .select("id")
+        .eq("store_id", storeId)
+        .eq("product_id", selectedProduct.id)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error("Product already added to your store");
+        return;
+      }
+
+      // Add product
+      const { error } = await supabase
+        .from("reseller_products")
+        .insert({
+          store_id: storeId,
+          product_id: selectedProduct.id,
+          reseller_price_etb: resellerPriceNum
+        });
+
+      if (error) throw error;
+
+      toast.success("Product added to your store!");
+      setSelectedProduct(null);
+      setSelectedCategory("");
+      setCategoryProducts([]);
+      setResellerPrice("");
+      fetchMyProducts(storeId);
+    } catch (error) {
+      toast.error("Failed to add product");
+      console.error(error);
+    }
   };
 
   const handleRemoveProduct = async (productId: string) => {
-    const { error } = await supabase
-      .from("reseller_products")
-      .delete()
-      .eq("id", productId);
+    try {
+      const { error } = await supabase
+        .from("reseller_products")
+        .delete()
+        .eq("id", productId);
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-      return;
+      if (error) throw error;
+
+      toast.success("Product removed from your store");
+      fetchMyProducts(storeId);
+    } catch (error) {
+      toast.error("Failed to remove product");
+      console.error(error);
     }
-
-    toast({
-      title: "Success",
-      description: "Product removed from your store"
-    });
-
-    await fetchMyProducts(storeId);
   };
 
   if (loading) {
@@ -182,66 +183,98 @@ export default function ResellerProducts() {
     <div className="min-h-screen">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Manage Products</h1>
+        <div className="flex items-center gap-2 mb-8">
+          <Store className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">Manage Products</h1>
+        </div>
 
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5" />
-              Add Product by Name
-            </CardTitle>
+            <CardTitle>Add Product by Category</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter Product Name"
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                />
-                <Button onClick={handleSearchProduct}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
-                </Button>
+              <div>
+                <Label>Select Category</Label>
+                <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="electronics">Electronics</SelectItem>
+                    <SelectItem value="fashion">Fashion</SelectItem>
+                    <SelectItem value="home">Home & Garden</SelectItem>
+                    <SelectItem value="beauty">Beauty & Health</SelectItem>
+                    <SelectItem value="sports">Sports & Outdoors</SelectItem>
+                    <SelectItem value="toys">Toys & Games</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {searchedProduct && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex gap-4">
-                      {searchedProduct.image_url && (
-                        <img
-                          src={searchedProduct.image_url}
-                          alt={searchedProduct.name}
-                          className="w-24 h-24 object-cover rounded"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{searchedProduct.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Code: {searchedProduct.unique_product_code}
-                        </p>
-                        <p className="text-sm">
-                          Base Price: {searchedProduct.price_etb} ETB
-                        </p>
-                        <div className="mt-2">
-                          <Label htmlFor="resellerPrice">Your Price (ETB) *</Label>
-                          <Input
-                            id="resellerPrice"
-                            type="number"
-                            step="0.01"
-                            value={resellerPrice}
-                            onChange={(e) => setResellerPrice(e.target.value)}
-                            placeholder={searchedProduct.price_etb.toString()}
-                          />
-                        </div>
-                        <Button onClick={handleAddProduct} className="mt-2">
-                          Add to My Store
-                        </Button>
-                      </div>
+              {categoryProducts.length > 0 && (
+                <div>
+                  <Label>Select Product</Label>
+                  <Select 
+                    value={selectedProduct?.id || ""} 
+                    onValueChange={(id) => {
+                      const product = categoryProducts.find(p => p.id === id);
+                      setSelectedProduct(product || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} - {product.price_etb.toFixed(2)} ETB
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {selectedProduct && (
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start gap-4">
+                    {selectedProduct.image_url && (
+                      <img
+                        src={selectedProduct.image_url}
+                        alt={selectedProduct.name}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{selectedProduct.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Base Price: {selectedProduct.price_etb.toFixed(2)} ETB
+                      </p>
+                      <Badge>{selectedProduct.category}</Badge>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="resellerPrice">Your Selling Price (ETB) *</Label>
+                    <Input
+                      id="resellerPrice"
+                      type="number"
+                      step="0.01"
+                      value={resellerPrice}
+                      onChange={(e) => setResellerPrice(e.target.value)}
+                      placeholder="Enter your price"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Must be higher than base price
+                    </p>
+                  </div>
+
+                  <Button onClick={handleAddProduct} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add to My Store
+                  </Button>
+                </div>
               )}
             </div>
           </CardContent>

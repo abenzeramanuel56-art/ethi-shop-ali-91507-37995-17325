@@ -407,6 +407,77 @@ export type Database = {
         }
         Relationships: []
       }
+      store_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          reviewed_at: string | null
+          status: string | null
+          store_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          reviewed_at?: string | null
+          status?: string | null
+          store_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          status?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_reports_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_bans: {
+        Row: {
+          banned_at: string | null
+          banned_by: string
+          id: string
+          is_active: boolean | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string | null
+          banned_by: string
+          id?: string
+          is_active?: boolean | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          banned_at?: string | null
+          banned_by?: string
+          id?: string
+          is_active?: boolean | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -424,6 +495,33 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_deductions: {
+        Row: {
+          amount_etb: number
+          created_at: string | null
+          deducted_by: string
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount_etb: number
+          created_at?: string | null
+          deducted_by: string
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount_etb?: number
+          created_at?: string | null
+          deducted_by?: string
+          id?: string
+          reason?: string
           user_id?: string
         }
         Relationships: []
@@ -472,6 +570,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      deduct_from_wallet: {
+        Args: {
+          deduction_amount: number
+          deduction_reason: string
+          target_user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

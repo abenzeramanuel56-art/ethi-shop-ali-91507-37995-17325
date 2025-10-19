@@ -14,6 +14,8 @@ import { DollarSign, Package, ShoppingCart, Users, Plus } from "lucide-react";
 import AdminResellers from "./Resellers";
 import AdminWithdrawals from "./Withdrawals";
 import AdminMessaging from "./Messaging";
+import AdminReports from "./Reports";
+import AdminPunishments from "./Punishments";
 
 interface Stats {
   pendingQuotes: number;
@@ -408,6 +410,8 @@ const AdminDashboard = () => {
             <TabsTrigger value="resellers">Resellers</TabsTrigger>
             <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
             <TabsTrigger value="messaging">Messaging</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="punishments">Punishments</TabsTrigger>
           </TabsList>
 
           <TabsContent value="quotes">
@@ -844,10 +848,18 @@ const AdminDashboard = () => {
         <AdminWithdrawals />
       </TabsContent>
 
-      <TabsContent value="messaging">
-        <AdminMessaging />
-      </TabsContent>
-    </Tabs>
+          <TabsContent value="messaging">
+            <AdminMessaging />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <AdminReports />
+          </TabsContent>
+
+          <TabsContent value="punishments">
+            <AdminPunishments />
+          </TabsContent>
+        </Tabs>
   </div>
 </div>
   );

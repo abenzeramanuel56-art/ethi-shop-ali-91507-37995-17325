@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Search, ShoppingCart } from "lucide-react";
+import ReportStoreDialog from "@/components/ReportStoreDialog";
 
 interface StoreInfo {
   id: string;
@@ -127,10 +128,15 @@ export default function Store() {
     <div className="min-h-screen">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold">{store?.store_name}</h1>
-          {store?.contact_email && (
-            <p className="text-muted-foreground">Contact: {store.contact_email}</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold">{store?.store_name}</h1>
+            {store?.contact_email && (
+              <p className="text-muted-foreground">Contact: {store.contact_email}</p>
+            )}
+          </div>
+          {store && (
+            <ReportStoreDialog storeId={store.id} storeName={store.store_name} />
           )}
         </div>
 

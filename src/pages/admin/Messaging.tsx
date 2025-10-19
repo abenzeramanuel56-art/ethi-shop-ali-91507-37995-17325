@@ -28,12 +28,35 @@ export default function AdminMessaging() {
   }, []);
 
   const fetchProfiles = async () => {
-    const { data } = await supabase
+    // Fetch all profiles with their roles
+    const { data: profilesData } = await supabase
       .from("profiles")
       .select("id, full_name")
       .order("full_name");
     
-    setProfiles(data || []);
+    if (!profilesData) {
+      setProfiles([]);
+      return;
+    }
+
+    // Fetch roles for each user
+    const profilesWithRoles = await Promise.all(
+      profilesData.map(async (profile) => {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", profile.id)
+          .single();
+        
+        const role = roleData?.role || "customer";
+        return {
+          ...profile,
+          full_name: `${profile.full_name} (${role})`
+        };
+      })
+    );
+    
+    setProfiles(profilesWithRoles);
   };
 
   const handleSendMessage = async () => {
