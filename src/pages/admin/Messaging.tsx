@@ -28,35 +28,38 @@ export default function AdminMessaging() {
   }, []);
 
   const fetchProfiles = async () => {
-    // Fetch all profiles with their roles
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .order("full_name");
-    
+    // Fetch all profiles and roles in parallel to avoid N+1 queries
+    const [{ data: profilesData }, { data: rolesData }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name").order("full_name"),
+      supabase.from("user_roles").select("user_id, role")
+    ]);
+
     if (!profilesData) {
       setProfiles([]);
       return;
     }
 
-    // Fetch roles for each user
-    const profilesWithRoles = await Promise.all(
-      profilesData.map(async (profile) => {
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", profile.id)
-          .single();
-        
-        const role = roleData?.role || "customer";
-        return {
-          ...profile,
-          full_name: `${profile.full_name} (${role})`
-        };
-      })
-    );
-    
-    setProfiles(profilesWithRoles);
+    const roleMap = new Map<string, string[]>();
+    (rolesData || []).forEach((r: any) => {
+      const arr = roleMap.get(r.user_id) || [];
+      arr.push(r.role);
+      roleMap.set(r.user_id, arr);
+    });
+
+    const pickRole = (roles: string[] | undefined) => {
+      if (!roles || roles.length === 0) return "customer";
+      if (roles.includes("admin")) return "admin";
+      if (roles.includes("moderator")) return "moderator";
+      if (roles.includes("reseller")) return "reseller";
+      return roles[0] || "customer";
+    };
+
+    const withRoles = profilesData.map((p: any) => {
+      const role = pickRole(roleMap.get(p.id));
+      return { ...p, full_name: `${p.full_name} (${role})` } as Profile;
+    });
+
+    setProfiles(withRoles);
   };
 
   const handleSendMessage = async () => {

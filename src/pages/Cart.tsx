@@ -128,6 +128,9 @@ const Cart = () => {
       }
 
       // Create order
+      const storeType = (cartItems as any[]).some((i: any) => i.store_type === "reseller") ? "reseller" : "admin";
+      const resellerId = storeType === "reseller" ? (cartItems as any[]).find((i: any) => i.store_type === "reseller")?.reseller_id || null : null;
+
       const { data: order, error: orderError } = await (supabase as any)
         .from("orders")
         .insert({
@@ -138,7 +141,9 @@ const Cart = () => {
           total_etb: calculateTotal(),
           payment_proof_url: paymentProofUrl,
           payment_method: paymentMethod,
-          status: "pending_payment"
+          status: "pending_payment",
+          store_type: storeType,
+          reseller_id: resellerId
         })
         .select()
         .single();

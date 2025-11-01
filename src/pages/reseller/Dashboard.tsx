@@ -14,6 +14,8 @@ export default function ResellerDashboard() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>("");
   const [hasStore, setHasStore] = useState(false);
+  const [storeSlug, setStoreSlug] = useState<string>("");
+  const [storeName, setStoreName] = useState<string>("");
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingOrders: 0,
@@ -68,6 +70,8 @@ export default function ResellerDashboard() {
     }
 
     setHasStore(true);
+    setStoreSlug(storeData.store_slug);
+    setStoreName(storeData.store_name);
     await fetchStats(storeData.id);
     setLoading(false);
   };
@@ -142,29 +146,48 @@ export default function ResellerDashboard() {
         
         <Card className="max-w-md mb-8">
           <CardHeader>
-            <CardTitle className="text-lg">Your User ID</CardTitle>
+            <CardTitle className="text-lg">Your IDs</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
-                {userId.slice(0, 8)}...{userId.slice(-8)}
-              </code>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(userId);
-                  toast({
-                    title: "Copied!",
-                    description: "User ID copied to clipboard"
-                  });
-                }}
-              >
-                Copy
-              </Button>
+          <CardContent className="space-y-3">
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">UID</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                  {userId.slice(0, 8)}...{userId.slice(-8)}
+                </code>
+                <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
+                  Copy
+                </Button>
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground mb-1">ID</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                  {userId.slice(0, 6)}...{userId.slice(-6)}
+                </code>
+                <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
+                  Copy
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {storeSlug && (
+          <Card className="max-w-md mb-8">
+            <CardHeader>
+              <CardTitle className="text-lg">Your Store Link</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-2">
+              <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                /store/{storeSlug}
+              </code>
+              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/store/${storeSlug}`)}>Copy</Button>
+              <Button size="sm" onClick={() => navigate(`/store/${storeSlug}`)}>Open</Button>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>

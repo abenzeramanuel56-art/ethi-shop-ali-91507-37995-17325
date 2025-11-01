@@ -99,8 +99,9 @@ export default function Store() {
     } else {
       cart.push({
         id: product.products.id,
-        name: product.products.name,
-        price: product.reseller_price_etb,
+        product_id: product.products.id,
+        product_name: product.products.name,
+        price_etb: product.reseller_price_etb,
         image_url: product.products.image_url,
         quantity: 1,
         reseller_id: store?.id,

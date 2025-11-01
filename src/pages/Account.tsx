@@ -136,23 +136,30 @@ const Account = () => {
           <h1 className="mb-4 text-4xl font-bold text-foreground">My Account</h1>
           <Card className="max-w-md">
             <CardHeader>
-              <CardTitle className="text-lg">Your User ID</CardTitle>
+              <CardTitle className="text-lg">Your IDs</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
-                  {userId.slice(0, 8)}...{userId.slice(-8)}
-                </code>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    navigator.clipboard.writeText(userId);
-                    toast.success("User ID copied!");
-                  }}
-                >
-                  Copy
-                </Button>
+            <CardContent className="space-y-3">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">UID</div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                    {userId.slice(0, 8)}...{userId.slice(-8)}
+                  </code>
+                  <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
+                    Copy
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">ID</div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                    {userId.slice(0, 6)}...{userId.slice(-6)}
+                  </code>
+                  <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
+                    Copy
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
