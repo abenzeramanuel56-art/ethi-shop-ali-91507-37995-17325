@@ -53,7 +53,7 @@ export default function ResellerProducts() {
       .from("reseller_stores")
       .select("id")
       .eq("user_id", session.session.user.id)
-      .single();
+      .maybeSingle();
 
     if (!store) {
       navigate("/reseller/setup");

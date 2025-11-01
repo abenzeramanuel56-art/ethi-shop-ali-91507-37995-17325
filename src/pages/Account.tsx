@@ -40,6 +40,7 @@ interface OrderItem {
 const Account = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string>("");
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
@@ -49,6 +50,7 @@ const Account = () => {
       if (!session) {
         navigate("/auth");
       } else {
+        setUserId(session.user.id);
         fetchData();
       }
     });
@@ -130,7 +132,31 @@ const Account = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-12">
-        <h1 className="mb-8 text-4xl font-bold text-foreground">My Account</h1>
+        <div className="mb-8">
+          <h1 className="mb-4 text-4xl font-bold text-foreground">My Account</h1>
+          <Card className="max-w-md">
+            <CardHeader>
+              <CardTitle className="text-lg">Your User ID</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                  {userId.slice(0, 8)}...{userId.slice(-8)}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(userId);
+                    toast.success("User ID copied!");
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <Tabs defaultValue="quotes" className="w-full">
           <TabsList>

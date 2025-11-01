@@ -12,6 +12,7 @@ export default function ResellerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string>("");
   const [hasStore, setHasStore] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -32,6 +33,8 @@ export default function ResellerDashboard() {
       navigate("/auth");
       return;
     }
+
+    setUserId(user.id);
 
     // Check if user has reseller role
     const { data: roleData } = await supabase
@@ -56,7 +59,7 @@ export default function ResellerDashboard() {
       .from("reseller_stores")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (!storeData) {
       setHasStore(false);
@@ -88,7 +91,7 @@ export default function ResellerDashboard() {
       .from("reseller_wallets")
       .select("*")
       .eq("user_id", user?.id)
-      .single();
+      .maybeSingle();
 
     setStats({
       totalOrders: orders?.length || 0,
@@ -135,7 +138,33 @@ export default function ResellerDashboard() {
     <div className="min-h-screen">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Reseller Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-4">Reseller Dashboard</h1>
+        
+        <Card className="max-w-md mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg">Your User ID</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
+                {userId.slice(0, 8)}...{userId.slice(-8)}
+              </code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(userId);
+                  toast({
+                    title: "Copied!",
+                    description: "User ID copied to clipboard"
+                  });
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>

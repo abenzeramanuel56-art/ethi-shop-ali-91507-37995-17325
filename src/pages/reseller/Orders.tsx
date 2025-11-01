@@ -42,7 +42,7 @@ export default function ResellerOrders() {
       .from("reseller_stores")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (!store) {
       navigate("/reseller/setup");

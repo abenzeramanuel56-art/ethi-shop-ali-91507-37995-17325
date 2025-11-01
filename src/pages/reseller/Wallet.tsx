@@ -53,7 +53,7 @@ export default function ResellerWallet() {
       .from("reseller_wallets")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
     setWallet(walletData);
 
