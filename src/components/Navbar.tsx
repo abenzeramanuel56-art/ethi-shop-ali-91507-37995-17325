@@ -109,7 +109,7 @@ export const Navbar = () => {
                 </Button>
               </>
             ) : (
-              <Link to="/auth">
+              <Link to={`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`}>
                 <Button variant="default">Sign In</Button>
               </Link>
             )}
