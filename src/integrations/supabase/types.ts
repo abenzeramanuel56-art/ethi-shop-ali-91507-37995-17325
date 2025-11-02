@@ -578,6 +578,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_store_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+          id: string
+          store_name: string
+          store_slug: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
