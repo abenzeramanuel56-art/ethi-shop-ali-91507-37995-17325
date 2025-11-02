@@ -157,7 +157,8 @@ const Cart = () => {
         product_id: item.product_id,
         product_name: item.product_name,
         quantity: item.quantity,
-        price_etb: item.price_etb
+        price_etb: item.price_etb,
+        reseller_profit_etb: (item as any).reseller_profit_etb ?? null
       }));
 
       const { error: itemsError } = await (supabase as any)

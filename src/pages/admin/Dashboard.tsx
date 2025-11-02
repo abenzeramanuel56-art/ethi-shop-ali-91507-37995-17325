@@ -62,6 +62,7 @@ interface Order {
   admin_notes: string | null;
   created_at: string;
   updated_at: string;
+  reseller_id: string | null;
 }
 
 const AdminDashboard = () => {
@@ -403,16 +404,71 @@ const AdminDashboard = () => {
 
         {/* Tabs for different sections */}
         <Tabs defaultValue="quotes" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="resellers">Resellers</TabsTrigger>
-            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-            <TabsTrigger value="messaging">Messaging</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="punishments">Punishments</TabsTrigger>
-          </TabsList>
+        <TabsList>
+          <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="reseller_orders">Reseller Orders</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="resellers">Resellers</TabsTrigger>
+          <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+          <TabsTrigger value="messaging">Messaging</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="punishments">Punishments</TabsTrigger>
+        </TabsList>
+
+          <TabsContent value="reseller_orders">
+            <Card>
+              <CardHeader>
+                <CardTitle>Reseller Orders</CardTitle>
+                <CardDescription>Verify payments and credit reseller wallets</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {orders.filter((o) => o.reseller_id).length === 0 ? (
+                  <p className="text-muted-foreground">No reseller orders yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {orders.filter((o) => o.reseller_id).map((order) => (
+                      <Card key={order.id}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="font-medium">Order #{order.id.slice(0, 8)}</div>
+                              <div className="text-sm text-muted-foreground">Status: {order.status}</div>
+                              {order.payment_proof_url && (
+                                <a href={order.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                  View Payment Proof
+                                </a>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(order.payment_proof_url || '#', '_blank')}
+                                disabled={!order.payment_proof_url}
+                              >
+                                Payment Proof
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setOrderUpdates({ status: 'payment_verified', tracking_number: '', admin_notes: '' });
+                                  handleUpdateOrder(order.id);
+                                }}
+                                disabled={order.status === 'payment_verified'}
+                              >
+                                Verify Payment & Credit
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="quotes">
             <Card>

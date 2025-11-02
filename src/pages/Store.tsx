@@ -27,11 +27,12 @@ interface ResellerProduct {
     description: string;
     image_url: string;
     category: string;
+    price_etb: number;
   };
 }
 
 export default function Store() {
-  const { slug } = useParams();
+  const { storeSlug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [store, setStore] = useState<StoreInfo | null>(null);
@@ -42,7 +43,7 @@ export default function Store() {
 
   useEffect(() => {
     fetchStore();
-  }, [slug]);
+  }, [storeSlug]);
 
   useEffect(() => {
     if (searchTerm.trim()) {
@@ -61,7 +62,7 @@ export default function Store() {
     const { data: storeData } = await supabase
       .from("reseller_stores")
       .select("*")
-      .eq("store_slug", slug)
+      .eq("store_slug", storeSlug)
       .single();
 
     if (!storeData) {
@@ -105,7 +106,8 @@ export default function Store() {
         image_url: product.products.image_url,
         quantity: 1,
         reseller_id: store?.id,
-        store_type: "reseller"
+        store_type: "reseller",
+        reseller_profit_etb: Math.max(0, product.reseller_price_etb - (product.products.price_etb || 0))
       });
     }
 
