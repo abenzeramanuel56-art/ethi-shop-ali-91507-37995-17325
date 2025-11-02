@@ -59,36 +59,44 @@ export default function Store() {
   }, [searchTerm, products]);
 
   const fetchStore = async () => {
-    const { data: storeData } = await supabase
-      .from("reseller_stores")
-      .select("*")
-      .eq("store_slug", storeSlug)
-      .single();
+    setLoading(true);
+    try {
+      const slug = (storeSlug || "").toLowerCase();
+      if (!slug) throw new Error("Missing store slug");
 
-    if (!storeData) {
+      const { data: storeData, error: storeError } = await supabase
+        .rpc("get_store_by_slug", { p_slug: slug })
+        .single();
+
+      if (storeError) throw storeError;
+      if (!storeData) throw new Error("Store not found");
+
+      setStore(storeData as StoreInfo);
+
+      const { data: productsData, error: productsError } = await supabase
+        .from("reseller_products")
+        .select(`
+          *,
+          products (*)
+        `)
+        .eq("store_id", storeData.id)
+        .eq("is_active", true);
+
+      if (productsError) throw productsError;
+
+      setProducts(productsData || []);
+      setFilteredProducts(productsData || []);
+    } catch (err) {
       toast({
         title: "Store Not Found",
         description: "This store does not exist",
-        variant: "destructive"
+        variant: "destructive",
       });
       navigate("/");
       return;
+    } finally {
+      setLoading(false);
     }
-
-    setStore(storeData);
-
-    const { data: productsData } = await supabase
-      .from("reseller_products")
-      .select(`
-        *,
-        products (*)
-      `)
-      .eq("store_id", storeData.id)
-      .eq("is_active", true);
-
-    setProducts(productsData || []);
-    setFilteredProducts(productsData || []);
-    setLoading(false);
   };
 
   const handleAddToCart = (product: ResellerProduct) => {
