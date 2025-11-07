@@ -36,6 +36,11 @@ const Home = () => {
                   Request an Item
                 </Button>
               </Link>
+              <Link to="/apply-reseller">
+                <Button size="lg" variant="outline" className="gap-2">
+                  Register as Reseller
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

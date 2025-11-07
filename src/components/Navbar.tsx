@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Package } from "lucide-react";
+import { ShoppingCart, User, Package, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -79,6 +79,12 @@ export const Navbar = () => {
             </Link>
             <Link to="/request-item">
               <Button variant="default">Request Item</Button>
+            </Link>
+            <Link to="/support">
+              <Button variant="ghost" size="sm" className="gap-1">
+                <MessageCircle className="h-4 w-4" />
+                Support
+              </Button>
             </Link>
             
             {user ? (

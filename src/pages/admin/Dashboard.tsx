@@ -409,6 +409,8 @@ const AdminDashboard = () => {
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="reseller_orders">Reseller Orders</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="applications">Applications</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="resellers">Resellers</TabsTrigger>
           <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           <TabsTrigger value="messaging">Messaging</TabsTrigger>
@@ -914,6 +916,34 @@ const AdminDashboard = () => {
 
           <TabsContent value="punishments">
             <AdminPunishments />
+          </TabsContent>
+
+          <TabsContent value="applications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Reseller Applications</CardTitle>
+                <CardDescription>Review and approve reseller applications</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate("/admin/applications")}>
+                  View All Applications
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="support">
+            <Card>
+              <CardHeader>
+                <CardTitle>Support Tickets</CardTitle>
+                <CardDescription>Respond to customer support tickets</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => navigate("/admin/support-tickets")}>
+                  View All Tickets
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
   </div>

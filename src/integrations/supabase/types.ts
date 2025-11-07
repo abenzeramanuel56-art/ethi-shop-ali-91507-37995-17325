@@ -281,6 +281,48 @@ export type Database = {
         }
         Relationships: []
       }
+      reseller_applications: {
+        Row: {
+          admin_notes: string | null
+          age: number
+          created_at: string
+          full_name: string
+          id: string
+          id_photo_url: string
+          phone: string
+          reviewed_at: string | null
+          status: string
+          uid: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          age: number
+          created_at?: string
+          full_name: string
+          id?: string
+          id_photo_url: string
+          phone: string
+          reviewed_at?: string | null
+          status?: string
+          uid: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          age?: number
+          created_at?: string
+          full_name?: string
+          id?: string
+          id_photo_url?: string
+          phone?: string
+          reviewed_at?: string | null
+          status?: string
+          uid?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reseller_products: {
         Row: {
           created_at: string | null
@@ -450,6 +492,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      support_tickets: {
+        Row: {
+          admin_response: string | null
+          category: string
+          created_at: string
+          id: string
+          message: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          category: string
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_bans: {
         Row: {
