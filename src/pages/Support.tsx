@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Sparkles } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const SUPPORT_CATEGORIES = [
   "Why is my account banned?",
@@ -30,6 +31,7 @@ export default function Support() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [myTickets, setMyTickets] = useState<any[]>([]);
+  const [aiSuggestion, setAiSuggestion] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -81,6 +83,7 @@ export default function Support() {
 
     setLoading(true);
 
+    // Submit ticket
     const { error } = await supabase
       .from("support_tickets")
       .insert({
@@ -90,9 +93,8 @@ export default function Support() {
         message
       });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       toast({
         title: "Error",
         description: "Failed to submit ticket. Please try again.",
@@ -100,6 +102,26 @@ export default function Support() {
       });
       return;
     }
+
+    // Get AI suggestion
+    try {
+      const { data: aiData, error: aiError } = await supabase.functions.invoke(
+        "analyze-support-ticket",
+        {
+          body: { category, subject, message }
+        }
+      );
+
+      if (aiError) {
+        console.error("AI analysis error:", aiError);
+      } else if (aiData?.suggestion) {
+        setAiSuggestion(aiData.suggestion);
+      }
+    } catch (aiError) {
+      console.error("Failed to get AI suggestion:", aiError);
+    }
+
+    setLoading(false);
 
     toast({
       title: "Ticket submitted",
@@ -181,6 +203,27 @@ export default function Support() {
                 </form>
               </CardContent>
             </Card>
+
+            {aiSuggestion && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    AI-Suggested Solution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Alert>
+                    <AlertDescription className="whitespace-pre-wrap">
+                      {aiSuggestion}
+                    </AlertDescription>
+                  </Alert>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    This is an automated suggestion. Our support team will review your ticket and provide additional assistance if needed.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {myTickets.length > 0 && (
               <Card>
