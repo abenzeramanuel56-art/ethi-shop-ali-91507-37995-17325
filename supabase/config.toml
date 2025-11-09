@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.analyze-support-ticket]
 verify_jwt = false
+
+[functions.fetch-aliexpress-image]
+verify_jwt = false

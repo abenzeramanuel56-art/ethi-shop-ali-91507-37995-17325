@@ -16,6 +16,7 @@ import AdminWithdrawals from "./Withdrawals";
 import AdminMessaging from "./Messaging";
 import AdminReports from "./Reports";
 import AdminPunishments from "./Punishments";
+import { ImageUpdater } from "./ImageUpdater";
 
 interface Stats {
   pendingQuotes: number;
@@ -866,6 +867,11 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* Image Updater Tool */}
+                <div className="mb-6">
+                  <ImageUpdater />
+                </div>
 
                 {loading ? (
                   <div className="text-center text-muted-foreground">Loading...</div>
