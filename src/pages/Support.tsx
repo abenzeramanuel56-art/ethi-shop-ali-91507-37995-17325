@@ -57,6 +57,31 @@ export default function Support() {
   useEffect(() => {
     checkAuth();
     fetchMyTickets();
+
+    // Set up real-time subscription for ticket replies
+    const channel = supabase
+      .channel('ticket-replies')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ticket_replies'
+        },
+        (payload) => {
+          console.log('New reply received:', payload);
+          // Refetch replies for the affected ticket
+          const ticketId = (payload.new as any).ticket_id;
+          if (ticketId) {
+            fetchTicketReplies(ticketId);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const checkAuth = async () => {

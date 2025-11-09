@@ -89,6 +89,7 @@ const AdminDashboard = () => {
     cost_usd: "",
     category: "other",
     stock_status: true,
+    aliexpress_url: "",
   });
   const [productImage, setProductImage] = useState<File | null>(null);
   const [editingOrder, setEditingOrder] = useState<string | null>(null);
@@ -324,6 +325,7 @@ const AdminDashboard = () => {
           category: newProduct.category as any,
           stock_status: newProduct.stock_status,
           image_url: imageUrl,
+          aliexpress_url: newProduct.aliexpress_url || null,
         }]);
 
       if (error) throw error;
@@ -337,6 +339,7 @@ const AdminDashboard = () => {
         cost_usd: "",
         category: "other",
         stock_status: true,
+        aliexpress_url: "",
       });
       setProductImage(null);
       fetchData();
@@ -793,6 +796,20 @@ const AdminDashboard = () => {
                             value={newProduct.description}
                             onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                           />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="aliexpress-url">AliExpress URL (Admin Only)</Label>
+                          <Input
+                            id="aliexpress-url"
+                            type="url"
+                            placeholder="https://www.aliexpress.com/item/..."
+                            value={newProduct.aliexpress_url}
+                            onChange={(e) => setNewProduct({ ...newProduct, aliexpress_url: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            This URL will only be visible to admins, not to customers
+                          </p>
                         </div>
 
                         <div className="space-y-2">

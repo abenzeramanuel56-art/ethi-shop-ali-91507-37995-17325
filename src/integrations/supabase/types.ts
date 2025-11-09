@@ -166,6 +166,7 @@ export type Database = {
       }
       products: {
         Row: {
+          aliexpress_url: string | null
           category: Database["public"]["Enums"]["product_category"] | null
           cost_usd: number | null
           created_at: string | null
@@ -179,6 +180,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          aliexpress_url?: string | null
           category?: Database["public"]["Enums"]["product_category"] | null
           cost_usd?: number | null
           created_at?: string | null
@@ -192,6 +194,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          aliexpress_url?: string | null
           category?: Database["public"]["Enums"]["product_category"] | null
           cost_usd?: number | null
           created_at?: string | null

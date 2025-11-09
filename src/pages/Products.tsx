@@ -128,50 +128,56 @@ const Products = () => {
             </p>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg">
-                <div className="relative h-48 overflow-hidden bg-muted">
+              <Card key={product.id} className="group flex flex-col overflow-hidden border-0 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+                <div className="relative aspect-square overflow-hidden bg-accent/30">
                   {product.image_url ? (
                     <img
                       src={product.image_url}
                       alt={product.name}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover transition-transform group-hover:scale-110"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">
                       No image
                     </div>
                   )}
-                  <Badge className="absolute right-2 top-2" variant="secondary">
-                    {product.category}
+                  <Badge className="absolute left-2 top-2 bg-sale-red text-white border-0 shadow-md">
+                    Hot Deal
                   </Badge>
                 </div>
                 
-                <CardHeader className="flex-grow">
-                  <CardTitle className="line-clamp-2">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-3">
+                <CardHeader className="flex-grow p-3">
+                  <CardTitle className="line-clamp-2 text-sm font-medium">{product.name}</CardTitle>
+                  <CardDescription className="line-clamp-2 text-xs">
                     {product.description}
                   </CardDescription>
                 </CardHeader>
                 
-                <CardContent>
-                  <div className="text-3xl font-bold text-primary">
-                    {product.price_etb.toLocaleString()} ETB
+                <CardContent className="p-3 pt-0">
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-2xl font-bold text-primary">
+                      {product.price_etb.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">ETB</div>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1 text-xs text-success">
+                    <span className="font-medium">Free Shipping</span>
                   </div>
                 </CardContent>
                 
-                <CardFooter className="flex gap-2">
+                <CardFooter className="flex gap-2 p-3 pt-0">
                   <Button 
-                    className="w-1/2 gap-2" 
+                    className="flex-1 h-9 text-xs gap-1" 
                     onClick={() => handleAddToCart(product)}
+                    variant="outline"
                   >
-                    <ShoppingCart className="h-4 w-4" />
-                    Add to Cart
+                    <ShoppingCart className="h-3 w-3" />
+                    Cart
                   </Button>
                   <Button 
-                    className="w-1/2" 
-                    variant="secondary"
+                    className="flex-1 h-9 text-xs font-bold" 
                     onClick={() => handleBuyNow(product)}
                   >
                     Buy Now
