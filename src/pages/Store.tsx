@@ -179,7 +179,13 @@ export default function Store() {
                   {rp.products.image_url ? (
                     <img
                       src={rp.products.image_url}
-                      alt={rp.products.name}
+                      alt={`${rp.products.name} product image`}
+                      loading="lazy"
+                      onError={(e) => {
+                        const img = e.currentTarget as HTMLImageElement;
+                        if (img.src.endsWith('/placeholder.svg')) return;
+                        img.src = '/placeholder.svg';
+                      }}
                       className="h-full w-full object-cover transition-transform group-hover:scale-110"
                     />
                   ) : (

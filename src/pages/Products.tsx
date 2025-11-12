@@ -204,7 +204,13 @@ const Products = () => {
                         {product.image_url ? (
                           <img
                             src={product.image_url}
-                            alt={product.name}
+                            alt={`${product.name} product image`}
+                            loading="lazy"
+                            onError={(e) => {
+                              const img = e.currentTarget as HTMLImageElement;
+                              if (img.src.endsWith('/placeholder.svg')) return;
+                              img.src = '/placeholder.svg';
+                            }}
                             className="h-full w-full object-cover transition-transform group-hover:scale-110"
                           />
                         ) : (
