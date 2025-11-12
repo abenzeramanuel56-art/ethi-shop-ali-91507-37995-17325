@@ -136,12 +136,12 @@ export default function Store() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 flex items-start justify-between">
           <div>
-            <h1 className="text-4xl font-bold">{store?.store_name}</h1>
+            <h1 className="text-4xl font-bold text-foreground">{store?.store_name}</h1>
             {store?.contact_email && (
               <p className="text-muted-foreground">Contact: {store.contact_email}</p>
             )}
@@ -172,29 +172,38 @@ export default function Store() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filteredProducts.map((rp) => (
-              <Card key={rp.id} className="overflow-hidden">
-                {rp.products.image_url && (
-                  <img
-                    src={rp.products.image_url}
-                    alt={rp.products.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-2">{rp.products.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">
+              <Card key={rp.id} className="group flex flex-col overflow-hidden border-0 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+                <div className="relative aspect-square overflow-hidden bg-accent/30">
+                  {rp.products.image_url ? (
+                    <img
+                      src={rp.products.image_url}
+                      alt={rp.products.name}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <CardContent className="flex-grow p-3">
+                  <h3 className="line-clamp-2 text-sm font-medium mb-2">{rp.products.name}</h3>
+                  <p className="text-xs text-muted-foreground mb-2">
                     Code: {rp.products.unique_product_code}
                   </p>
-                  <p className="text-xl font-bold mb-4">
-                    {rp.reseller_price_etb} ETB
-                  </p>
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <div className="text-2xl font-bold text-primary">
+                      {rp.reseller_price_etb.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-muted-foreground">ETB</div>
+                  </div>
                   <Button
                     onClick={() => handleAddToCart(rp)}
-                    className="w-full"
+                    className="w-full h-9 text-xs font-bold gap-1"
                   >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    <ShoppingCart className="h-3 w-3" />
                     Add to Cart
                   </Button>
                 </CardContent>

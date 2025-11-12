@@ -139,10 +139,10 @@ export default function ResellerDashboard() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-4">Reseller Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-4 text-foreground">Reseller Dashboard</h1>
         
         <Card className="max-w-md mb-8">
           <CardHeader>
@@ -190,43 +190,43 @@ export default function ResellerDashboard() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
+          <Card className="border-0 shadow-md bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              <ShoppingCart className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalOrders}</div>
+              <div className="text-2xl font-bold text-primary">{stats.totalOrders}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-md bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              <ShoppingCart className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingOrders}</div>
+              <div className="text-2xl font-bold text-secondary">{stats.pendingOrders}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-md bg-gradient-to-br from-accent/10 to-accent/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Products</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <Package className="h-4 w-4 text-accent-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProducts}</div>
+              <div className="text-2xl font-bold text-accent-foreground">{stats.totalProducts}</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-md bg-gradient-to-br from-success/10 to-success/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <DollarSign className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.currentBalance.toFixed(2)} ETB</div>
+              <div className="text-2xl font-bold text-success">{stats.currentBalance.toFixed(2)} ETB</div>
               <p className="text-xs text-muted-foreground">Total Earned: {stats.totalEarned.toFixed(2)} ETB</p>
             </CardContent>
           </Card>
