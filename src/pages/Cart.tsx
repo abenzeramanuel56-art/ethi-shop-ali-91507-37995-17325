@@ -148,8 +148,15 @@ const Cart = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
-      if (!order) throw new Error("Order creation failed");
+      if (orderError) {
+        console.error('Order insert error:', orderError);
+        throw orderError;
+      }
+      if (!order) {
+        const msg = 'Order creation failed: no order returned';
+        console.error(msg);
+        throw new Error(msg);
+      }
 
       // Create order items
       const orderItems = cartItems.map(item => ({
@@ -165,15 +172,20 @@ const Cart = () => {
         .from("order_items")
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Order items insert error:', itemsError);
+        throw itemsError;
+      }
 
       // Clear cart
       localStorage.removeItem("cart");
       toast.success("Order placed successfully!");
       navigate("/account");
     } catch (error: any) {
-      console.error(error);
-      toast.error("Failed to place order");
+      console.error('Checkout error:', error);
+      // Prefer friendly message but include server error when available
+      const serverMsg = error?.message || (error?.error && error.error.message) || JSON.stringify(error);
+      toast.error(`Failed to place order: ${serverMsg}`);
     }
   };
 
