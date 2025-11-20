@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import NotificationBell from "./NotificationBell";
+import RotatingBadge from "@/components/RotatingBadge";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -122,6 +123,7 @@ export const Navbar = () => {
           </div>
         </div>
       </div>
+      <RotatingBadge />
     </nav>
   );
 };
