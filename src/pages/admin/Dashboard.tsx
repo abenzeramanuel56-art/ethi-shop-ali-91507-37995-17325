@@ -911,6 +911,13 @@ const AdminDashboard = () => {
                                 </span>
                               )}
                             </div>
+                            {product.aliexpress_url && (
+                              <div className="mt-2">
+                                <a href={product.aliexpress_url} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
+                                  Original AliExpress Link
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>

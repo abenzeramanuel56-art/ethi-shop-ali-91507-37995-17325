@@ -123,25 +123,38 @@ async function downloadBuffer(url) {
 
 async function processRow(row) {
   const name = row.name || row.unique_product_code || '';
+  // prefer any existing external/product link saved in the DB
+  const possibleLink = row.external_url || row.source_url || row.product_url || row.ali_url || row.link || row.url || null;
   if (!name) return { ok: false, reason: 'no name', id: row.id };
 
-  // Build a simple AliExpress search URL
-  const q = encodeURIComponent(name);
-  const searchUrl = `https://www.aliexpress.com/wholesale?SearchText=${q}`;
-
   try {
-    // Fetch search page
-    const searchHtml = await fetchText(searchUrl);
-    // Try to find a product link
-    const linkMatch = searchHtml.match(/<a[^>]+href=["']([^"']+\/item\/[^"']+)["']/i) || searchHtml.match(/<a[^>]+href=["']([^"']+\/product\/[^"']+)["']/i);
+    let imgUrl = null;
     let productUrl = null;
-    if (linkMatch && linkMatch[1]) productUrl = new URL(linkMatch[1], 'https://www.aliexpress.com').toString();
 
-    // If no product link, try to extract image directly from search page
-    let imgUrl = extractFromHtml(searchHtml, 'https://www.aliexpress.com');
-    if (!imgUrl && productUrl) {
-      const prodHtml = await fetchText(productUrl);
-      imgUrl = extractFromHtml(prodHtml, productUrl);
+    // If a product link exists on the row, use it directly
+    if (possibleLink && typeof possibleLink === 'string') {
+      productUrl = possibleLink;
+      try {
+        const prodHtml = await fetchText(productUrl);
+        imgUrl = extractFromHtml(prodHtml, productUrl);
+      } catch (e) {
+        // fallthrough to searching by name
+        productUrl = null;
+      }
+    }
+
+    // If we still don't have an image, search AliExpress by name
+    if (!imgUrl) {
+      const q = encodeURIComponent(name);
+      const searchUrl = `https://www.aliexpress.com/wholesale?SearchText=${q}`;
+      const searchHtml = await fetchText(searchUrl);
+      const linkMatch = searchHtml.match(/<a[^>]+href=["']([^"']+\/item\/[^"']+)["']/i) || searchHtml.match(/<a[^>]+href=["']([^"']+\/product\/[^"']+)["']/i);
+      if (linkMatch && linkMatch[1]) productUrl = new URL(linkMatch[1], 'https://www.aliexpress.com').toString();
+      imgUrl = extractFromHtml(searchHtml, 'https://www.aliexpress.com');
+      if (!imgUrl && productUrl) {
+        const prodHtml = await fetchText(productUrl);
+        imgUrl = extractFromHtml(prodHtml, productUrl);
+      }
     }
 
     if (!imgUrl) return { ok: false, reason: 'no image found', id: row.id };
