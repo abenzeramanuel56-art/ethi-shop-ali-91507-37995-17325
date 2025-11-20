@@ -36,6 +36,7 @@ export default function Store() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     fetchStore();
@@ -215,6 +216,19 @@ export default function Store() {
 
       setProducts(normalized);
       setFilteredProducts(normalized);
+
+      // Debug: log sample of product image_url values so we can inspect importer output
+      try {
+        // Log first 30 entries to the dev console
+        // eslint-disable-next-line no-console
+        console.log("[Store] loaded products (sample):", normalized.slice(0, 30).map((r: any) => ({
+          id: r.id,
+          productId: (Array.isArray(r.products) ? r.products[0]?.id : r.products?.id),
+          image_url: (Array.isArray(r.products) ? r.products[0]?.image_url : r.products?.image_url),
+        })));
+      } catch (e) {
+        // ignore
+      }
     } catch (err) {
       toast({
         title: "Store Not Found",
@@ -291,10 +305,48 @@ export default function Store() {
             />
           </div>
           <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowDebug((s) => !s)}
+              className="text-xs px-2 py-1 rounded bg-accent/10 hover:bg-accent/20"
+            >
+              {showDebug ? "Hide image debug" : "Show image debug"}
+            </button>
             <div className="text-xs text-muted-foreground">Products: {products.length}</div>
           </div>
         </div>
-        
+
+        {showDebug && (
+          <Card className="mb-4">
+            <CardContent>
+              <div className="text-sm font-medium mb-2">Image debug (first 50 products)</div>
+              <div className="grid gap-2">
+                {products.slice(0, 50).map((rp) => {
+                  const prod = Array.isArray(rp.products) ? rp.products[0] : rp.products;
+                  const url = prod?.image_url || "/placeholder.svg";
+                  const isHttp = typeof url === "string" && url.startsWith("http");
+                  const looksLikeImage = /\.(jpe?g|png|webp|gif|svg)(\?|$)/i.test(url);
+                  return (
+                    <div key={rp.id} className="flex items-center gap-3">
+                      <div className="w-12 h-8 bg-muted rounded overflow-hidden">
+                        <img src={isHttp ? url : "/placeholder.svg"} alt="thumb" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 text-xs">
+                        <div className="truncate">{url}</div>
+                        <div className="text-muted-foreground">{isHttp ? (looksLikeImage ? "Direct image URL" : "HTTP but may not be direct image") : "Not HTTP / storage path"}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        {isHttp && (
+                          <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">Open</a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {filteredProducts.length === 0 ? (
           <Card>
