@@ -137,8 +137,7 @@ async function processProductRow(row, index) {
     if (uploadError) throw uploadError;
 
     // get public url (works if bucket is public)
-    const publicUrlResp = await supabase.storage.from(BUCKET).getPublicUrl(filename);
-    const publicData = publicUrlResp && publicUrlResp.data ? publicUrlResp.data : publicUrlResp;
+    const { data: publicData } = await supabase.storage.from(BUCKET).getPublicUrl(filename) as any;
     const publicUrl = publicData?.publicUrl || publicData?.public_url || publicData?.publicURL;
 
     if (!publicUrl) {

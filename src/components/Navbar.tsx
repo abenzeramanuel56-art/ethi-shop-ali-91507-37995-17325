@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import NotificationBell from "./NotificationBell";
 import RotatingBadge from "@/components/RotatingBadge";
-import LanguageSelector from "@/components/LanguageSelector";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -91,9 +90,6 @@ export const Navbar = () => {
             
             {user ? (
               <>
-                <div className="hidden sm:block">
-                  <LanguageSelector />
-                </div>
                 {isAdmin && (
                   <Link to="/admin">
                     <Button variant="secondary">Admin Panel</Button>

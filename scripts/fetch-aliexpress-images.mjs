@@ -172,8 +172,7 @@ async function processRow(row) {
     if (uploadError) throw uploadError;
 
     // Get public URL or signed
-    const pubResp = await supabase.storage.from(BUCKET).getPublicUrl(filename);
-    const pub = pubResp && pubResp.data ? pubResp.data : pubResp;
+    const { data: pub } = await supabase.storage.from(BUCKET).getPublicUrl(filename) as any;
     let publicUrl = pub?.publicUrl || pub?.public_url || pub?.publicURL;
     if (!publicUrl) {
       const signed = await supabase.storage.from(BUCKET).createSignedUrl(filename, 60 * 60);
