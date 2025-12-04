@@ -47,6 +47,18 @@ interface Product {
   image_url: string | null;
   category: string;
   stock_status: boolean;
+  aliexpress_url: string | null;
+}
+
+interface OrderItem {
+  id: string;
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  price_etb: number;
+  product?: {
+    aliexpress_url: string | null;
+  };
 }
 
 interface Order {
@@ -64,6 +76,7 @@ interface Order {
   created_at: string;
   updated_at: string;
   reseller_id: string | null;
+  order_items?: OrderItem[];
 }
 
 const AdminDashboard = () => {
@@ -137,7 +150,17 @@ const AdminDashboard = () => {
           .order("created_at", { ascending: false }),
         (supabase as any)
           .from("orders")
-          .select("*"),
+          .select(`
+            *,
+            order_items (
+              id,
+              product_id,
+              product_name,
+              quantity,
+              price_etb,
+              products:product_id (aliexpress_url)
+            )
+          `),
         (supabase as any)
           .from("products")
           .select("*")
@@ -149,24 +172,30 @@ const AdminDashboard = () => {
       if (productsResponse.error) throw productsResponse.error;
 
       const quotes = quotesResponse.data || [];
-      const ordersList = ordersResponse.data || [];
+      const ordersList = (ordersResponse.data || []).map((order: any) => ({
+        ...order,
+        order_items: (order.order_items || []).map((item: any) => ({
+          ...item,
+          product: item.products,
+        })),
+      }));
       const productsList = productsResponse.data || [];
 
       setQuoteRequests(quotes);
       setProducts(productsList);
-      setOrders(ordersList.sort((a, b) => 
+      setOrders(ordersList.sort((a: any, b: any) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ));
 
       setStats({
-        pendingQuotes: quotes.filter((q) => q.status === "pending").length,
-        pendingPayments: ordersList.filter((o) => o.status === "pending_payment").length,
-        activeOrders: ordersList.filter((o) => 
+        pendingQuotes: quotes.filter((q: any) => q.status === "pending").length,
+        pendingPayments: ordersList.filter((o: any) => o.status === "pending_payment").length,
+        activeOrders: ordersList.filter((o: any) => 
           !["delivered", "cancelled"].includes(o.status)
         ).length,
         totalRevenue: ordersList
-          .filter((o) => o.status === "delivered")
-          .reduce((sum, o) => sum + parseFloat(String(o.total_etb)), 0),
+          .filter((o: any) => o.status === "delivered")
+          .reduce((sum: number, o: any) => sum + parseFloat(String(o.total_etb)), 0),
       });
     } catch (error: any) {
       toast.error("Failed to load admin data");
@@ -655,6 +684,36 @@ const AdminDashboard = () => {
                                   <span className="font-medium">Admin Notes:</span> {order.admin_notes}
                                 </p>
                               )}
+                              
+                              {/* Order Items with AliExpress Links */}
+                              {order.order_items && order.order_items.length > 0 && (
+                                <div className="mt-3 rounded-lg border bg-muted/30 p-3">
+                                  <p className="mb-2 font-medium text-sm">Order Items:</p>
+                                  <div className="space-y-2">
+                                    {order.order_items.map((item) => (
+                                      <div key={item.id} className="flex items-center justify-between text-sm">
+                                        <div>
+                                          <span>{item.product_name}</span>
+                                          <span className="text-muted-foreground"> × {item.quantity}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span>{item.price_etb.toLocaleString()} ETB</span>
+                                          {item.product?.aliexpress_url && (
+                                            <a
+                                              href={item.product.aliexpress_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-primary hover:underline"
+                                            >
+                                              AliExpress →
+                                            </a>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {editingOrder === order.id ? (
@@ -888,6 +947,9 @@ const AdminDashboard = () => {
                                 src={product.image_url}
                                 alt={product.name}
                                 className="mb-4 h-48 w-full rounded-lg object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                                }}
                               />
                             )}
                             <div className="flex items-start justify-between">
@@ -911,6 +973,16 @@ const AdminDashboard = () => {
                                 </span>
                               )}
                             </div>
+                            {product.aliexpress_url && (
+                              <a
+                                href={product.aliexpress_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 inline-block text-sm text-primary hover:underline"
+                              >
+                                View on AliExpress →
+                              </a>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
