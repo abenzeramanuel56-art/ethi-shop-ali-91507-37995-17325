@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ShoppingCart, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Product {
   id: string;
@@ -19,9 +20,11 @@ interface Product {
   image_url: string;
   category: string;
   stock_status: boolean;
+  unique_product_code?: string;
 }
 
 const Products = () => {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +55,7 @@ const Products = () => {
       setProducts(data || []);
       setFilteredProducts(data || []);
     } catch (error: any) {
-      toast.error("Failed to load products");
+      toast.error(t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -60,22 +63,18 @@ const Products = () => {
 
   useEffect(() => {
     let filtered = products.filter((product) => {
-      // Search filter
       const matchesSearch =
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // Category filter
       const matchesCategory =
         selectedCategories.length === 0 ||
         selectedCategories.includes(product.category);
 
-      // Price range filter
       const matchesPrice =
         product.price_etb >= priceRange[0] && product.price_etb <= priceRange[1];
 
-      // Free shipping filter (all products have free shipping in this case)
       const matchesFreeShipping = !freeShipping || true;
 
       return matchesSearch && matchesCategory && matchesPrice && matchesFreeShipping;
@@ -111,10 +110,11 @@ const Products = () => {
         price_etb: product.price_etb,
         quantity: 1,
         image_url: product.image_url,
+        store_type: "admin",
       });
     }
     localStorage.setItem("cart", JSON.stringify(cart));
-    toast.success(`${product.name} added to cart!`);
+    toast.success(`${product.name} ${t('store.addedToCartDesc')}`);
   };
 
   const handleBuyNow = (product: Product) => {
@@ -140,34 +140,32 @@ const Products = () => {
           />
 
           <main className="flex-1">
-            <div className="container mx-auto px-4 py-12">
-              <div className="mb-8 flex items-center gap-4">
+            <div className="container mx-auto px-4 py-8">
+              <div className="mb-6 flex items-center gap-4">
                 <SidebarTrigger className="md:hidden">
                   <Button variant="outline" size="icon">
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
                 </SidebarTrigger>
                 <div className="flex-1">
-                  <h1 className="mb-2 text-4xl font-bold text-foreground">Browse Products</h1>
-                  <p className="text-lg text-muted-foreground">
-                    Curated selection of popular AliExpress products
-                  </p>
+                  <h1 className="mb-1 text-3xl font-bold text-foreground">{t('products.title')}</h1>
+                  <p className="text-sm text-muted-foreground">{t('products.subtitle')}</p>
                 </div>
               </div>
 
-              <div className="mb-8">
+              <div className="mb-6">
                 <div className="relative max-w-md">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="Search products..."
+                    placeholder={t('products.search')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
                 </div>
                 <div className="mt-2 text-sm text-muted-foreground">
-                  Showing {filteredProducts.length} of {products.length} products
+                  {t('products.showing')} {filteredProducts.length} {t('products.of')} {products.length} {t('products.products')}
                 </div>
               </div>
 
@@ -187,12 +185,12 @@ const Products = () => {
                 <Card className="p-12 text-center">
                   <p className="text-lg text-muted-foreground">
                     {searchQuery || selectedCategories.length > 0
-                      ? "No products found matching your filters"
-                      : "No products available yet. Check back soon!"}
+                      ? t('products.noMatch')
+                      : t('products.noProducts')}
                   </p>
                   {(searchQuery || selectedCategories.length > 0 || priceRange[0] > 0 || priceRange[1] < maxPrice) && (
                     <Button onClick={handleResetFilters} className="mt-4">
-                      Clear Filters
+                      {t('products.clearFilters')}
                     </Button>
                   )}
                 </Card>
@@ -219,26 +217,25 @@ const Products = () => {
                           </div>
                         )}
                         <Badge className="absolute left-2 top-2 bg-sale-red text-white border-0 shadow-md">
-                          Hot Deal
+                          {t('products.hotDeal')}
                         </Badge>
                       </div>
                       
-                      <CardHeader className="flex-grow p-3">
-                        <CardTitle className="line-clamp-2 text-sm font-medium">{product.name}</CardTitle>
-                        <CardDescription className="line-clamp-2 text-xs">
-                          {product.description}
-                        </CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent className="p-3 pt-0">
-                        <div className="flex items-baseline gap-2">
+                      <CardContent className="flex-grow p-3">
+                        <h3 className="line-clamp-2 text-sm font-medium mb-1">{product.name}</h3>
+                        {product.unique_product_code && (
+                          <p className="text-xs text-muted-foreground mb-2">
+                            {t('store.code')}: {product.unique_product_code}
+                          </p>
+                        )}
+                        <div className="flex items-baseline gap-2 mb-2">
                           <div className="text-2xl font-bold text-primary">
                             {product.price_etb.toLocaleString()}
                           </div>
-                          <div className="text-xs text-muted-foreground">ETB</div>
+                          <div className="text-xs text-muted-foreground">{t('common.etb')}</div>
                         </div>
-                        <div className="mt-1 flex items-center gap-1 text-xs text-success">
-                          <span className="font-medium">Free Shipping</span>
+                        <div className="flex items-center gap-1 text-xs text-success">
+                          <span className="font-medium">{t('products.freeShipping')}</span>
                         </div>
                       </CardContent>
                       
@@ -249,13 +246,13 @@ const Products = () => {
                           variant="outline"
                         >
                           <ShoppingCart className="h-3 w-3" />
-                          Cart
+                          {t('products.cart')}
                         </Button>
                         <Button 
                           className="flex-1 h-9 text-xs font-bold" 
                           onClick={() => handleBuyNow(product)}
                         >
-                          Buy Now
+                          {t('products.buyNow')}
                         </Button>
                       </CardFooter>
                     </Card>

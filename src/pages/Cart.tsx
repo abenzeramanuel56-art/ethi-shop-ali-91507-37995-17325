@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Trash2, ShoppingBag } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CartItem {
   id: string;
@@ -17,13 +18,18 @@ interface CartItem {
   price_etb: number;
   quantity: number;
   image_url?: string;
+  store_type?: string;
+  reseller_id?: string;
+  reseller_profit_etb?: number;
 }
 
 const Cart = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [shippingAddress, setShippingAddress] = useState("");
   const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
@@ -42,7 +48,6 @@ const Cart = () => {
     }
     setUser(session.user);
     loadProfile(session.user.id);
-    // For now, cart is stored in localStorage
     loadCart();
     setLoading(false);
   };
@@ -76,7 +81,7 @@ const Cart = () => {
   const removeItem = (id: string) => {
     const updated = cartItems.filter(item => item.id !== id);
     updateCart(updated);
-    toast.success("Item removed from cart");
+    toast.success(t('cart.itemRemoved'));
   };
 
   const updateQuantity = (id: string, quantity: number) => {
@@ -93,19 +98,21 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     if (!shippingAddress || !city || !phone) {
-      toast.error("Please fill in all shipping information");
+      toast.error(t('cart.fillShipping'));
       return;
     }
 
     if (!paymentMethod) {
-      toast.error("Please select a payment method");
+      toast.error(t('cart.selectPaymentMethod'));
       return;
     }
 
     if (cartItems.length === 0) {
-      toast.error("Your cart is empty");
+      toast.error(t('cart.emptyCart'));
       return;
     }
+
+    setSubmitting(true);
 
     try {
       let paymentProofUrl = null;
@@ -118,19 +125,25 @@ const Cart = () => {
           .from('payment-proofs')
           .upload(fileName, paymentProof);
 
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('payment-proofs')
-          .getPublicUrl(fileName);
-        
-        paymentProofUrl = publicUrl;
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          // Continue without payment proof if upload fails
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('payment-proofs')
+            .getPublicUrl(fileName);
+          paymentProofUrl = publicUrl;
+        }
       }
 
-      // Create order
-      const storeType = (cartItems as any[]).some((i: any) => i.store_type === "reseller") ? "reseller" : "admin";
-      const resellerId = storeType === "reseller" ? (cartItems as any[]).find((i: any) => i.store_type === "reseller")?.reseller_id || null : null;
+      // Determine store type and reseller ID
+      const hasResellerItems = cartItems.some(i => i.store_type === "reseller");
+      const storeType = hasResellerItems ? "reseller" : "admin";
+      const resellerId = hasResellerItems 
+        ? cartItems.find(i => i.store_type === "reseller")?.reseller_id || null 
+        : null;
 
+      // Create order
       const { data: order, error: orderError } = await (supabase as any)
         .from("orders")
         .insert({
@@ -148,32 +161,41 @@ const Cart = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order error:', orderError);
+        throw new Error(orderError.message || 'Failed to create order');
+      }
+      
       if (!order) throw new Error("Order creation failed");
 
       // Create order items
       const orderItems = cartItems.map(item => ({
         order_id: order.id,
-        product_id: item.product_id,
+        product_id: item.product_id || null,
         product_name: item.product_name,
         quantity: item.quantity,
         price_etb: item.price_etb,
-        reseller_profit_etb: (item as any).reseller_profit_etb ?? null
+        reseller_profit_etb: item.reseller_profit_etb ?? 0
       }));
 
       const { error: itemsError } = await (supabase as any)
         .from("order_items")
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Items error:', itemsError);
+        throw new Error(itemsError.message || 'Failed to create order items');
+      }
 
       // Clear cart
       localStorage.removeItem("cart");
-      toast.success("Order placed successfully!");
+      toast.success(t('cart.orderSuccess'));
       navigate("/account");
     } catch (error: any) {
-      console.error(error);
-      toast.error("Failed to place order");
+      console.error('Checkout error:', error);
+      toast.error(error.message || t('cart.orderFailed'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -182,7 +204,7 @@ const Cart = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto px-4 py-12 text-center">
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -192,23 +214,23 @@ const Cart = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="mb-8 text-4xl font-bold text-foreground">Shopping Cart</h1>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="mb-6 text-3xl font-bold text-foreground">{t('cart.title')}</h1>
 
         {cartItems.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-              <p className="mb-4 text-xl text-muted-foreground">Your cart is empty</p>
-              <Button onClick={() => navigate("/products")}>Browse Products</Button>
+              <p className="mb-4 text-xl text-muted-foreground">{t('cart.empty')}</p>
+              <Button onClick={() => navigate("/products")}>{t('cart.browseProducts')}</Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Cart Items</CardTitle>
+                  <CardTitle>{t('cart.items')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {cartItems.map((item) => (
@@ -218,11 +240,15 @@ const Cart = () => {
                           src={item.image_url}
                           alt={item.product_name}
                           className="h-20 w-20 rounded-lg object-cover"
+                          onError={(e) => {
+                            const img = e.currentTarget as HTMLImageElement;
+                            img.src = '/placeholder.svg';
+                          }}
                         />
                       )}
                       <div className="flex-1">
                         <h3 className="font-semibold">{item.product_name}</h3>
-                        <p className="text-lg text-primary">{item.price_etb.toLocaleString()} ETB</p>
+                        <p className="text-lg text-primary">{item.price_etb.toLocaleString()} {t('common.etb')}</p>
                         <div className="mt-2 flex items-center gap-2">
                           <Button
                             size="sm"
@@ -236,7 +262,7 @@ const Cart = () => {
                             min="1"
                             value={item.quantity}
                             onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
-                            className="w-20 text-center"
+                            className="w-16 text-center"
                           />
                           <Button
                             size="sm"
@@ -256,7 +282,7 @@ const Cart = () => {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                         <p className="font-bold">
-                          {(item.price_etb * item.quantity).toLocaleString()} ETB
+                          {(item.price_etb * item.quantity).toLocaleString()} {t('common.etb')}
                         </p>
                       </div>
                     </div>
@@ -268,98 +294,95 @@ const Cart = () => {
             <div>
               <Card>
                 <CardHeader>
-                  <CardTitle>Checkout</CardTitle>
+                  <CardTitle>{t('cart.checkout')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="shipping-address">Shipping Address *</Label>
+                    <Label htmlFor="shipping-address">{t('cart.shippingAddress')} *</Label>
                     <Textarea
                       id="shipping-address"
-                      placeholder="Enter your shipping address"
+                      placeholder={t('cart.shippingAddress')}
                       value={shippingAddress}
                       onChange={(e) => setShippingAddress(e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city">{t('cart.city')} *</Label>
                     <Input
                       id="city"
-                      placeholder="Enter your city"
+                      placeholder={t('cart.city')}
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone *</Label>
+                    <Label htmlFor="phone">{t('cart.phone')} *</Label>
                     <Input
                       id="phone"
-                      placeholder="Enter your phone number"
+                      placeholder={t('cart.phone')}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="payment-method">Payment Method *</Label>
+                    <Label htmlFor="payment-method">{t('cart.paymentMethod')} *</Label>
                     <select
                       id="payment-method"
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value as "cbe" | "telebirr" | "")}
                     >
-                      <option value="">Select payment method</option>
-                      <option value="cbe">CBE (Commercial Bank of Ethiopia)</option>
-                      <option value="telebirr">Telebirr</option>
+                      <option value="">{t('cart.selectPayment')}</option>
+                      <option value="cbe">{t('cart.cbe')}</option>
+                      <option value="telebirr">{t('cart.telebirr')}</option>
                     </select>
                   </div>
 
                   {paymentMethod && (
                     <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                      <p className="font-semibold text-foreground">Payment Instructions:</p>
+                      <p className="font-semibold text-foreground">{t('cart.paymentInstructions')}</p>
                       {paymentMethod === "telebirr" ? (
                         <>
-                          <p className="text-sm text-muted-foreground">
-                            Transfer the total amount to:
-                          </p>
+                          <p className="text-sm text-muted-foreground">{t('cart.transferAmount')}</p>
                           <p className="text-lg font-bold text-foreground">+251998265025</p>
-                          <p className="text-sm text-muted-foreground">via Telebirr</p>
+                          <p className="text-sm text-muted-foreground">{t('cart.via')} Telebirr</p>
                         </>
                       ) : (
                         <>
-                          <p className="text-sm text-muted-foreground">
-                            Transfer the total amount to:
-                          </p>
+                          <p className="text-sm text-muted-foreground">{t('cart.transferAmount')}</p>
                           <p className="text-lg font-bold text-foreground">1000036292017</p>
-                          <p className="text-sm text-muted-foreground">
-                            Commercial Bank of Ethiopia (CBE)
-                          </p>
+                          <p className="text-sm text-muted-foreground">Commercial Bank of Ethiopia (CBE)</p>
                         </>
                       )}
                     </div>
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="payment-proof">Payment Proof (Optional)</Label>
+                    <Label htmlFor="payment-proof">{t('cart.paymentProof')}</Label>
                     <Input
                       id="payment-proof"
                       type="file"
                       accept="image/*"
                       onChange={(e) => setPaymentProof(e.target.files?.[0] || null)}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Upload a screenshot of your payment confirmation
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('cart.uploadScreenshot')}</p>
                   </div>
 
                   <div className="border-t pt-4">
                     <div className="mb-4 flex justify-between text-xl font-bold">
-                      <span>Total:</span>
-                      <span className="text-primary">{calculateTotal().toLocaleString()} ETB</span>
+                      <span>{t('cart.total')}</span>
+                      <span className="text-primary">{calculateTotal().toLocaleString()} {t('common.etb')}</span>
                     </div>
-                    <Button className="w-full" size="lg" onClick={handleCheckout}>
-                      Place Order
+                    <Button 
+                      className="w-full" 
+                      size="lg" 
+                      onClick={handleCheckout}
+                      disabled={submitting}
+                    >
+                      {submitting ? t('common.loading') : t('cart.placeOrder')}
                     </Button>
                   </div>
                 </CardContent>
