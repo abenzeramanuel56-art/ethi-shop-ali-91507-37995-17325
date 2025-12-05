@@ -3,13 +3,14 @@ import type { ChangeEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Search, ShoppingCart } from "lucide-react";
 import ReportStoreDialog from "@/components/ReportStoreDialog";
-import ProductImageUploader from "@/components/ProductImageUploader";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StoreInfo {
   id: string;
@@ -22,7 +23,6 @@ interface StoreInfo {
 interface ResellerProduct {
   id: string;
   reseller_price_etb: number;
-  // supabase joined relation can be object or array
   products: any;
 }
 
@@ -30,65 +30,55 @@ export default function Store() {
   const { storeSlug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [products, setProducts] = useState<ResellerProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ResellerProduct[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     fetchStore();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeSlug]);
 
-  const STORAGE_BUCKET = "product-images"; // change if your bucket name differs
+  const STORAGE_BUCKET = "product-images";
 
-  // Resolve a stored path or URL to a usable image URL. Tries:
-  // - return as-is if it's already an http URL
-  // - try getPublicUrl (public bucket)
-  // - fallback to createSignedUrl (private bucket)
-  // - final fallback to placeholder
   async function resolveImageUrl(path?: string | null) {
     if (!path) return "/placeholder.svg";
     if (path.startsWith("http")) return path;
 
     try {
-      // Try public URL
       const pubRes: any = await supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
       const publicUrl = pubRes?.data?.publicUrl || pubRes?.public_url || pubRes?.publicURL || pubRes?.publicURI;
       if (publicUrl) return publicUrl;
 
-      // Try signed url (short lived)
       const signedRes: any = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 60);
       const signedUrl = signedRes?.data?.signedUrl || signedRes?.data?.signedURL;
       if (signedUrl) return signedUrl;
     } catch (e) {
-      // ignore and fallthrough to placeholder
+      // ignore
     }
 
     return "/placeholder.svg";
   }
 
-  // normalize joined product (object or array)
   const getProduct = (rp: ResellerProduct) => {
     if (!rp || !rp.products) return null;
     return Array.isArray(rp.products) ? rp.products[0] : rp.products;
   };
 
-  // IMAGE UPLOADER: uploads file to Supabase Storage and updates products.image_url
   const handleImageSelect = async (e: ChangeEvent<HTMLInputElement>, rp: ResellerProduct) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const prod = getProduct(rp);
     if (!prod) {
-      toast({ title: "Upload failed", description: "Product data missing", variant: "destructive" });
+      toast({ title: t('common.error'), description: "Product data missing", variant: "destructive" });
       return;
     }
 
-    const bucket = "product-images"; // change to your bucket name if different
+    const bucket = "product-images";
     const path = `products/${prod.id}/${Date.now()}_${file.name}`;
 
     try {
@@ -97,12 +87,10 @@ export default function Store() {
       const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      // get public URL (if bucket is public). getPublicUrl is synchronous
       const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path) as any;
       const publicUrl = publicData?.publicUrl || publicData?.public_url || publicData?.publicURL;
       if (!publicUrl) throw new Error("Unable to get public URL for uploaded image");
 
-      // update product record
       const { error: updateError } = await supabase
         .from("products")
         .update({ image_url: publicUrl })
@@ -110,7 +98,6 @@ export default function Store() {
 
       if (updateError) throw updateError;
 
-      // update local state to reflect new image without refetching
       setProducts((prev) =>
         prev.map((p) => {
           if (p.id !== rp.id) return p;
@@ -124,40 +111,14 @@ export default function Store() {
         })
       );
 
-      toast({ title: "Image updated", description: `${prod.name} image updated` });
+      toast({ title: t('common.success'), description: `${prod.name} image updated` });
     } catch (err: any) {
-      toast({ title: "Upload failed", description: err?.message || "Something went wrong", variant: "destructive" });
+      toast({ title: t('common.error'), description: err?.message || "Something went wrong", variant: "destructive" });
     } finally {
       setUploadingProductId(null);
-      // clear input value so same file can be selected again
       if (e.target) e.target.value = "";
     }
   };
-
-  // Image with fallback and protection against infinite onError loops
-  function ImageWithFallback({ src, alt, className }: { src?: string | null; alt?: string; className?: string }) {
-    const erroredRef = useRef(false);
-    const [imgSrc, setImgSrc] = useState<string>(() => src || "/placeholder.svg");
-
-    useEffect(() => {
-      setImgSrc(src || "/placeholder.svg");
-      erroredRef.current = false;
-    }, [src]);
-
-    return (
-      <img
-        src={imgSrc}
-        alt={alt || "product image"}
-        loading="lazy"
-        onError={(e) => {
-          if (erroredRef.current) return;
-          erroredRef.current = true;
-          (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
-        }}
-        className={className}
-      />
-    );
-  }
 
   useEffect(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -203,7 +164,6 @@ export default function Store() {
 
       if (productsError) throw productsError;
 
-      // ensure products have safe image_url fields and normalize joined product
       const normalized = await Promise.all(
         (productsData || []).map(async (rp: any) => {
           const prod = Array.isArray(rp.products) ? rp.products[0] : rp.products;
@@ -216,23 +176,10 @@ export default function Store() {
 
       setProducts(normalized);
       setFilteredProducts(normalized);
-
-      // Debug: log sample of product image_url values so we can inspect importer output
-      try {
-        // Log first 30 entries to the dev console
-        // eslint-disable-next-line no-console
-        console.log("[Store] loaded products (sample):", normalized.slice(0, 30).map((r: any) => ({
-          id: r.id,
-          productId: (Array.isArray(r.products) ? r.products[0]?.id : r.products?.id),
-          image_url: (Array.isArray(r.products) ? r.products[0]?.image_url : r.products?.image_url),
-        })));
-      } catch (e) {
-        // ignore
-      }
     } catch (err) {
       toast({
-        title: "Store Not Found",
-        description: "This store does not exist",
+        title: t('store.notFound'),
+        description: t('store.notFoundDesc'),
         variant: "destructive",
       });
       navigate("/");
@@ -244,36 +191,46 @@ export default function Store() {
 
   const handleAddToCart = (product: ResellerProduct) => {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const prod = getProduct(product);
+    if (!prod) return;
     
-    const existingItem = cart.find((item: any) => item.id === product.products.id);
+    const existingItem = cart.find((item: any) => item.id === prod.id && item.store_type === "reseller");
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
       cart.push({
-        id: product.products.id,
-        product_id: product.products.id,
-        product_name: product.products.name,
+        id: `${prod.id}-reseller-${Date.now()}`,
+        product_id: prod.id,
+        product_name: prod.name,
         price_etb: product.reseller_price_etb,
-        image_url: product.products.image_url,
+        image_url: prod.image_url,
         quantity: 1,
         reseller_id: store?.id,
         store_type: "reseller",
-        reseller_profit_etb: Math.max(0, product.reseller_price_etb - (product.products.price_etb || 0))
+        reseller_profit_etb: Math.max(0, product.reseller_price_etb - (prod.price_etb || 0))
       });
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
     
     toast({
-      title: "Added to Cart",
-      description: `${product.products.name} added to cart`
+      title: t('store.addedToCart'),
+      description: `${prod.name} ${t('store.addedToCartDesc')}`
     });
+  };
+
+  const handleBuyNow = (product: ResellerProduct) => {
+    handleAddToCart(product);
+    navigate("/cart");
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading store...</p>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <p className="text-muted-foreground">{t('store.loading')}</p>
+        </div>
       </div>
     );
   }
@@ -282,11 +239,11 @@ export default function Store() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-start justify-between">
+        <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-foreground">{store?.store_name}</h1>
+            <h1 className="text-3xl font-bold text-foreground">{store?.store_name}</h1>
             {store?.contact_email && (
-              <p className="text-muted-foreground">Contact: {store.contact_email}</p>
+              <p className="text-sm text-muted-foreground">{t('store.contact')}: {store.contact_email}</p>
             )}
           </div>
           {store && (
@@ -298,75 +255,35 @@ export default function Store() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search products..."
+              placeholder={t('store.searchProducts')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowDebug((s) => !s)}
-              className="text-xs px-2 py-1 rounded bg-accent/10 hover:bg-accent/20"
-            >
-              {showDebug ? "Hide image debug" : "Show image debug"}
-            </button>
-            <div className="text-xs text-muted-foreground">Products: {products.length}</div>
+          <div className="mt-2 text-sm text-muted-foreground">
+            {t('products.showing')} {filteredProducts.length} {t('products.products')}
           </div>
         </div>
-
-        {showDebug && (
-          <Card className="mb-4">
-            <CardContent>
-              <div className="text-sm font-medium mb-2">Image debug (first 50 products)</div>
-              <div className="grid gap-2">
-                {products.slice(0, 50).map((rp) => {
-                  const prod = Array.isArray(rp.products) ? rp.products[0] : rp.products;
-                  const url = prod?.image_url || "/placeholder.svg";
-                  const isHttp = typeof url === "string" && url.startsWith("http");
-                  const looksLikeImage = /\.(jpe?g|png|webp|gif|svg)(\?|$)/i.test(url);
-                  return (
-                    <div key={rp.id} className="flex items-center gap-3">
-                      <div className="w-12 h-8 bg-muted rounded overflow-hidden">
-                        <img src={isHttp ? url : "/placeholder.svg"} alt="thumb" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 text-xs">
-                        <div className="truncate">{url}</div>
-                        <div className="text-muted-foreground">{isHttp ? (looksLikeImage ? "Direct image URL" : "HTTP but may not be direct image") : "Not HTTP / storage path"}</div>
-                      </div>
-                      <div className="flex gap-2">
-                        {isHttp && (
-                          <a href={url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">Open</a>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {filteredProducts.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">
-                {searchTerm ? "No products found" : "No products available"}
+                {searchTerm ? t('store.noProductsFound') : t('store.noProducts')}
               </p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filteredProducts.map((rp) => (
-              <Card key={rp.id} className="group flex flex-col overflow-hidden border-0 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
-                <div className="relative aspect-square overflow-hidden bg-accent/30">
-                  {(() => {
-                    const prod = getProduct(rp);
-                    if (!prod) return (
-                      <div className="flex h-full items-center justify-center text-muted-foreground">No image</div>
-                    );
-                    return prod.image_url ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {filteredProducts.map((rp) => {
+              const prod = getProduct(rp);
+              if (!prod) return null;
+              
+              return (
+                <Card key={rp.id} className="group flex flex-col overflow-hidden border-0 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+                  <div className="relative aspect-square overflow-hidden bg-accent/30">
+                    {prod.image_url ? (
                       <img
                         src={prod.image_url}
                         alt={`${prod.name} product image`}
@@ -379,47 +296,52 @@ export default function Store() {
                         className="h-full w-full object-cover transition-transform group-hover:scale-110"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-muted-foreground">No image</div>
-                    );
-                  })()}
-                </div>
-                <CardContent className="flex-grow p-3">
-                  <h3 className="line-clamp-2 text-sm font-medium mb-2">{getProduct(rp)?.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Code: {getProduct(rp)?.unique_product_code}
-                  </p>
-                  <div className="flex items-baseline gap-2 mb-3">
-                    <div className="text-2xl font-bold text-primary">
-                      {(Number(rp.reseller_price_etb ?? 0)).toLocaleString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground">ETB</div>
+                      <div className="flex h-full items-center justify-center text-muted-foreground">
+                        No image
+                      </div>
+                    )}
+                    <Badge className="absolute left-2 top-2 bg-sale-red text-white border-0 shadow-md">
+                      {t('products.hotDeal')}
+                    </Badge>
                   </div>
-                  <div className="flex gap-2 items-center mb-3">
+                  
+                  <CardContent className="flex-grow p-3">
+                    <h3 className="line-clamp-2 text-sm font-medium mb-1">{prod.name}</h3>
+                    {prod.unique_product_code && (
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {t('store.code')}: {prod.unique_product_code}
+                      </p>
+                    )}
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <div className="text-xl font-bold text-primary">
+                        {(Number(rp.reseller_price_etb ?? 0)).toLocaleString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{t('common.etb')}</div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-success">
+                      <span className="font-medium">{t('products.freeShipping')}</span>
+                    </div>
+                  </CardContent>
+                  
+                  <CardFooter className="flex gap-2 p-3 pt-0">
                     <Button
                       onClick={() => handleAddToCart(rp)}
-                      className="flex-1 h-9 text-xs font-bold gap-1"
+                      className="flex-1 h-9 text-xs gap-1"
+                      variant="outline"
                     >
                       <ShoppingCart className="h-3 w-3" />
-                      Add to Cart
+                      {t('products.cart')}
                     </Button>
-
-                    {/* Hidden file input triggered by label */}
-                    <div className="flex items-center">
-                      <input
-                        id={`file-${rp.id}`}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleImageSelect(e, rp)}
-                      />
-                      <label htmlFor={`file-${rp.id}`} className="text-xs text-muted-foreground cursor-pointer px-2 py-1 rounded hover:bg-accent/20">
-                        {uploadingProductId === rp.id ? "Uploading..." : "Update Image"}
-                      </label>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <Button 
+                      className="flex-1 h-9 text-xs font-bold" 
+                      onClick={() => handleBuyNow(rp)}
+                    >
+                      {t('products.buyNow')}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

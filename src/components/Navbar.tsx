@@ -6,9 +6,12 @@ import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import NotificationBell from "./NotificationBell";
 import RotatingBadge from "@/components/RotatingBadge";
+import { LanguageSelector } from "./LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const Navbar = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isReseller, setIsReseller] = useState(false);
@@ -71,20 +74,25 @@ export const Navbar = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <Package className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">AliExpress Ethiopia</span>
+            <span className="text-2xl font-bold text-foreground">{t('nav.brand')}</span>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <LanguageSelector />
             <Link to="/products">
-              <Button variant="ghost">Browse Products</Button>
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex">
+                {t('nav.browse')}
+              </Button>
             </Link>
             <Link to="/request-item">
-              <Button variant="default">Request Item</Button>
+              <Button variant="default" size="sm" className="hidden md:inline-flex">
+                {t('nav.request')}
+              </Button>
             </Link>
             <Link to="/support">
               <Button variant="ghost" size="sm" className="gap-1">
                 <MessageCircle className="h-4 w-4" />
-                Support
+                <span className="hidden md:inline">{t('nav.support')}</span>
               </Button>
             </Link>
             
@@ -92,12 +100,16 @@ export const Navbar = () => {
               <>
                 {isAdmin && (
                   <Link to="/admin">
-                    <Button variant="secondary">Admin Panel</Button>
+                    <Button variant="secondary" size="sm" className="hidden md:inline-flex">
+                      {t('nav.admin')}
+                    </Button>
                   </Link>
                 )}
                 {isReseller && (
                   <Link to="/reseller">
-                    <Button variant="secondary">Reseller Dashboard</Button>
+                    <Button variant="secondary" size="sm" className="hidden md:inline-flex">
+                      {t('nav.reseller')}
+                    </Button>
                   </Link>
                 )}
                 <Link to="/cart">
@@ -111,13 +123,13 @@ export const Navbar = () => {
                     <User className="h-5 w-5" />
                   </Button>
                 </Link>
-                <Button variant="outline" onClick={handleSignOut}>
-                  Sign Out
+                <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden md:inline-flex">
+                  {t('nav.signOut')}
                 </Button>
               </>
             ) : (
               <Link to={`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`}>
-                <Button variant="default">Sign In</Button>
+                <Button variant="default" size="sm">{t('nav.signIn')}</Button>
               </Link>
             )}
           </div>
