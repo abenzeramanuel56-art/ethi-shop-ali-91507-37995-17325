@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -23,6 +24,7 @@ const signInSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -70,7 +72,7 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast.success("Account created! Please check your email to verify your account before signing in.");
+      toast.success(t('auth.accountCreated'));
       setEmail("");
       setPassword("");
       setFullName("");
@@ -99,14 +101,14 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("Email not confirmed")) {
-          toast.error("Please verify your email before signing in. Check your inbox for the verification link.");
+          toast.error(t('auth.verifyEmail'));
         } else {
           throw error;
         }
         return;
       }
 
-      toast.success("Signed in successfully!");
+      toast.success(t('auth.signedIn'));
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -124,22 +126,22 @@ const Auth = () => {
       <div className="container mx-auto flex items-center justify-center px-4 py-16">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl">Welcome</CardTitle>
+            <CardTitle className="text-2xl">{t('auth.welcome')}</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              {t('auth.description')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">{t('auth.email')}</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -150,7 +152,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">{t('auth.password')}</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -160,7 +162,7 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign In"}
+                    {loading ? t('auth.signingIn') : t('auth.signIn')}
                   </Button>
                 </form>
               </TabsContent>
@@ -168,7 +170,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-name">{t('auth.fullName')}</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -179,7 +181,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">{t('auth.email')}</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -190,7 +192,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password">{t('auth.password')}</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -201,7 +203,7 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Create Account"}
+                    {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
                   </Button>
                 </form>
               </TabsContent>
