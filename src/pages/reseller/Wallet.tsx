@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Download } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Wallet {
   current_balance_etb: number;
@@ -29,6 +30,7 @@ interface WithdrawalRequest {
 export default function ResellerWallet() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,6 @@ export default function ResellerWallet() {
       return;
     }
 
-    // Fetch wallet
     const { data: walletData } = await supabase
       .from("reseller_wallets")
       .select("*")
@@ -57,7 +58,6 @@ export default function ResellerWallet() {
 
     setWallet(walletData);
 
-    // Fetch withdrawal requests
     const { data: withdrawalData } = await supabase
       .from("withdrawal_requests")
       .select("*")
@@ -74,8 +74,8 @@ export default function ResellerWallet() {
     const amount = parseFloat(withdrawAmount);
     if (!amount || amount <= 0) {
       toast({
-        title: "Error",
-        description: "Please enter a valid amount",
+        title: t('common.error'),
+        description: t('wallet.invalidAmount'),
         variant: "destructive"
       });
       return;
@@ -83,8 +83,8 @@ export default function ResellerWallet() {
 
     if (amount > (wallet?.current_balance_etb || 0)) {
       toast({
-        title: "Error",
-        description: "Insufficient balance",
+        title: t('common.error'),
+        description: t('wallet.insufficientBalance'),
         variant: "destructive"
       });
       return;
@@ -106,7 +106,7 @@ export default function ResellerWallet() {
 
     if (error) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -114,8 +114,8 @@ export default function ResellerWallet() {
     }
 
     toast({
-      title: "Success",
-      description: "Withdrawal request submitted"
+      title: t('common.success'),
+      description: t('wallet.requestSubmitted')
     });
 
     setWithdrawAmount("");
@@ -127,7 +127,7 @@ export default function ResellerWallet() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+        <p>{t('common.loading')}</p>
       </div>
     );
   }
@@ -138,18 +138,18 @@ export default function ResellerWallet() {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8 flex items-center gap-2">
           <DollarSign className="h-8 w-8" />
-          Wallet & Withdrawals
+          {t('wallet.title')}
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Current Balance</CardTitle>
+              <CardTitle>{t('wallet.currentBalance')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold">{wallet?.current_balance_etb.toFixed(2) || "0.00"} ETB</p>
+              <p className="text-4xl font-bold">{wallet?.current_balance_etb.toFixed(2) || "0.00"} {t('common.etb')}</p>
               <p className="text-sm text-muted-foreground mt-2">
-                Total Earned: {wallet?.total_earned_etb.toFixed(2) || "0.00"} ETB
+                {t('wallet.totalEarned')}: {wallet?.total_earned_etb.toFixed(2) || "0.00"} {t('common.etb')}
               </p>
             </CardContent>
           </Card>
@@ -158,13 +158,13 @@ export default function ResellerWallet() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
-                Request Withdrawal
+                {t('wallet.requestWithdrawal')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleWithdrawalRequest} className="space-y-4">
                 <div>
-                  <Label htmlFor="amount">Amount (ETB) *</Label>
+                  <Label htmlFor="amount">{t('wallet.amount')} *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -177,22 +177,22 @@ export default function ResellerWallet() {
                 </div>
 
                 <div>
-                  <Label>Payment Method *</Label>
+                  <Label>{t('wallet.paymentMethod')} *</Label>
                   <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "telebirr" | "cbe")}>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="telebirr" id="telebirr" />
-                      <Label htmlFor="telebirr">Telebirr</Label>
+                      <Label htmlFor="telebirr">{t('wallet.telebirr')}</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="cbe" id="cbe" />
-                      <Label htmlFor="cbe">CBE (Commercial Bank of Ethiopia)</Label>
+                      <Label htmlFor="cbe">{t('wallet.cbe')}</Label>
                     </div>
                   </RadioGroup>
                 </div>
 
                 {paymentMethod === "telebirr" && (
                   <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Label htmlFor="phone">{t('wallet.phoneNumber')} *</Label>
                     <Input
                       id="phone"
                       value={accountDetail1}
@@ -206,7 +206,7 @@ export default function ResellerWallet() {
                 {paymentMethod === "cbe" && (
                   <>
                     <div>
-                      <Label htmlFor="accountName">Account Holder Name *</Label>
+                      <Label htmlFor="accountName">{t('wallet.accountHolderName')} *</Label>
                       <Input
                         id="accountName"
                         value={accountDetail1}
@@ -215,7 +215,7 @@ export default function ResellerWallet() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="accountNumber">Account Number *</Label>
+                      <Label htmlFor="accountNumber">{t('wallet.accountNumber')} *</Label>
                       <Input
                         id="accountNumber"
                         value={accountDetail2}
@@ -226,7 +226,7 @@ export default function ResellerWallet() {
                   </>
                 )}
 
-                <Button type="submit">Submit Request</Button>
+                <Button type="submit">{t('wallet.submitRequest')}</Button>
               </form>
             </CardContent>
           </Card>
@@ -234,11 +234,11 @@ export default function ResellerWallet() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Withdrawal History</CardTitle>
+            <CardTitle>{t('wallet.withdrawalHistory')}</CardTitle>
           </CardHeader>
           <CardContent>
             {withdrawals.length === 0 ? (
-              <p className="text-muted-foreground">No withdrawal requests yet</p>
+              <p className="text-muted-foreground">{t('wallet.noWithdrawals')}</p>
             ) : (
               <div className="space-y-4">
                 {withdrawals.map((wd) => (
@@ -246,7 +246,7 @@ export default function ResellerWallet() {
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold">{wd.amount_etb} ETB</p>
+                          <p className="font-semibold">{wd.amount_etb} {t('common.etb')}</p>
                           <p className="text-sm text-muted-foreground">
                             {wd.payment_method.toUpperCase()} • {new Date(wd.created_at).toLocaleDateString()}
                           </p>

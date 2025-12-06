@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Sparkles, Send } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const SUPPORT_CATEGORIES = [
   "Why is my account banned?",
@@ -43,6 +44,7 @@ interface Ticket {
 export default function Support() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState("");
   const [category, setCategory] = useState("");
@@ -58,7 +60,6 @@ export default function Support() {
     checkAuth();
     fetchMyTickets();
 
-    // Set up real-time subscription for ticket replies
     const channel = supabase
       .channel('ticket-replies')
       .on(
@@ -69,8 +70,6 @@ export default function Support() {
           table: 'ticket_replies'
         },
         (payload) => {
-          console.log('New reply received:', payload);
-          // Refetch replies for the affected ticket
           const ticketId = (payload.new as any).ticket_id;
           if (ticketId) {
             fetchTicketReplies(ticketId);
@@ -103,7 +102,6 @@ export default function Support() {
 
     setMyTickets(data || []);
     
-    // Fetch replies for all tickets
     if (data) {
       data.forEach(ticket => fetchTicketReplies(ticket.id));
     }
@@ -127,8 +125,8 @@ export default function Support() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({
-        title: "Please sign in",
-        description: "You need to be signed in to submit a support ticket",
+        title: t('support.signInRequired'),
+        description: t('support.signInRequiredDesc'),
         variant: "destructive"
       });
       navigate("/auth");
@@ -137,8 +135,8 @@ export default function Support() {
 
     if (!category || !subject || !message) {
       toast({
-        title: "Missing information",
-        description: "Please fill in all fields",
+        title: t('support.missingInfo'),
+        description: t('support.missingInfoDesc'),
         variant: "destructive"
       });
       return;
@@ -146,7 +144,6 @@ export default function Support() {
 
     setLoading(true);
 
-    // Submit ticket
     const { error } = await supabase
       .from("support_tickets")
       .insert({
@@ -159,14 +156,13 @@ export default function Support() {
     if (error) {
       setLoading(false);
       toast({
-        title: "Error",
-        description: "Failed to submit ticket. Please try again.",
+        title: t('support.error'),
+        description: t('support.errorDesc'),
         variant: "destructive"
       });
       return;
     }
 
-    // Get AI suggestion
     try {
       const { data: aiData, error: aiError } = await supabase.functions.invoke(
         "analyze-support-ticket",
@@ -175,9 +171,7 @@ export default function Support() {
         }
       );
 
-      if (aiError) {
-        console.error("AI analysis error:", aiError);
-      } else if (aiData?.suggestion) {
+      if (!aiError && aiData?.suggestion) {
         setAiSuggestion(aiData.suggestion);
       }
     } catch (aiError) {
@@ -187,8 +181,8 @@ export default function Support() {
     setLoading(false);
 
     toast({
-      title: "Ticket submitted",
-      description: "Our support team will respond soon"
+      title: t('support.ticketSubmitted'),
+      description: t('support.ticketSubmittedDesc')
     });
 
     setCategory("");
@@ -215,16 +209,16 @@ export default function Support() {
 
     if (error) {
       toast({
-        title: "Error",
-        description: "Failed to send reply",
+        title: t('support.error'),
+        description: t('support.replyError'),
         variant: "destructive"
       });
       return;
     }
 
     toast({
-      title: "Reply sent",
-      description: "Your message has been sent to support"
+      title: t('support.replySent'),
+      description: t('support.replySentDesc')
     });
 
     setReplyMessages(prev => ({ ...prev, [ticketId]: "" }));
@@ -250,30 +244,30 @@ export default function Support() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2 text-primary">
             <MessageCircle className="h-8 w-8" />
-            Customer Support
+            {t('support.title')}
           </h1>
-          <p className="text-muted-foreground mb-8">We're here to help you</p>
+          <p className="text-muted-foreground mb-8">{t('support.subtitle')}</p>
 
           <div className="grid gap-8">
             <Card className="border-2">
               <CardHeader>
-                <CardTitle>Submit a Support Ticket</CardTitle>
+                <CardTitle>{t('support.submitTicket')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label>Your User ID</Label>
+                    <Label>{t('support.yourUserId')}</Label>
                     <Input value={userId} disabled className="bg-muted" />
                     <p className="text-xs text-muted-foreground mt-1">
-                      This is automatically filled when you're signed in
+                      {t('support.userIdNote')}
                     </p>
                   </div>
 
                   <div>
-                    <Label>Category</Label>
+                    <Label>{t('support.category')}</Label>
                     <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder={t('support.selectCategory')} />
                       </SelectTrigger>
                       <SelectContent>
                         {SUPPORT_CATEGORIES.map((cat) => (
@@ -286,28 +280,28 @@ export default function Support() {
                   </div>
 
                   <div>
-                    <Label>Subject</Label>
+                    <Label>{t('support.subject')}</Label>
                     <Input
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      placeholder="Brief description of your issue"
+                      placeholder={t('support.subjectPlaceholder')}
                       required
                     />
                   </div>
 
                   <div>
-                    <Label>Message</Label>
+                    <Label>{t('support.message')}</Label>
                     <Textarea
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Please provide details about your issue..."
+                      placeholder={t('support.messagePlaceholder')}
                       rows={6}
                       required
                     />
                   </div>
 
                   <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? "Submitting..." : "Submit Ticket"}
+                    {loading ? t('support.submitting') : t('support.submit')}
                   </Button>
                 </form>
               </CardContent>
@@ -318,7 +312,7 @@ export default function Support() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
-                    AI-Suggested Solution
+                    {t('support.aiSuggestion')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -328,7 +322,7 @@ export default function Support() {
                     </AlertDescription>
                   </Alert>
                   <p className="text-xs text-muted-foreground mt-3">
-                    This is an automated suggestion. Our support team will review your ticket and provide additional assistance if needed.
+                    {t('support.aiNote')}
                   </p>
                 </CardContent>
               </Card>
@@ -337,7 +331,7 @@ export default function Support() {
             {myTickets.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>My Support Tickets</CardTitle>
+                  <CardTitle>{t('support.myTickets')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -369,13 +363,12 @@ export default function Support() {
                           <div className="border-t bg-muted/30">
                             <div className="p-4 space-y-4">
                               <div>
-                                <p className="text-sm font-medium mb-1">Original Message:</p>
+                                <p className="text-sm font-medium mb-1">{t('support.originalMessage')}</p>
                                 <p className="text-sm text-muted-foreground">{ticket.message}</p>
                               </div>
 
                               <Separator />
 
-                              {/* Conversation Thread */}
                               <div className="space-y-3 max-h-96 overflow-y-auto">
                                 {ticketReplies[ticket.id]?.map((reply) => (
                                   <div
@@ -388,7 +381,7 @@ export default function Support() {
                                   >
                                     <div className="flex justify-between items-start mb-1">
                                       <span className="text-xs font-semibold">
-                                        {reply.is_admin ? "Support Team" : "You"}
+                                        {reply.is_admin ? t('support.supportTeam') : t('support.you')}
                                       </span>
                                       <span className="text-xs text-muted-foreground">
                                         {new Date(reply.created_at).toLocaleString()}
@@ -399,7 +392,6 @@ export default function Support() {
                                 ))}
                               </div>
 
-                              {/* Reply Input */}
                               {ticket.status !== 'closed' && (
                                 <div className="flex gap-2 pt-2">
                                   <Textarea
@@ -410,7 +402,7 @@ export default function Support() {
                                         [ticket.id]: e.target.value
                                       }))
                                     }
-                                    placeholder="Type your reply..."
+                                    placeholder={t('support.typeReply')}
                                     rows={3}
                                     className="flex-1"
                                   />

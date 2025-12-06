@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ResellerSetup() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [existingStore, setExistingStore] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -66,7 +68,6 @@ export default function ResellerSetup() {
 
     try {
       if (existingStore) {
-        // Update existing store
         const { error } = await supabase
           .from("reseller_stores")
           .update({
@@ -80,11 +81,10 @@ export default function ResellerSetup() {
         if (error) throw error;
 
         toast({
-          title: "Success",
-          description: "Store updated successfully"
+          title: t('common.success'),
+          description: t('setup.storeUpdated')
         });
       } else {
-        // Create new store
         const { error } = await supabase
           .from("reseller_stores")
           .insert({
@@ -97,7 +97,6 @@ export default function ResellerSetup() {
 
         if (error) throw error;
 
-        // Create wallet for reseller
         await supabase
           .from("reseller_wallets")
           .insert({
@@ -107,15 +106,15 @@ export default function ResellerSetup() {
           });
 
         toast({
-          title: "Success",
-          description: "Store created successfully"
+          title: t('common.success'),
+          description: t('setup.storeCreated')
         });
       }
 
       navigate("/reseller");
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: t('common.error'),
         description: error.message,
         variant: "destructive"
       });
@@ -131,13 +130,13 @@ export default function ResellerSetup() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>
-              {existingStore ? "Edit Store Settings" : "Create Your Store"}
+              {existingStore ? t('setup.editTitle') : t('setup.createTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="storeName">Store Name *</Label>
+                <Label htmlFor="storeName">{t('setup.storeName')} *</Label>
                 <Input
                   id="storeName"
                   value={formData.storeName}
@@ -147,7 +146,7 @@ export default function ResellerSetup() {
               </div>
 
               <div>
-                <Label htmlFor="storeSlug">Store URL Slug *</Label>
+                <Label htmlFor="storeSlug">{t('setup.storeSlug')} *</Label>
                 <Input
                   id="storeSlug"
                   value={formData.storeSlug}
@@ -156,12 +155,12 @@ export default function ResellerSetup() {
                   required
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your store will be at: /store/{generateSlug(formData.storeSlug || formData.storeName)}
+                  {t('setup.storeUrlPreview')} /store/{generateSlug(formData.storeSlug || formData.storeName)}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="contactEmail">Contact Email</Label>
+                <Label htmlFor="contactEmail">{t('setup.contactEmail')}</Label>
                 <Input
                   id="contactEmail"
                   type="email"
@@ -171,7 +170,7 @@ export default function ResellerSetup() {
               </div>
 
               <div>
-                <Label htmlFor="contactPhone">Contact Phone</Label>
+                <Label htmlFor="contactPhone">{t('setup.contactPhone')}</Label>
                 <Input
                   id="contactPhone"
                   value={formData.contactPhone}
@@ -180,7 +179,7 @@ export default function ResellerSetup() {
               </div>
 
               <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : existingStore ? "Update Store" : "Create Store"}
+                {loading ? t('setup.saving') : existingStore ? t('setup.update') : t('setup.create')}
               </Button>
             </form>
           </CardContent>

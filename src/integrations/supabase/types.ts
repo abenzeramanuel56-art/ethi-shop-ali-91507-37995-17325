@@ -284,6 +284,50 @@ export type Database = {
         }
         Relationships: []
       }
+      refund_requests: {
+        Row: {
+          admin_notes: string | null
+          amount_etb: number
+          created_at: string | null
+          customer_id: string
+          id: string
+          order_id: string
+          processed_at: string | null
+          reason: string
+          status: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_etb: number
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          order_id: string
+          processed_at?: string | null
+          reason: string
+          status?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_etb?: number
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          order_id?: string
+          processed_at?: string | null
+          reason?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reseller_applications: {
         Row: {
           admin_notes: string | null

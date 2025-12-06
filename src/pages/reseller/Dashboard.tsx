@@ -7,10 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Store, Package, DollarSign, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ResellerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>("");
   const [hasStore, setHasStore] = useState(false);
@@ -38,7 +40,6 @@ export default function ResellerDashboard() {
 
     setUserId(user.id);
 
-    // Check if user has reseller role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -48,15 +49,14 @@ export default function ResellerDashboard() {
 
     if (!roleData) {
       toast({
-        title: "Access Denied",
-        description: "You need reseller access to view this page",
+        title: t('reseller.accessDenied'),
+        description: t('reseller.accessDeniedDesc'),
         variant: "destructive"
       });
       navigate("/");
       return;
     }
 
-    // Check if reseller has created a store
     const { data: storeData } = await supabase
       .from("reseller_stores")
       .select("*")
@@ -77,19 +77,16 @@ export default function ResellerDashboard() {
   };
 
   const fetchStats = async (storeId: string) => {
-    // Fetch orders
     const { data: orders } = await supabase
       .from("orders")
       .select("*")
       .eq("reseller_id", storeId);
 
-    // Fetch products
     const { data: products } = await supabase
       .from("reseller_products")
       .select("*")
       .eq("store_id", storeId);
 
-    // Fetch wallet
     const { data: { user } } = await supabase.auth.getUser();
     const { data: wallet } = await supabase
       .from("reseller_wallets")
@@ -109,7 +106,7 @@ export default function ResellerDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+        <p>{t('common.loading')}</p>
       </div>
     );
   }
@@ -123,13 +120,13 @@ export default function ResellerDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Store className="h-6 w-6" />
-                Create Your Store
+                {t('reseller.createStore')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="mb-4">You need to create a store before you can start selling.</p>
+              <p className="mb-4">{t('reseller.createStoreDesc')}</p>
               <Button onClick={() => navigate("/reseller/setup")}>
-                Create Store
+                {t('reseller.createStoreBtn')}
               </Button>
             </CardContent>
           </Card>
@@ -142,32 +139,32 @@ export default function ResellerDashboard() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-4 text-foreground">Reseller Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-4 text-foreground">{t('reseller.title')}</h1>
         
         <Card className="max-w-md mb-8">
           <CardHeader>
-            <CardTitle className="text-lg">Your IDs</CardTitle>
+            <CardTitle className="text-lg">{t('reseller.yourIds')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <div className="text-sm text-muted-foreground mb-1">UID</div>
+              <div className="text-sm text-muted-foreground mb-1">{t('reseller.uid')}</div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
                   {userId.slice(0, 8)}...{userId.slice(-8)}
                 </code>
                 <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
-                  Copy
+                  {t('reseller.copy')}
                 </Button>
               </div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground mb-1">ID</div>
+              <div className="text-sm text-muted-foreground mb-1">{t('reseller.id')}</div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
                   {userId.slice(0, 6)}...{userId.slice(-6)}
                 </code>
                 <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
-                  Copy
+                  {t('reseller.copy')}
                 </Button>
               </div>
             </div>
@@ -177,14 +174,14 @@ export default function ResellerDashboard() {
         {storeSlug && (
           <Card className="max-w-md mb-8">
             <CardHeader>
-              <CardTitle className="text-lg">Your Store Link</CardTitle>
+              <CardTitle className="text-lg">{t('reseller.storeLink')}</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center gap-2">
               <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
                 /store/{storeSlug}
               </code>
-              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/store/${storeSlug}`)}>Copy</Button>
-              <Button size="sm" onClick={() => navigate(`/store/${storeSlug}`)}>Open</Button>
+              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/store/${storeSlug}`)}>{t('reseller.copy')}</Button>
+              <Button size="sm" onClick={() => navigate(`/store/${storeSlug}`)}>{t('reseller.open')}</Button>
             </CardContent>
           </Card>
         )}
@@ -192,7 +189,7 @@ export default function ResellerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card className="border-0 shadow-md bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reseller.totalOrders')}</CardTitle>
               <ShoppingCart className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
@@ -202,7 +199,7 @@ export default function ResellerDashboard() {
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reseller.pendingOrders')}</CardTitle>
               <ShoppingCart className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
@@ -212,7 +209,7 @@ export default function ResellerDashboard() {
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-accent/10 to-accent/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Products</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reseller.products')}</CardTitle>
               <Package className="h-4 w-4 text-accent-foreground" />
             </CardHeader>
             <CardContent>
@@ -222,32 +219,32 @@ export default function ResellerDashboard() {
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-success/10 to-success/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reseller.currentBalance')}</CardTitle>
               <DollarSign className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">{stats.currentBalance.toFixed(2)} ETB</div>
-              <p className="text-xs text-muted-foreground">Total Earned: {stats.totalEarned.toFixed(2)} ETB</p>
+              <div className="text-2xl font-bold text-success">{stats.currentBalance.toFixed(2)} {t('common.etb')}</div>
+              <p className="text-xs text-muted-foreground">{t('reseller.totalEarned')}: {stats.totalEarned.toFixed(2)} {t('common.etb')}</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="products">
           <TabsList>
-            <TabsTrigger value="products">Products</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="wallet">Wallet</TabsTrigger>
-            <TabsTrigger value="store">Store Settings</TabsTrigger>
+            <TabsTrigger value="products">{t('reseller.products')}</TabsTrigger>
+            <TabsTrigger value="orders">{t('reseller.orders')}</TabsTrigger>
+            <TabsTrigger value="wallet">{t('reseller.wallet')}</TabsTrigger>
+            <TabsTrigger value="store">{t('reseller.storeSettings')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products">
             <Card>
               <CardHeader>
-                <CardTitle>Manage Products</CardTitle>
+                <CardTitle>{t('reseller.manageProducts')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Button onClick={() => navigate("/reseller/products")}>
-                  Manage Products
+                  {t('reseller.manageProducts')}
                 </Button>
               </CardContent>
             </Card>
@@ -256,11 +253,11 @@ export default function ResellerDashboard() {
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <CardTitle>View Orders</CardTitle>
+                <CardTitle>{t('reseller.viewOrders')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Button onClick={() => navigate("/reseller/orders")}>
-                  View All Orders
+                  {t('reseller.viewAllOrders')}
                 </Button>
               </CardContent>
             </Card>
@@ -269,11 +266,11 @@ export default function ResellerDashboard() {
           <TabsContent value="wallet">
             <Card>
               <CardHeader>
-                <CardTitle>Wallet & Withdrawals</CardTitle>
+                <CardTitle>{t('reseller.walletWithdrawals')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Button onClick={() => navigate("/reseller/wallet")}>
-                  Manage Wallet
+                  {t('reseller.manageWallet')}
                 </Button>
               </CardContent>
             </Card>
@@ -282,11 +279,11 @@ export default function ResellerDashboard() {
           <TabsContent value="store">
             <Card>
               <CardHeader>
-                <CardTitle>Store Settings</CardTitle>
+                <CardTitle>{t('reseller.storeSettings')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Button onClick={() => navigate("/reseller/setup")}>
-                  Edit Store Settings
+                  {t('reseller.editStoreSettings')}
                 </Button>
               </CardContent>
             </Card>
