@@ -333,8 +333,13 @@ export type Database = {
           admin_notes: string | null
           age: number
           created_at: string
+          email: string | null
+          face_descriptor: Json | null
+          face_photo_url: string | null
           full_name: string
           id: string
+          id_back_photo_url: string | null
+          id_front_photo_url: string | null
           id_photo_url: string
           phone: string
           reviewed_at: string | null
@@ -346,8 +351,13 @@ export type Database = {
           admin_notes?: string | null
           age: number
           created_at?: string
+          email?: string | null
+          face_descriptor?: Json | null
+          face_photo_url?: string | null
           full_name: string
           id?: string
+          id_back_photo_url?: string | null
+          id_front_photo_url?: string | null
           id_photo_url: string
           phone: string
           reviewed_at?: string | null
@@ -359,8 +369,13 @@ export type Database = {
           admin_notes?: string | null
           age?: number
           created_at?: string
+          email?: string | null
+          face_descriptor?: Json | null
+          face_photo_url?: string | null
           full_name?: string
           id?: string
+          id_back_photo_url?: string | null
+          id_front_photo_url?: string | null
           id_photo_url?: string
           phone?: string
           reviewed_at?: string | null
