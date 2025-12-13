@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { TermsAgreementDialog } from "@/components/TermsAgreementDialog";
 import { z } from "zod";
 
 const signUpSchema = z.object({
@@ -30,6 +31,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [showTerms, setShowTerms] = useState(false);
+  const [pendingSignUp, setPendingSignUp] = useState<{email: string; password: string; fullName: string} | null>(null);
 
   const returnTo = searchParams.get("returnTo") || "/";
 
@@ -56,15 +59,29 @@ const Auth = () => {
     
     try {
       const validated = signUpSchema.parse({ email, password, fullName });
-      setLoading(true);
+      setPendingSignUp(validated);
+      setShowTerms(true);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+    }
+  };
 
+  const handleTermsAccepted = async () => {
+    if (!pendingSignUp) return;
+    
+    setLoading(true);
+    setShowTerms(false);
+
+    try {
       const redirectUrl = `${window.location.origin}/`;
       const { error } = await supabase.auth.signUp({
-        email: validated.email,
-        password: validated.password,
+        email: pendingSignUp.email,
+        password: pendingSignUp.password,
         options: {
           data: {
-            full_name: validated.fullName,
+            full_name: pendingSignUp.fullName,
           },
           emailRedirectTo: redirectUrl,
         },
@@ -72,16 +89,14 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Update profile to mark terms as accepted
       toast.success(t('auth.accountCreated'));
       setEmail("");
       setPassword("");
       setFullName("");
+      setPendingSignUp(null);
     } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error(error.message || "Failed to create account");
-      }
+      toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
     }
@@ -211,6 +226,11 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
+      
+      <TermsAgreementDialog 
+        open={showTerms} 
+        onAccept={handleTermsAccepted} 
+      />
     </div>
   );
 };

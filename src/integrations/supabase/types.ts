@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          display_duration_seconds: number
+          display_order: number
+          id: string
+          is_active: boolean
+          media_type: string
+          media_url: string
+          quiz_difficulty: string
+          time_gap_minutes: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          display_duration_seconds?: number
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          media_type: string
+          media_url: string
+          quiz_difficulty?: string
+          time_gap_minutes?: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          display_duration_seconds?: number
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          media_url?: string
+          quiz_difficulty?: string
+          time_gap_minutes?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -167,6 +212,7 @@ export type Database = {
       products: {
         Row: {
           aliexpress_url: string | null
+          badge: string | null
           category: Database["public"]["Enums"]["product_category"] | null
           cost_usd: number | null
           created_at: string | null
@@ -181,6 +227,7 @@ export type Database = {
         }
         Insert: {
           aliexpress_url?: string | null
+          badge?: string | null
           category?: Database["public"]["Enums"]["product_category"] | null
           cost_usd?: number | null
           created_at?: string | null
@@ -195,6 +242,7 @@ export type Database = {
         }
         Update: {
           aliexpress_url?: string | null
+          badge?: string | null
           category?: Database["public"]["Enums"]["product_category"] | null
           cost_usd?: number | null
           created_at?: string | null
@@ -217,6 +265,7 @@ export type Database = {
           id: string
           phone: string | null
           shipping_address: string | null
+          terms_accepted_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -226,6 +275,7 @@ export type Database = {
           id: string
           phone?: string | null
           shipping_address?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -235,6 +285,7 @@ export type Database = {
           id?: string
           phone?: string | null
           shipping_address?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -671,6 +722,69 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_suspensions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          reason: string
+          suspended_at: string | null
+          suspended_by: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          reason: string
+          suspended_at?: string | null
+          suspended_by: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          reason?: string
+          suspended_at?: string | null
+          suspended_by?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_warnings: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          reason: string
+          user_id: string
+          warned_by: string
+          warning_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason: string
+          user_id: string
+          warned_by: string
+          warning_number?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          reason?: string
+          user_id?: string
+          warned_by?: string
+          warning_number?: number
         }
         Relationships: []
       }
