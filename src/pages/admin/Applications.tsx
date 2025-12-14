@@ -6,16 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Store } from "lucide-react";
+import { Store, User, Phone, Mail, Calendar, IdCard, Camera } from "lucide-react";
 
 interface Application {
   id: string;
   full_name: string;
+  email: string | null;
   uid: string;
   age: number;
   phone: string;
   id_photo_url: string;
+  id_front_photo_url: string | null;
+  id_back_photo_url: string | null;
+  face_photo_url: string | null;
   status: string;
   admin_notes: string | null;
   created_at: string;
@@ -121,43 +126,126 @@ export default function AdminApplications() {
               <Card key={app.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>{app.full_name}</span>
-                    <span className={`text-sm px-3 py-1 rounded ${
-                      app.status === 'pending' ? 'bg-yellow-500/20 text-yellow-700' :
-                      app.status === 'approved' ? 'bg-green-500/20 text-green-700' :
-                      'bg-red-500/20 text-red-700'
-                    }`}>
-                      {app.status.toUpperCase()}
+                    <span className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      {app.full_name}
                     </span>
+                    <Badge variant={
+                      app.status === 'pending' ? 'secondary' :
+                      app.status === 'approved' ? 'default' : 'destructive'
+                    }>
+                      {app.status.toUpperCase()}
+                    </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <Label>UID</Label>
-                      <p>{app.uid}</p>
+                  {/* Personal Information */}
+                  <div className="grid md:grid-cols-3 gap-4 mb-6">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Email</Label>
+                        <p className="text-sm">{app.email || 'N/A'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <Label>Age</Label>
-                      <p>{app.age}</p>
+                    <div className="flex items-center gap-2">
+                      <IdCard className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <Label className="text-xs text-muted-foreground">UID</Label>
+                        <p className="text-sm">{app.uid}</p>
+                      </div>
                     </div>
-                    <div>
-                      <Label>Phone</Label>
-                      <p>{app.phone}</p>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Age</Label>
+                        <p className="text-sm">{app.age} years</p>
+                      </div>
                     </div>
-                    <div>
-                      <Label>Applied</Label>
-                      <p>{new Date(app.created_at).toLocaleDateString()}</p>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Phone</Label>
+                        <p className="text-sm">{app.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Applied</Label>
+                        <p className="text-sm">{new Date(app.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <Label>ID Photo</Label>
-                    <img 
-                      src={app.id_photo_url} 
-                      alt="ID" 
-                      className="max-w-sm rounded border mt-2"
-                    />
+                  {/* Photos Section */}
+                  <div className="mb-6">
+                    <Label className="text-sm font-medium mb-3 block">Verification Photos</Label>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {/* ID Front */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
+                          <IdCard className="h-3 w-3" /> ID Front
+                        </Label>
+                        {app.id_front_photo_url ? (
+                          <img 
+                            src={app.id_front_photo_url} 
+                            alt="ID Front" 
+                            className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(app.id_front_photo_url!, '_blank')}
+                          />
+                        ) : app.id_photo_url ? (
+                          <img 
+                            src={app.id_photo_url} 
+                            alt="ID" 
+                            className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(app.id_photo_url, '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-40 bg-muted rounded flex items-center justify-center text-muted-foreground">
+                            No image
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ID Back */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
+                          <IdCard className="h-3 w-3" /> ID Back
+                        </Label>
+                        {app.id_back_photo_url ? (
+                          <img 
+                            src={app.id_back_photo_url} 
+                            alt="ID Back" 
+                            className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(app.id_back_photo_url!, '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-40 bg-muted rounded flex items-center justify-center text-muted-foreground">
+                            No image
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Face Photo */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
+                          <Camera className="h-3 w-3" /> Face Verification
+                        </Label>
+                        {app.face_photo_url ? (
+                          <img 
+                            src={app.face_photo_url} 
+                            alt="Face" 
+                            className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(app.face_photo_url!, '_blank')}
+                          />
+                        ) : (
+                          <div className="w-full h-40 bg-muted rounded flex items-center justify-center text-muted-foreground">
+                            No image
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {app.status === 'pending' && (
