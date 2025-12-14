@@ -33,6 +33,8 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [showTerms, setShowTerms] = useState(false);
   const [pendingSignUp, setPendingSignUp] = useState<{email: string; password: string; fullName: string} | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   const returnTo = searchParams.get("returnTo") || "/";
 
@@ -59,7 +61,7 @@ const Auth = () => {
     
     try {
       const validated = signUpSchema.parse({ email, password, fullName });
-      setPendingSignUp(validated);
+      setPendingSignUp({ email: validated.email, password: validated.password, fullName: validated.fullName });
       setShowTerms(true);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -89,7 +91,6 @@ const Auth = () => {
 
       if (error) throw error;
 
-      // Update profile to mark terms as accepted
       toast.success(t('auth.accountCreated'));
       setEmail("");
       setPassword("");
@@ -135,6 +136,74 @@ const Auth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!resetEmail) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) throw error;
+
+      toast.success(t('auth.resetEmailSent'));
+      setShowForgotPassword(false);
+      setResetEmail("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reset email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto flex items-center justify-center px-4 py-16">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-2xl">{t('auth.forgotPassword')}</CardTitle>
+              <CardDescription>{t('auth.forgotPasswordDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">{t('auth.email')}</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? t('auth.sending') : t('auth.sendResetLink')}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setShowForgotPassword(false)}
+                >
+                  {t('auth.backToLogin')}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -178,6 +247,14 @@ const Auth = () => {
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? t('auth.signingIn') : t('auth.signIn')}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    className="w-full text-sm"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    {t('auth.forgotPassword')}
                   </Button>
                 </form>
               </TabsContent>

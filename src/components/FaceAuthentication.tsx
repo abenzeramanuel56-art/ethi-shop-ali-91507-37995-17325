@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Camera, Check, X, Eye, RotateCcw } from 'lucide-react';
+import { Camera, Check, X, Eye, RotateCcw, Loader2 } from 'lucide-react';
+import * as faceapi from 'face-api.js';
 
 interface FaceAuthenticationProps {
   onComplete: (facePhoto: Blob, faceDescriptor: number[]) => void;
@@ -19,9 +20,13 @@ export function FaceAuthentication({ onComplete, onCancel }: FaceAuthenticationP
   const [currentChallenge, setCurrentChallenge] = useState<Challenge>('center');
   const [challengesPassed, setChallengesPassed] = useState<Challenge[]>([]);
   const [instruction, setInstruction] = useState('');
-  const [countdown, setCountdown] = useState(3);
   const [isCapturing, setIsCapturing] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(true);
+  const [lastDescriptor, setLastDescriptor] = useState<Float32Array | null>(null);
+  const [blinkState, setBlinkState] = useState<'open' | 'closed' | 'detected'>('open');
+  const detectionIntervalRef = useRef<number | null>(null);
 
   const challenges: Challenge[] = ['center', 'left', 'right', 'blink'];
 
@@ -42,18 +47,144 @@ export function FaceAuthentication({ onComplete, onCancel }: FaceAuthenticationP
     }
   }, [t]);
 
+  // Load face-api.js models
   useEffect(() => {
-    startCamera();
+    const loadModels = async () => {
+      setLoadingModels(true);
+      try {
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+        
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]);
+        
+        setModelsLoaded(true);
+      } catch (error) {
+        console.error('Error loading face-api models:', error);
+      } finally {
+        setLoadingModels(false);
+      }
+    };
+
+    loadModels();
+  }, []);
+
+  useEffect(() => {
+    if (modelsLoaded) {
+      startCamera();
+    }
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+      }
     };
-  }, []);
+  }, [modelsLoaded]);
 
   useEffect(() => {
     setInstruction(getInstructionText(currentChallenge));
   }, [currentChallenge, getInstructionText]);
+
+  // Start face detection loop
+  useEffect(() => {
+    if (!modelsLoaded || !videoRef.current || currentChallenge === 'complete') return;
+
+    const detectFaces = async () => {
+      if (!videoRef.current || videoRef.current.readyState !== 4) return;
+
+      try {
+        const detection = await faceapi
+          .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+        if (detection) {
+          setFaceDetected(true);
+          setLastDescriptor(detection.descriptor);
+
+          // Get face landmarks for challenge validation
+          const landmarks = detection.landmarks;
+          const nose = landmarks.getNose();
+          const leftEye = landmarks.getLeftEye();
+          const rightEye = landmarks.getRightEye();
+
+          // Calculate head pose based on nose position relative to face box
+          const faceBox = detection.detection.box;
+          const noseX = nose[3].x;
+          const faceCenterX = faceBox.x + faceBox.width / 2;
+          const headTurn = (noseX - faceCenterX) / (faceBox.width / 2);
+
+          // Validate current challenge
+          if (!isCapturing) {
+            validateChallenge(headTurn, leftEye, rightEye);
+          }
+        } else {
+          setFaceDetected(false);
+        }
+      } catch (error) {
+        console.error('Face detection error:', error);
+      }
+    };
+
+    detectionIntervalRef.current = window.setInterval(detectFaces, 200);
+
+    return () => {
+      if (detectionIntervalRef.current) {
+        clearInterval(detectionIntervalRef.current);
+      }
+    };
+  }, [modelsLoaded, currentChallenge, isCapturing]);
+
+  const validateChallenge = (headTurn: number, leftEye: faceapi.Point[], rightEye: faceapi.Point[]) => {
+    switch (currentChallenge) {
+      case 'center':
+        // Head should be relatively straight
+        if (Math.abs(headTurn) < 0.15) {
+          passChallenge();
+        }
+        break;
+      case 'left':
+        // Head should be turned left (positive headTurn in mirrored video)
+        if (headTurn > 0.2) {
+          passChallenge();
+        }
+        break;
+      case 'right':
+        // Head should be turned right
+        if (headTurn < -0.2) {
+          passChallenge();
+        }
+        break;
+      case 'blink':
+        // Detect blink by measuring eye aspect ratio
+        const leftEAR = calculateEyeAspectRatio(leftEye);
+        const rightEAR = calculateEyeAspectRatio(rightEye);
+        const avgEAR = (leftEAR + rightEAR) / 2;
+
+        if (avgEAR < 0.2) {
+          if (blinkState === 'open') {
+            setBlinkState('closed');
+          }
+        } else if (blinkState === 'closed') {
+          setBlinkState('detected');
+          passChallenge();
+        }
+        break;
+    }
+  };
+
+  const calculateEyeAspectRatio = (eye: faceapi.Point[]): number => {
+    // Simple EAR calculation
+    const verticalDist1 = Math.abs(eye[1].y - eye[5].y);
+    const verticalDist2 = Math.abs(eye[2].y - eye[4].y);
+    const horizontalDist = Math.abs(eye[0].x - eye[3].x);
+    
+    return (verticalDist1 + verticalDist2) / (2 * horizontalDist);
+  };
 
   const startCamera = async () => {
     try {
@@ -69,48 +200,29 @@ export function FaceAuthentication({ onComplete, onCancel }: FaceAuthenticationP
     }
   };
 
-  const simulateFaceDetection = () => {
-    // Simulate face detection - in production would use face-api.js
-    setFaceDetected(true);
-    return true;
-  };
-
   const passChallenge = () => {
     if (!challengesPassed.includes(currentChallenge)) {
-      const newPassed = [...challengesPassed, currentChallenge];
-      setChallengesPassed(newPassed);
-      
-      const currentIndex = challenges.indexOf(currentChallenge);
-      if (currentIndex < challenges.length - 1) {
-        setCurrentChallenge(challenges[currentIndex + 1]);
-      } else {
-        setCurrentChallenge('complete');
-        capturePhoto();
-      }
-    }
-  };
-
-  const handleChallengeClick = () => {
-    if (simulateFaceDetection()) {
-      setCountdown(3);
       setIsCapturing(true);
       
-      const interval = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            setIsCapturing(false);
-            passChallenge();
-            return 3;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      setTimeout(() => {
+        const newPassed = [...challengesPassed, currentChallenge];
+        setChallengesPassed(newPassed);
+        
+        const currentIndex = challenges.indexOf(currentChallenge);
+        if (currentIndex < challenges.length - 1) {
+          setCurrentChallenge(challenges[currentIndex + 1]);
+          setBlinkState('open');
+        } else {
+          setCurrentChallenge('complete');
+          capturePhoto();
+        }
+        setIsCapturing(false);
+      }, 500);
     }
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
+    if (videoRef.current && canvasRef.current && lastDescriptor) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
       canvas.width = video.videoWidth;
@@ -120,9 +232,9 @@ export function FaceAuthentication({ onComplete, onCancel }: FaceAuthenticationP
         ctx.drawImage(video, 0, 0);
         canvas.toBlob((blob) => {
           if (blob) {
-            // Generate a simple face descriptor (in production would use face-api.js)
-            const fakeDescriptor = Array.from({ length: 128 }, () => Math.random());
-            onComplete(blob, fakeDescriptor);
+            // Convert Float32Array to regular array for storage
+            const descriptorArray = Array.from(lastDescriptor);
+            onComplete(blob, descriptorArray);
           }
         }, 'image/jpeg', 0.9);
       }
@@ -140,6 +252,22 @@ export function FaceAuthentication({ onComplete, onCancel }: FaceAuthenticationP
         return <Camera className="h-6 w-6" />;
     }
   };
+
+  if (loadingModels) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-lg font-medium">{t('face.loadingModels')}</p>
+            <p className="text-sm text-muted-foreground text-center">
+              {t('face.loadingModelsDesc')}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -189,10 +317,10 @@ export function FaceAuthentication({ onComplete, onCancel }: FaceAuthenticationP
               }`} />
             </div>
 
-            {/* Countdown overlay */}
+            {/* Capturing overlay */}
             {isCapturing && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <span className="text-6xl font-bold text-white">{countdown}</span>
+              <div className="absolute inset-0 bg-green-500/30 flex items-center justify-center">
+                <Check className="h-16 w-16 text-white" />
               </div>
             )}
 
@@ -207,24 +335,25 @@ export function FaceAuthentication({ onComplete, onCancel }: FaceAuthenticationP
 
           <canvas ref={canvasRef} className="hidden" />
 
+          {/* Status message */}
+          <div className="text-center">
+            {!faceDetected && currentChallenge !== 'complete' && (
+              <p className="text-sm text-yellow-600">{t('face.positionFace')}</p>
+            )}
+            {faceDetected && currentChallenge !== 'complete' && (
+              <p className="text-sm text-green-600">{t('face.faceDetected')}</p>
+            )}
+          </div>
+
           {currentChallenge !== 'complete' ? (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={onCancel}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 mr-2" />
-                {t('common.cancel')}
-              </Button>
-              <Button
-                onClick={handleChallengeClick}
-                disabled={isCapturing}
-                className="flex-1"
-              >
-                {isCapturing ? t('face.hold') : t('face.verify')}
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="w-full"
+            >
+              <X className="h-4 w-4 mr-2" />
+              {t('common.cancel')}
+            </Button>
           ) : (
             <div className="text-center text-green-600 font-medium">
               <Check className="h-8 w-8 mx-auto mb-2" />
