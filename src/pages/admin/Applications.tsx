@@ -60,7 +60,7 @@ export default function AdminApplications() {
 
   const fetchApplications = async () => {
     const { data } = await supabase
-      .from("reseller_applications")
+      .from("seller_applications")
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -70,7 +70,7 @@ export default function AdminApplications() {
 
   const handleUpdateStatus = async (appId: string, status: string) => {
     const { error } = await supabase
-      .from("reseller_applications")
+      .from("seller_applications")
       .update({
         status,
         admin_notes: adminNotes,

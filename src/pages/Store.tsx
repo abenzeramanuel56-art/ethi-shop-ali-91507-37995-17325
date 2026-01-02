@@ -153,8 +153,8 @@ export default function Store() {
 
       setStore(storeData as StoreInfo);
 
-      const { data: productsData, error: productsError } = await supabase
-        .from("reseller_products")
+      const { data: productsData, error: productsError } = await (supabase as any)
+        .from("seller_products")
         .select(`
           *,
           products (*)

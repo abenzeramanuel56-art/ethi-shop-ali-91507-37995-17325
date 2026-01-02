@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export default function ResellerSetup() {
+export default function SellerSetup() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -33,8 +33,8 @@ export default function ResellerSetup() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("reseller_stores")
+    const { data } = await (supabase as any)
+      .from("seller_stores")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -68,8 +68,8 @@ export default function ResellerSetup() {
 
     try {
       if (existingStore) {
-        const { error } = await supabase
-          .from("reseller_stores")
+        const { error } = await (supabase as any)
+          .from("seller_stores")
           .update({
             store_name: formData.storeName,
             store_slug: slug,
@@ -81,12 +81,12 @@ export default function ResellerSetup() {
         if (error) throw error;
 
         toast({
-          title: t('common.success'),
-          description: t('setup.storeUpdated')
+          title: "Success",
+          description: "Store updated successfully"
         });
       } else {
-        const { error } = await supabase
-          .from("reseller_stores")
+        const { error } = await (supabase as any)
+          .from("seller_stores")
           .insert({
             user_id: user.id,
             store_name: formData.storeName,
@@ -97,8 +97,8 @@ export default function ResellerSetup() {
 
         if (error) throw error;
 
-        await supabase
-          .from("reseller_wallets")
+        await (supabase as any)
+          .from("seller_wallets")
           .insert({
             user_id: user.id,
             current_balance_etb: 0,
@@ -106,15 +106,15 @@ export default function ResellerSetup() {
           });
 
         toast({
-          title: t('common.success'),
-          description: t('setup.storeCreated')
+          title: "Success",
+          description: "Store created successfully"
         });
       }
 
-      navigate("/reseller");
+      navigate("/seller");
     } catch (error: any) {
       toast({
-        title: t('common.error'),
+        title: "Error",
         description: error.message,
         variant: "destructive"
       });
@@ -130,13 +130,13 @@ export default function ResellerSetup() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>
-              {existingStore ? t('setup.editTitle') : t('setup.createTitle')}
+              {existingStore ? "Edit Store Settings" : "Create Your Store"}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="storeName">{t('setup.storeName')} *</Label>
+                <Label htmlFor="storeName">Store Name *</Label>
                 <Input
                   id="storeName"
                   value={formData.storeName}
@@ -146,7 +146,7 @@ export default function ResellerSetup() {
               </div>
 
               <div>
-                <Label htmlFor="storeSlug">{t('setup.storeSlug')} *</Label>
+                <Label htmlFor="storeSlug">Store Slug *</Label>
                 <Input
                   id="storeSlug"
                   value={formData.storeSlug}
@@ -155,12 +155,12 @@ export default function ResellerSetup() {
                   required
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('setup.storeUrlPreview')} /store/{generateSlug(formData.storeSlug || formData.storeName)}
+                  Store URL: /store/{generateSlug(formData.storeSlug || formData.storeName)}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="contactEmail">{t('setup.contactEmail')}</Label>
+                <Label htmlFor="contactEmail">Contact Email</Label>
                 <Input
                   id="contactEmail"
                   type="email"
@@ -170,7 +170,7 @@ export default function ResellerSetup() {
               </div>
 
               <div>
-                <Label htmlFor="contactPhone">{t('setup.contactPhone')}</Label>
+                <Label htmlFor="contactPhone">Contact Phone</Label>
                 <Input
                   id="contactPhone"
                   value={formData.contactPhone}
@@ -179,7 +179,7 @@ export default function ResellerSetup() {
               </div>
 
               <Button type="submit" disabled={loading}>
-                {loading ? t('setup.saving') : existingStore ? t('setup.update') : t('setup.create')}
+                {loading ? "Saving..." : existingStore ? "Update Store" : "Create Store"}
               </Button>
             </form>
           </CardContent>

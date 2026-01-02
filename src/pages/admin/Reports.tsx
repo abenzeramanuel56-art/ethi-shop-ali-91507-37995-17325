@@ -49,7 +49,7 @@ export default function AdminReports() {
       const reportsWithDetails = await Promise.all(
         (reportsData || []).map(async (report) => {
           const [storeData, profileData] = await Promise.all([
-            supabase.from("reseller_stores").select("store_name, store_slug").eq("id", report.store_id).single(),
+            (supabase as any).from("seller_stores").select("store_name, store_slug").eq("id", report.store_id).single(),
             supabase.from("profiles").select("full_name").eq("id", report.reporter_id).single()
           ]);
 

@@ -12,16 +12,16 @@ import RequestItem from "./pages/RequestItem";
 import Account from "./pages/Account";
 import Cart from "./pages/Cart";
 import Support from "./pages/Support";
-import ApplyReseller from "./pages/ApplyReseller";
+import ApplySeller from "./pages/ApplySeller";
 import ApplicationSubmitted from "./pages/ApplicationSubmitted";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminApplications from "./pages/admin/Applications";
 import AdminSupportTickets from "./pages/admin/SupportTickets";
-import ResellerDashboard from "./pages/reseller/Dashboard";
-import ResellerSetup from "./pages/reseller/Setup";
-import ResellerProducts from "./pages/reseller/Products";
-import ResellerOrders from "./pages/reseller/Orders";
-import ResellerWallet from "./pages/reseller/Wallet";
+import SellerDashboard from "./pages/seller/Dashboard";
+import SellerSetup from "./pages/seller/Setup";
+import SellerProducts from "./pages/seller/Products";
+import SellerOrders from "./pages/seller/Orders";
+import SellerWallet from "./pages/seller/Wallet";
 import Store from "./pages/Store";
 import NotFound from "./pages/NotFound";
 
@@ -43,16 +43,16 @@ const App = () => (
             <Route path="/account" element={<Account />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/support" element={<Support />} />
-            <Route path="/apply-reseller" element={<ApplyReseller />} />
+            <Route path="/apply-seller" element={<ApplySeller />} />
             <Route path="/application-submitted" element={<ApplicationSubmitted />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/applications" element={<AdminApplications />} />
             <Route path="/admin/support-tickets" element={<AdminSupportTickets />} />
-            <Route path="/reseller" element={<ResellerDashboard />} />
-            <Route path="/reseller/setup" element={<ResellerSetup />} />
-            <Route path="/reseller/products" element={<ResellerProducts />} />
-            <Route path="/reseller/orders" element={<ResellerOrders />} />
-            <Route path="/reseller/wallet" element={<ResellerWallet />} />
+            <Route path="/seller" element={<SellerDashboard />} />
+            <Route path="/seller/setup" element={<SellerSetup />} />
+            <Route path="/seller/products" element={<SellerProducts />} />
+            <Route path="/seller/orders" element={<SellerOrders />} />
+            <Route path="/seller/wallet" element={<SellerWallet />} />
             <Route path="/store/:storeSlug" element={<Store />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

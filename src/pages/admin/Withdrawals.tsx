@@ -93,15 +93,15 @@ export default function AdminWithdrawals() {
       // If approved or paid, update wallet balance
       if ((newStatus === 'approved' || newStatus === 'paid') && withdrawal) {
         // Get current balance first
-        const { data: walletData } = await supabase
-          .from("reseller_wallets")
+        const { data: walletData } = await (supabase as any)
+          .from("seller_wallets")
           .select("current_balance_etb")
           .eq("user_id", withdrawal.user_id)
           .single();
 
         if (walletData) {
-          const { error: walletError } = await supabase
-            .from("reseller_wallets")
+          const { error: walletError } = await (supabase as any)
+            .from("seller_wallets")
             .update({
               current_balance_etb: walletData.current_balance_etb - withdrawal.amount_etb
             })

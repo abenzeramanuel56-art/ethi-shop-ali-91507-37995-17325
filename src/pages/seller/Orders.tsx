@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, Phone } from "lucide-react";
 
 interface Order {
   id: string;
@@ -19,10 +20,11 @@ interface Order {
   tracking_number: string;
   profiles?: {
     full_name: string;
+    phone: string;
   } | null;
 }
 
-export default function ResellerOrders() {
+export default function SellerOrders() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,37 +40,47 @@ export default function ResellerOrders() {
       return;
     }
 
-    const { data: store } = await supabase
-      .from("reseller_stores")
+    const { data: store } = await (supabase as any)
+      .from("seller_stores")
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (!store) {
-      navigate("/reseller/setup");
+      navigate("/seller/setup");
       return;
     }
 
     const { data } = await supabase
       .from("orders")
-      .select(`
-        *,
-        profiles!orders_customer_id_fkey (full_name)
-      `)
-      .eq("reseller_id", store.id)
+      .select("*")
+      .eq("seller_id", store.id)
       .order("created_at", { ascending: false });
 
-    setOrders((data as any) || []);
+    // Fetch profiles separately
+    const ordersWithProfiles = await Promise.all(
+      (data || []).map(async (order) => {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("full_name, phone")
+          .eq("id", order.customer_id)
+          .single();
+        
+        return { ...order, profiles: profileData };
+      })
+    );
+
+    setOrders(ordersWithProfiles);
     setLoading(false);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending_payment": return "default";
-      case "confirmed": return "secondary";
-      case "shipped": return "default";
-      case "delivered": return "default";
-      default: return "secondary";
+      case "pending_payment": return "bg-warning text-warning-foreground";
+      case "payment_verified": return "bg-info text-info-foreground";
+      case "shipped": return "bg-primary text-primary-foreground";
+      case "delivered": return "bg-success text-success-foreground";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
@@ -102,7 +114,7 @@ export default function ResellerOrders() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Order #{order.id.slice(0, 8)}</span>
-                    <Badge variant={getStatusColor(order.status)}>
+                    <Badge className={getStatusColor(order.status)}>
                       {order.status.replace("_", " ").toUpperCase()}
                     </Badge>
                   </CardTitle>
@@ -111,7 +123,7 @@ export default function ResellerOrders() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Customer</p>
-                      <p className="font-medium">{order.profiles?.full_name}</p>
+                      <p className="font-medium">{order.profiles?.full_name || "Unknown"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total</p>
@@ -122,8 +134,13 @@ export default function ResellerOrders() {
                       <p className="font-medium">{order.shipping_address}, {order.city}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium">{order.phone}</p>
+                      <p className="text-sm text-muted-foreground">Customer Phone</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{order.phone}</p>
+                        <Button size="sm" variant="outline" onClick={() => window.open(`tel:${order.phone}`)}>
+                          <Phone className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     {order.payment_proof_url && (
                       <div>
@@ -138,12 +155,10 @@ export default function ResellerOrders() {
                         </a>
                       </div>
                     )}
-                    {order.tracking_number && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Tracking Number</p>
-                        <p className="font-medium">{order.tracking_number}</p>
-                      </div>
-                    )}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Order Date</p>
+                      <p className="font-medium">{new Date(order.created_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
