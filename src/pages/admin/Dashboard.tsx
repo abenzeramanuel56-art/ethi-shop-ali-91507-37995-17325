@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { DollarSign, Package, ShoppingCart, Users, Plus } from "lucide-react";
-import AdminResellers from "./Resellers";
+import AdminSellers from "./Sellers";
 import AdminWithdrawals from "./Withdrawals";
 import AdminMessaging from "./Messaging";
 import AdminReports from "./Reports";

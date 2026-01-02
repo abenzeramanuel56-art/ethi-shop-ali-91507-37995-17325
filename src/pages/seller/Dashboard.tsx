@@ -9,14 +9,13 @@ import { Store, Package, DollarSign, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export default function ResellerDashboard() {
+export default function SellerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>("");
   const [hasStore, setHasStore] = useState(false);
-  const [storeSlug, setStoreSlug] = useState<string>("");
   const [storeName, setStoreName] = useState<string>("");
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -27,10 +26,10 @@ export default function ResellerDashboard() {
   });
 
   useEffect(() => {
-    checkResellerAccess();
+    checkSellerAccess();
   }, []);
 
-  const checkResellerAccess = async () => {
+  const checkSellerAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -49,16 +48,16 @@ export default function ResellerDashboard() {
 
     if (!roleData) {
       toast({
-        title: t('reseller.accessDenied'),
-        description: t('reseller.accessDeniedDesc'),
+        title: "Access Denied",
+        description: "You need to be a seller to access this page",
         variant: "destructive"
       });
       navigate("/");
       return;
     }
 
-    const { data: storeData } = await supabase
-      .from("reseller_stores")
+    const { data: storeData } = await (supabase as any)
+      .from("seller_stores")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -70,28 +69,26 @@ export default function ResellerDashboard() {
     }
 
     setHasStore(true);
-    setStoreSlug(storeData.store_slug);
     setStoreName(storeData.store_name);
-    await fetchStats(storeData.id);
+    await fetchStats(storeData.id, user.id);
     setLoading(false);
   };
 
-  const fetchStats = async (storeId: string) => {
+  const fetchStats = async (storeId: string, userId: string) => {
     const { data: orders } = await supabase
       .from("orders")
       .select("*")
-      .eq("reseller_id", storeId);
+      .eq("seller_id", storeId);
 
     const { data: products } = await supabase
-      .from("reseller_products")
+      .from("products")
       .select("*")
-      .eq("store_id", storeId);
+      .eq("seller_id", storeId);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: wallet } = await supabase
-      .from("reseller_wallets")
+    const { data: wallet } = await (supabase as any)
+      .from("seller_wallets")
       .select("*")
-      .eq("user_id", user?.id)
+      .eq("user_id", userId)
       .maybeSingle();
 
     setStats({
@@ -106,7 +103,7 @@ export default function ResellerDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>{t('common.loading')}</p>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -120,13 +117,13 @@ export default function ResellerDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Store className="h-6 w-6" />
-                {t('reseller.createStore')}
+                Create Your Store
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="mb-4">{t('reseller.createStoreDesc')}</p>
-              <Button onClick={() => navigate("/reseller/setup")}>
-                {t('reseller.createStoreBtn')}
+              <p className="mb-4">You need to set up your store before you can start selling.</p>
+              <Button onClick={() => navigate("/seller/setup")}>
+                Create Store
               </Button>
             </CardContent>
           </Card>
@@ -139,57 +136,13 @@ export default function ResellerDashboard() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-4 text-foreground">{t('reseller.title')}</h1>
-        
-        <Card className="max-w-md mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg">{t('reseller.yourIds')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="text-sm text-muted-foreground mb-1">{t('reseller.uid')}</div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
-                  {userId.slice(0, 8)}...{userId.slice(-8)}
-                </code>
-                <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
-                  {t('reseller.copy')}
-                </Button>
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-muted-foreground mb-1">{t('reseller.id')}</div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
-                  {userId.slice(0, 6)}...{userId.slice(-6)}
-                </code>
-                <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(userId)}>
-                  {t('reseller.copy')}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {storeSlug && (
-          <Card className="max-w-md mb-8">
-            <CardHeader>
-              <CardTitle className="text-lg">{t('reseller.storeLink')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center gap-2">
-              <code className="flex-1 rounded bg-muted px-3 py-2 text-sm font-mono">
-                /store/{storeSlug}
-              </code>
-              <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/store/${storeSlug}`)}>{t('reseller.copy')}</Button>
-              <Button size="sm" onClick={() => navigate(`/store/${storeSlug}`)}>{t('reseller.open')}</Button>
-            </CardContent>
-          </Card>
-        )}
+        <h1 className="text-3xl font-bold mb-4 text-foreground">Seller Dashboard</h1>
+        <p className="text-muted-foreground mb-8">Welcome back, {storeName}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card className="border-0 shadow-md bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reseller.totalOrders')}</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
               <ShoppingCart className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
@@ -199,7 +152,7 @@ export default function ResellerDashboard() {
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-secondary/10 to-secondary/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reseller.pendingOrders')}</CardTitle>
+              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
               <ShoppingCart className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
@@ -209,7 +162,7 @@ export default function ResellerDashboard() {
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-accent/10 to-accent/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reseller.products')}</CardTitle>
+              <CardTitle className="text-sm font-medium">My Products</CardTitle>
               <Package className="h-4 w-4 text-accent-foreground" />
             </CardHeader>
             <CardContent>
@@ -219,32 +172,32 @@ export default function ResellerDashboard() {
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-success/10 to-success/5">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('reseller.currentBalance')}</CardTitle>
+              <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
               <DollarSign className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">{stats.currentBalance.toFixed(2)} {t('common.etb')}</div>
-              <p className="text-xs text-muted-foreground">{t('reseller.totalEarned')}: {stats.totalEarned.toFixed(2)} {t('common.etb')}</p>
+              <div className="text-2xl font-bold text-success">{stats.currentBalance.toFixed(2)} ETB</div>
+              <p className="text-xs text-muted-foreground">Total Earned: {stats.totalEarned.toFixed(2)} ETB</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="products">
           <TabsList>
-            <TabsTrigger value="products">{t('reseller.products')}</TabsTrigger>
-            <TabsTrigger value="orders">{t('reseller.orders')}</TabsTrigger>
-            <TabsTrigger value="wallet">{t('reseller.wallet')}</TabsTrigger>
-            <TabsTrigger value="store">{t('reseller.storeSettings')}</TabsTrigger>
+            <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="wallet">Wallet</TabsTrigger>
+            <TabsTrigger value="store">Store Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products">
             <Card>
               <CardHeader>
-                <CardTitle>{t('reseller.manageProducts')}</CardTitle>
+                <CardTitle>Manage Products</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => navigate("/reseller/products")}>
-                  {t('reseller.manageProducts')}
+                <Button onClick={() => navigate("/seller/products")}>
+                  Manage Products
                 </Button>
               </CardContent>
             </Card>
@@ -253,11 +206,11 @@ export default function ResellerDashboard() {
           <TabsContent value="orders">
             <Card>
               <CardHeader>
-                <CardTitle>{t('reseller.viewOrders')}</CardTitle>
+                <CardTitle>View Orders</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => navigate("/reseller/orders")}>
-                  {t('reseller.viewAllOrders')}
+                <Button onClick={() => navigate("/seller/orders")}>
+                  View All Orders
                 </Button>
               </CardContent>
             </Card>
@@ -266,11 +219,11 @@ export default function ResellerDashboard() {
           <TabsContent value="wallet">
             <Card>
               <CardHeader>
-                <CardTitle>{t('reseller.walletWithdrawals')}</CardTitle>
+                <CardTitle>Wallet & Withdrawals</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => navigate("/reseller/wallet")}>
-                  {t('reseller.manageWallet')}
+                <Button onClick={() => navigate("/seller/wallet")}>
+                  Manage Wallet
                 </Button>
               </CardContent>
             </Card>
@@ -279,11 +232,11 @@ export default function ResellerDashboard() {
           <TabsContent value="store">
             <Card>
               <CardHeader>
-                <CardTitle>{t('reseller.storeSettings')}</CardTitle>
+                <CardTitle>Store Settings</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => navigate("/reseller/setup")}>
-                  {t('reseller.editStoreSettings')}
+                <Button onClick={() => navigate("/seller/setup")}>
+                  Edit Store Settings
                 </Button>
               </CardContent>
             </Card>

@@ -59,6 +59,137 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_applications: {
+        Row: {
+          admin_notes: string | null
+          age: number
+          created_at: string | null
+          email: string | null
+          full_name: string
+          id: string
+          id_back_photo_url: string
+          id_front_photo_url: string
+          license_plate: string | null
+          phone: string
+          reviewed_at: string | null
+          status: string
+          user_id: string
+          vehicle_type: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          age: number
+          created_at?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          id_back_photo_url: string
+          id_front_photo_url: string
+          license_plate?: string | null
+          phone: string
+          reviewed_at?: string | null
+          status?: string
+          user_id: string
+          vehicle_type?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          age?: number
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          id_back_photo_url?: string
+          id_front_photo_url?: string
+          license_plate?: string | null
+          phone?: string
+          reviewed_at?: string | null
+          status?: string
+          user_id?: string
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
+      driver_orders: {
+        Row: {
+          created_at: string | null
+          customer_confirmed_delivery: boolean | null
+          delivered_at: string | null
+          distance_km: number | null
+          driver_earning_etb: number | null
+          driver_id: string
+          id: string
+          order_id: string
+          pickup_at: string | null
+          seller_confirmed_pickup: boolean | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_confirmed_delivery?: boolean | null
+          delivered_at?: string | null
+          distance_km?: number | null
+          driver_earning_etb?: number | null
+          driver_id: string
+          id?: string
+          order_id: string
+          pickup_at?: string | null
+          seller_confirmed_pickup?: boolean | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_confirmed_delivery?: boolean | null
+          delivered_at?: string | null
+          distance_km?: number | null
+          driver_earning_etb?: number | null
+          driver_id?: string
+          id?: string
+          order_id?: string
+          pickup_at?: string | null
+          seller_confirmed_pickup?: boolean | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_wallets: {
+        Row: {
+          created_at: string | null
+          current_balance_etb: number
+          id: string
+          total_earned_etb: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_balance_etb?: number
+          id?: string
+          total_earned_etb?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_balance_etb?: number
+          id?: string
+          total_earned_etb?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -153,11 +284,15 @@ export type Database = {
           city: string
           created_at: string | null
           customer_id: string
+          delivery_fee_etb: number | null
+          driver_assigned: boolean | null
           id: string
           payment_method: string | null
           payment_proof_url: string | null
           phone: string
           reseller_id: string | null
+          seller_id: string | null
+          seller_notified: boolean | null
           shipping_address: string
           status: Database["public"]["Enums"]["order_status"] | null
           store_type: string | null
@@ -170,11 +305,15 @@ export type Database = {
           city: string
           created_at?: string | null
           customer_id: string
+          delivery_fee_etb?: number | null
+          driver_assigned?: boolean | null
           id?: string
           payment_method?: string | null
           payment_proof_url?: string | null
           phone: string
           reseller_id?: string | null
+          seller_id?: string | null
+          seller_notified?: boolean | null
           shipping_address: string
           status?: Database["public"]["Enums"]["order_status"] | null
           store_type?: string | null
@@ -187,11 +326,15 @@ export type Database = {
           city?: string
           created_at?: string | null
           customer_id?: string
+          delivery_fee_etb?: number | null
+          driver_assigned?: boolean | null
           id?: string
           payment_method?: string | null
           payment_proof_url?: string | null
           phone?: string
           reseller_id?: string | null
+          seller_id?: string | null
+          seller_notified?: boolean | null
           shipping_address?: string
           status?: Database["public"]["Enums"]["order_status"] | null
           store_type?: string | null
@@ -204,7 +347,14 @@ export type Database = {
             foreignKeyName: "orders_reseller_id_fkey"
             columns: ["reseller_id"]
             isOneToOne: false
-            referencedRelation: "reseller_stores"
+            referencedRelation: "seller_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_stores"
             referencedColumns: ["id"]
           },
         ]
@@ -221,6 +371,7 @@ export type Database = {
           image_url: string | null
           name: string
           price_etb: number
+          seller_id: string | null
           stock_status: boolean | null
           unique_product_code: string | null
           updated_at: string | null
@@ -236,6 +387,7 @@ export type Database = {
           image_url?: string | null
           name: string
           price_etb: number
+          seller_id?: string | null
           stock_status?: boolean | null
           unique_product_code?: string | null
           updated_at?: string | null
@@ -251,11 +403,20 @@ export type Database = {
           image_url?: string | null
           name?: string
           price_etb?: number
+          seller_id?: string | null
           stock_status?: boolean | null
           unique_product_code?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -263,6 +424,9 @@ export type Database = {
           created_at: string | null
           full_name: string
           id: string
+          latitude: number | null
+          location_updated_at: string | null
+          longitude: number | null
           phone: string | null
           shipping_address: string | null
           terms_accepted_at: string | null
@@ -273,6 +437,9 @@ export type Database = {
           created_at?: string | null
           full_name: string
           id: string
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           phone?: string | null
           shipping_address?: string | null
           terms_accepted_at?: string | null
@@ -283,6 +450,9 @@ export type Database = {
           created_at?: string | null
           full_name?: string
           id?: string
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           phone?: string | null
           shipping_address?: string | null
           terms_accepted_at?: string | null
@@ -379,7 +549,7 @@ export type Database = {
           },
         ]
       }
-      reseller_applications: {
+      seller_applications: {
         Row: {
           admin_notes: string | null
           age: number
@@ -436,13 +606,13 @@ export type Database = {
         }
         Relationships: []
       }
-      reseller_products: {
+      seller_products: {
         Row: {
           created_at: string | null
           id: string
           is_active: boolean | null
           product_id: string
-          reseller_price_etb: number
+          seller_price_etb: number
           store_id: string
           updated_at: string | null
         }
@@ -451,7 +621,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           product_id: string
-          reseller_price_etb: number
+          seller_price_etb: number
           store_id: string
           updated_at?: string | null
         }
@@ -460,7 +630,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           product_id?: string
-          reseller_price_etb?: number
+          seller_price_etb?: number
           store_id?: string
           updated_at?: string | null
         }
@@ -476,12 +646,12 @@ export type Database = {
             foreignKeyName: "reseller_products_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
-            referencedRelation: "reseller_stores"
+            referencedRelation: "seller_stores"
             referencedColumns: ["id"]
           },
         ]
       }
-      reseller_stores: {
+      seller_stores: {
         Row: {
           contact_email: string | null
           contact_phone: string | null
@@ -514,7 +684,7 @@ export type Database = {
         }
         Relationships: []
       }
-      reseller_wallets: {
+      seller_wallets: {
         Row: {
           created_at: string | null
           current_balance_etb: number
@@ -601,7 +771,7 @@ export type Database = {
             foreignKeyName: "store_reports_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
-            referencedRelation: "reseller_stores"
+            referencedRelation: "seller_stores"
             referencedColumns: ["id"]
           },
         ]
@@ -894,7 +1064,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer" | "reseller"
+      app_role: "admin" | "customer" | "reseller" | "driver"
       order_status:
         | "pending_payment"
         | "payment_verified"
@@ -1040,7 +1210,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer", "reseller"],
+      app_role: ["admin", "customer", "reseller", "driver"],
       order_status: [
         "pending_payment",
         "payment_verified",
