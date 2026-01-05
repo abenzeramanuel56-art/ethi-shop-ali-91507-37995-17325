@@ -47,8 +47,8 @@ export default function ApplyReseller() {
     }
 
     // Check if user already has an application
-    const { data } = await supabase
-      .from("reseller_applications")
+    const { data } = await (supabase as any)
+      .from("seller_applications")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -94,8 +94,8 @@ export default function ApplyReseller() {
 
   const checkForDuplicateFace = async (descriptor: number[]): Promise<boolean> => {
     // Check if this face has been used for another application
-    const { data: existingApps } = await supabase
-      .from("reseller_applications")
+    const { data: existingApps } = await (supabase as any)
+      .from("seller_applications")
       .select("id, face_descriptor")
       .not("face_descriptor", "is", null);
 
@@ -238,8 +238,8 @@ export default function ApplyReseller() {
         .getPublicUrl(faceFileName);
 
       // Create application
-      const { error: insertError } = await supabase
-        .from("reseller_applications")
+      const { error: insertError } = await (supabase as any)
+        .from("seller_applications")
         .insert({
           user_id: user.id,
           full_name: fullName,
@@ -309,7 +309,7 @@ export default function ApplyReseller() {
                     </div>
                   )}
                   {existingApplication.status === 'approved' && (
-                    <Button onClick={() => navigate("/reseller/setup")} className="w-full">
+                    <Button onClick={() => navigate("/seller/setup")} className="w-full">
                       {t('apply.setupStore')}
                     </Button>
                   )}
