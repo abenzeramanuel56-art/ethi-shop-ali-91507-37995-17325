@@ -38,9 +38,9 @@ const Home = () => {
                   {t('home.hero.request')}
                 </Button>
               </Link>
-              <Link to="/apply-reseller">
+              <Link to="/apply-seller">
                 <Button size="lg" variant="outline" className="gap-2">
-                  {t('home.reseller.apply')}
+                  {t('home.seller.apply')}
                 </Button>
               </Link>
             </div>
@@ -98,18 +98,23 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Reseller CTA */}
+      {/* Seller CTA */}
       <section className="border-t py-16 bg-primary/5">
         <div className="container mx-auto px-4 text-center">
           <h2 className="mb-4 text-2xl font-bold text-foreground">
-            {t('home.reseller.title')}
+            {t('home.seller.title')}
           </h2>
           <p className="mb-6 text-muted-foreground">
-            {t('home.reseller.subtitle')}
+            {t('home.seller.subtitle')}
           </p>
-          <Link to="/apply-reseller">
-            <Button size="lg">{t('home.reseller.apply')}</Button>
-          </Link>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link to="/apply-seller">
+              <Button size="lg">{t('home.seller.apply')}</Button>
+            </Link>
+            <Link to="/apply-driver">
+              <Button size="lg" variant="secondary">{t('home.driver.apply')}</Button>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

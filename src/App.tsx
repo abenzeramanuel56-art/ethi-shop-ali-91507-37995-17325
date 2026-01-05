@@ -13,6 +13,7 @@ import Account from "./pages/Account";
 import Cart from "./pages/Cart";
 import Support from "./pages/Support";
 import ApplySeller from "./pages/ApplySeller";
+import ApplyDriver from "./pages/ApplyDriver";
 import ApplicationSubmitted from "./pages/ApplicationSubmitted";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminApplications from "./pages/admin/Applications";
@@ -22,6 +23,7 @@ import SellerSetup from "./pages/seller/Setup";
 import SellerProducts from "./pages/seller/Products";
 import SellerOrders from "./pages/seller/Orders";
 import SellerWallet from "./pages/seller/Wallet";
+import DriverDashboard from "./pages/driver/Dashboard";
 import Store from "./pages/Store";
 import NotFound from "./pages/NotFound";
 
@@ -44,6 +46,7 @@ const App = () => (
             <Route path="/cart" element={<Cart />} />
             <Route path="/support" element={<Support />} />
             <Route path="/apply-seller" element={<ApplySeller />} />
+            <Route path="/apply-driver" element={<ApplyDriver />} />
             <Route path="/application-submitted" element={<ApplicationSubmitted />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/applications" element={<AdminApplications />} />
@@ -53,6 +56,7 @@ const App = () => (
             <Route path="/seller/products" element={<SellerProducts />} />
             <Route path="/seller/orders" element={<SellerOrders />} />
             <Route path="/seller/wallet" element={<SellerWallet />} />
+            <Route path="/driver" element={<DriverDashboard />} />
             <Route path="/store/:storeSlug" element={<Store />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
