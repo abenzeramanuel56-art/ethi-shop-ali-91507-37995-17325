@@ -14,14 +14,16 @@ export const Navbar = () => {
   const { t } = useLanguage();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isReseller, setIsReseller] = useState(false);
+  const [isSeller, setIsSeller] = useState(false);
+  const [isDriver, setIsDriver] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
-        checkResellerStatus(session.user.id);
+        checkSellerStatus(session.user.id);
+        checkDriverStatus(session.user.id);
       }
     });
 
@@ -30,10 +32,12 @@ export const Navbar = () => {
         setUser(session?.user ?? null);
         if (session?.user) {
           checkAdminStatus(session.user.id);
-          checkResellerStatus(session.user.id);
+          checkSellerStatus(session.user.id);
+          checkDriverStatus(session.user.id);
         } else {
           setIsAdmin(false);
-          setIsReseller(false);
+          setIsSeller(false);
+          setIsDriver(false);
         }
       }
     );
@@ -52,7 +56,7 @@ export const Navbar = () => {
     setIsAdmin(!!data);
   };
 
-  const checkResellerStatus = async (userId: string) => {
+  const checkSellerStatus = async (userId: string) => {
     const { data } = await (supabase as any)
       .from("user_roles")
       .select("role")
@@ -60,7 +64,18 @@ export const Navbar = () => {
       .eq("role", "reseller")
       .maybeSingle();
     
-    setIsReseller(!!data);
+    setIsSeller(!!data);
+  };
+
+  const checkDriverStatus = async (userId: string) => {
+    const { data } = await (supabase as any)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "driver")
+      .maybeSingle();
+    
+    setIsDriver(!!data);
   };
 
   const handleSignOut = async () => {
@@ -105,10 +120,17 @@ export const Navbar = () => {
                     </Button>
                   </Link>
                 )}
-                {isReseller && (
-                  <Link to="/reseller">
+                {isSeller && (
+                  <Link to="/seller">
                     <Button variant="secondary" size="sm" className="hidden md:inline-flex">
-                      {t('nav.reseller')}
+                      {t('nav.seller')}
+                    </Button>
+                  </Link>
+                )}
+                {isDriver && (
+                  <Link to="/driver">
+                    <Button variant="secondary" size="sm" className="hidden md:inline-flex">
+                      {t('nav.driver')}
                     </Button>
                   </Link>
                 )}
