@@ -444,7 +444,7 @@ const AdminDashboard = () => {
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
-          <TabsTrigger value="resellers">Resellers</TabsTrigger>
+          <TabsTrigger value="sellers">Sellers</TabsTrigger>
           <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
           <TabsTrigger value="messaging">Messaging</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -993,8 +993,8 @@ const AdminDashboard = () => {
         </Card>
       </TabsContent>
 
-      <TabsContent value="resellers">
-        <AdminResellers />
+      <TabsContent value="sellers">
+        <AdminSellers />
       </TabsContent>
 
       <TabsContent value="withdrawals">
