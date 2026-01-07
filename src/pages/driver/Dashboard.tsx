@@ -7,10 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { SimpleMap } from "@/components/SimpleMap";
+import { calculateDistance, DRIVER_RATE_PER_KM } from "@/hooks/useGeolocation";
 import { 
   Truck, Package, DollarSign, MapPin, Phone, 
-  CheckCircle, Clock, Navigation
+  CheckCircle, Clock, Navigation, Bell
 } from "lucide-react";
+
+interface PendingOrder {
+  id: string;
+  order_id: string;
+  seller_latitude: number | null;
+  seller_longitude: number | null;
+  seller_phone: string | null;
+  customer_latitude: number | null;
+  customer_longitude: number | null;
+  customer_phone: string | null;
+  shipping_address: string | null;
+  city: string | null;
+  distance_km: number | null;
+  estimated_earning_etb: number | null;
+  created_at: string;
+}
 
 interface DriverOrder {
   id: string;
@@ -20,6 +38,12 @@ interface DriverOrder {
   customer_confirmed_delivery: boolean;
   distance_km: number | null;
   driver_earning_etb: number | null;
+  seller_latitude: number | null;
+  seller_longitude: number | null;
+  seller_phone: string | null;
+  customer_latitude: number | null;
+  customer_longitude: number | null;
+  customer_phone: string | null;
   created_at: string;
   orders: {
     id: string;
@@ -42,13 +66,39 @@ interface DriverWallet {
 export default function DriverDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<DriverOrder[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+  const [myOrders, setMyOrders] = useState<DriverOrder[]>([]);
   const [wallet, setWallet] = useState<DriverWallet | null>(null);
   const [isDriver, setIsDriver] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     checkDriverStatus();
   }, []);
+
+  useEffect(() => {
+    if (!isDriver) return;
+
+    // Subscribe to realtime pending orders
+    const channel = supabase
+      .channel('pending-driver-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pending_driver_orders'
+        },
+        () => {
+          fetchPendingOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isDriver]);
 
   const checkDriverStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -56,6 +106,8 @@ export default function DriverDashboard() {
       navigate("/auth");
       return;
     }
+
+    setUserId(user.id);
 
     const { data: roleData } = await (supabase as any)
       .from("user_roles")
@@ -71,10 +123,26 @@ export default function DriverDashboard() {
     }
 
     setIsDriver(true);
+    fetchPendingOrders();
     fetchDriverData(user.id);
   };
 
-  const fetchDriverData = async (userId: string) => {
+  const fetchPendingOrders = async () => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from("pending_driver_orders")
+        .select("*")
+        .is("accepted_by", null)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPendingOrders(data || []);
+    } catch (error) {
+      console.error("Failed to fetch pending orders:", error);
+    }
+  };
+
+  const fetchDriverData = async (driverId: string) => {
     try {
       // Fetch driver orders
       const { data: ordersData, error: ordersError } = await (supabase as any)
@@ -93,17 +161,17 @@ export default function DriverDashboard() {
             )
           )
         `)
-        .eq("driver_id", userId)
+        .eq("driver_id", driverId)
         .order("created_at", { ascending: false });
 
       if (ordersError) throw ordersError;
-      setOrders(ordersData || []);
+      setMyOrders(ordersData || []);
 
       // Fetch wallet
       const { data: walletData } = await (supabase as any)
         .from("driver_wallets")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", driverId)
         .maybeSingle();
 
       setWallet(walletData || { current_balance_etb: 0, total_earned_etb: 0 });
@@ -111,6 +179,65 @@ export default function DriverDashboard() {
       toast.error("Failed to load driver data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const acceptOrder = async (pendingOrder: PendingOrder) => {
+    if (!userId) return;
+
+    try {
+      // Calculate distance if we have coordinates
+      let distanceKm = pendingOrder.distance_km;
+      let earning = pendingOrder.estimated_earning_etb;
+
+      if (pendingOrder.seller_latitude && pendingOrder.seller_longitude && 
+          pendingOrder.customer_latitude && pendingOrder.customer_longitude) {
+        distanceKm = calculateDistance(
+          pendingOrder.seller_latitude,
+          pendingOrder.seller_longitude,
+          pendingOrder.customer_latitude,
+          pendingOrder.customer_longitude
+        );
+        earning = distanceKm * DRIVER_RATE_PER_KM;
+      }
+
+      // Mark pending order as accepted
+      const { error: updateError } = await (supabase as any)
+        .from("pending_driver_orders")
+        .update({
+          accepted_by: userId,
+          accepted_at: new Date().toISOString()
+        })
+        .eq("id", pendingOrder.id)
+        .is("accepted_by", null);
+
+      if (updateError) throw updateError;
+
+      // Create driver order
+      const { error: insertError } = await (supabase as any)
+        .from("driver_orders")
+        .insert({
+          driver_id: userId,
+          order_id: pendingOrder.order_id,
+          status: "pending",
+          distance_km: distanceKm,
+          driver_earning_etb: earning,
+          seller_latitude: pendingOrder.seller_latitude,
+          seller_longitude: pendingOrder.seller_longitude,
+          seller_phone: pendingOrder.seller_phone,
+          customer_latitude: pendingOrder.customer_latitude,
+          customer_longitude: pendingOrder.customer_longitude,
+          customer_phone: pendingOrder.customer_phone
+        });
+
+      if (insertError) throw insertError;
+
+      toast.success("Order accepted! Go pick up from the seller.");
+      fetchPendingOrders();
+      fetchDriverData(userId);
+    } catch (error: any) {
+      toast.error("Failed to accept order. It may have been taken by another driver.");
+      fetchPendingOrders();
     }
   };
 
@@ -127,13 +254,13 @@ export default function DriverDashboard() {
 
       if (error) throw error;
       toast.success("Pickup confirmed! Now deliver to the customer.");
-      checkDriverStatus();
+      if (userId) fetchDriverData(userId);
     } catch (error: any) {
       toast.error("Failed to confirm pickup");
     }
   };
 
-  const confirmDelivery = async (driverOrderId: string, customerPhone: string) => {
+  const confirmDelivery = async (driverOrderId: string) => {
     try {
       const { error } = await (supabase as any)
         .from("driver_orders")
@@ -145,11 +272,8 @@ export default function DriverDashboard() {
         .eq("id", driverOrderId);
 
       if (error) throw error;
-      toast.success("Delivery confirmed! Payment has been credited to your wallet.");
-      
-      // Show customer phone
-      toast.info(`Customer phone: ${customerPhone}`);
-      checkDriverStatus();
+      toast.success("Delivery confirmed! Payment credited to your wallet.");
+      if (userId) fetchDriverData(userId);
     } catch (error: any) {
       toast.error("Failed to confirm delivery");
     }
@@ -180,9 +304,9 @@ export default function DriverDashboard() {
     return null;
   }
 
-  const pendingOrders = orders.filter(o => o.status === "pending");
-  const activeOrders = orders.filter(o => o.status === "picked_up");
-  const completedOrders = orders.filter(o => o.status === "delivered");
+  const activeOrders = myOrders.filter(o => o.status === "pending");
+  const inTransitOrders = myOrders.filter(o => o.status === "picked_up");
+  const completedOrders = myOrders.filter(o => o.status === "delivered");
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,35 +321,35 @@ export default function DriverDashboard() {
         <div className="grid gap-4 md:grid-cols-4 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Available Orders</CardTitle>
+              <Bell className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-500">
+                {pendingOrders.length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {wallet?.current_balance_etb.toFixed(2)} ETB
+                {wallet?.current_balance_etb?.toFixed(2) || "0.00"} ETB
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Earned</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {wallet?.total_earned_etb.toFixed(2)} ETB
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
+              <CardTitle className="text-sm font-medium">Active Deliveries</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{pendingOrders.length + activeOrders.length}</div>
+              <div className="text-2xl font-bold">{activeOrders.length + inTransitOrders.length}</div>
             </CardContent>
           </Card>
 
@@ -240,13 +364,21 @@ export default function DriverDashboard() {
           </Card>
         </div>
 
-        <Tabs defaultValue="pending">
-          <TabsList>
-            <TabsTrigger value="pending">
-              Pending Pickup ({pendingOrders.length})
+        <Tabs defaultValue="available">
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="available" className="relative">
+              Available Orders
+              {pendingOrders.length > 0 && (
+                <span className="ml-2 bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {pendingOrders.length}
+                </span>
+              )}
             </TabsTrigger>
-            <TabsTrigger value="active">
-              In Transit ({activeOrders.length})
+            <TabsTrigger value="pending">
+              Pending Pickup ({activeOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="transit">
+              In Transit ({inTransitOrders.length})
             </TabsTrigger>
             <TabsTrigger value="completed">
               Completed ({completedOrders.length})
@@ -254,40 +386,140 @@ export default function DriverDashboard() {
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="space-y-4">
+          {/* Available Orders Tab */}
+          <TabsContent value="available" className="space-y-4">
             {pendingOrders.length === 0 ? (
+              <Card className="p-8 text-center">
+                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No orders available right now</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  New orders will appear here when admin approves them
+                </p>
+              </Card>
+            ) : (
+              pendingOrders.map((order) => (
+                <Card key={order.id} className="border-l-4 border-l-orange-500">
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <Badge className="bg-orange-500 mb-2">New Order</Badge>
+                        <p className="text-sm text-muted-foreground">
+                          Order #{order.order_id.slice(0, 8)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        {order.estimated_earning_etb && (
+                          <p className="text-lg font-bold text-green-600">
+                            +{order.estimated_earning_etb.toFixed(2)} ETB
+                          </p>
+                        )}
+                        {order.distance_km && (
+                          <p className="text-sm text-muted-foreground">
+                            ~{order.distance_km.toFixed(1)} km
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4" />
+                        <span>Deliver to: {order.shipping_address}, {order.city}</span>
+                      </div>
+                    </div>
+
+                    {/* Map Preview */}
+                    {order.seller_latitude && order.customer_latitude && (
+                      <SimpleMap
+                        locations={[
+                          { 
+                            latitude: order.seller_latitude, 
+                            longitude: order.seller_longitude!, 
+                            label: "Pickup (Seller)", 
+                            type: "seller" 
+                          },
+                          { 
+                            latitude: order.customer_latitude, 
+                            longitude: order.customer_longitude!, 
+                            label: "Delivery (Customer)", 
+                            type: "customer" 
+                          }
+                        ]}
+                        className="mb-4"
+                      />
+                    )}
+
+                    <Button 
+                      onClick={() => acceptOrder(order)}
+                      className="w-full bg-orange-500 hover:bg-orange-600"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Accept This Order
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {/* Pending Pickup Tab */}
+          <TabsContent value="pending" className="space-y-4">
+            {activeOrders.length === 0 ? (
               <Card className="p-8 text-center">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">No pending pickups</p>
               </Card>
             ) : (
-              pendingOrders.map((order) => (
+              activeOrders.map((order) => (
                 <Card key={order.id}>
                   <CardContent className="pt-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="font-semibold">
-                          {order.orders?.seller_stores?.store_name || "Unknown Store"}
+                          {order.orders?.seller_stores?.store_name || "Seller"}
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           Order #{order.order_id.slice(0, 8)}
                         </p>
                       </div>
                       <Badge className={getStatusColor(order.status)}>
-                        {order.status}
+                        Awaiting Pickup
                       </Badge>
                     </div>
 
-                    <div className="space-y-2 mb-4">
+                    {/* Contact Info */}
+                    <div className="space-y-2 mb-4 p-3 bg-muted rounded-lg">
+                      <p className="font-medium text-sm">Contact Information:</p>
                       <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-4 w-4" />
-                        <span>Seller: {order.orders?.seller_stores?.contact_phone || "N/A"}</span>
+                        <span>Seller: <a href={`tel:${order.seller_phone || order.orders?.seller_stores?.contact_phone}`} className="text-primary underline">{order.seller_phone || order.orders?.seller_stores?.contact_phone || "N/A"}</a></span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4" />
-                        <span>Deliver to: {order.orders?.city}</span>
+                        <Phone className="h-4 w-4" />
+                        <span>Customer: <a href={`tel:${order.customer_phone || order.orders?.phone}`} className="text-primary underline">{order.customer_phone || order.orders?.phone}</a></span>
                       </div>
                     </div>
+
+                    {/* Map */}
+                    {order.seller_latitude && order.customer_latitude && (
+                      <SimpleMap
+                        locations={[
+                          { 
+                            latitude: order.seller_latitude, 
+                            longitude: order.seller_longitude!, 
+                            label: "Pickup (Seller)", 
+                            type: "seller" 
+                          },
+                          { 
+                            latitude: order.customer_latitude, 
+                            longitude: order.customer_longitude!, 
+                            label: "Delivery (Customer)", 
+                            type: "customer" 
+                          }
+                        ]}
+                        className="mb-4"
+                      />
+                    )}
 
                     <Button 
                       onClick={() => confirmPickup(order.id)}
@@ -302,14 +534,15 @@ export default function DriverDashboard() {
             )}
           </TabsContent>
 
-          <TabsContent value="active" className="space-y-4">
-            {activeOrders.length === 0 ? (
+          {/* In Transit Tab */}
+          <TabsContent value="transit" className="space-y-4">
+            {inTransitOrders.length === 0 ? (
               <Card className="p-8 text-center">
                 <Truck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground">No orders in transit</p>
               </Card>
             ) : (
-              activeOrders.map((order) => (
+              inTransitOrders.map((order) => (
                 <Card key={order.id}>
                   <CardContent className="pt-6">
                     <div className="flex justify-between items-start mb-4">
@@ -319,33 +552,49 @@ export default function DriverDashboard() {
                           Order #{order.order_id.slice(0, 8)}
                         </p>
                       </div>
-                      <Badge className={getStatusColor(order.status)}>
-                        In Transit
-                      </Badge>
+                      <Badge className="bg-blue-500">In Transit</Badge>
                     </div>
 
-                    <div className="space-y-2 mb-4">
+                    {/* Contact Info */}
+                    <div className="space-y-2 mb-4 p-3 bg-muted rounded-lg">
+                      <p className="font-medium text-sm">Customer Contact:</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4" />
+                        <a href={`tel:${order.customer_phone || order.orders?.phone}`} className="text-primary underline text-lg">
+                          {order.customer_phone || order.orders?.phone}
+                        </a>
+                      </div>
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="h-4 w-4" />
                         <span>{order.orders?.shipping_address}, {order.orders?.city}</span>
                       </div>
-                      {order.distance_km && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Navigation className="h-4 w-4" />
-                          <span>Distance: {order.distance_km} km</span>
-                        </div>
-                      )}
-                      {order.driver_earning_etb && (
-                        <div className="flex items-center gap-2 text-sm font-medium text-green-600">
-                          <DollarSign className="h-4 w-4" />
-                          <span>Earning: {order.driver_earning_etb.toFixed(2)} ETB</span>
-                        </div>
-                      )}
+                    </div>
+
+                    {/* Map */}
+                    {order.customer_latitude && (
+                      <SimpleMap
+                        locations={[
+                          { 
+                            latitude: order.customer_latitude, 
+                            longitude: order.customer_longitude!, 
+                            label: "Delivery Location", 
+                            type: "customer" 
+                          }
+                        ]}
+                        className="mb-4"
+                      />
+                    )}
+
+                    <div className="flex items-center justify-between mb-4 p-3 bg-green-50 rounded-lg">
+                      <span className="text-sm">Your Earning:</span>
+                      <span className="text-lg font-bold text-green-600">
+                        +{order.driver_earning_etb?.toFixed(2) || "0.00"} ETB
+                      </span>
                     </div>
 
                     <Button 
-                      onClick={() => confirmDelivery(order.id, order.orders?.phone || "")}
-                      className="w-full"
+                      onClick={() => confirmDelivery(order.id)}
+                      className="w-full bg-green-600 hover:bg-green-700"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Confirm Delivery
@@ -356,6 +605,7 @@ export default function DriverDashboard() {
             )}
           </TabsContent>
 
+          {/* Completed Tab */}
           <TabsContent value="completed" className="space-y-4">
             {completedOrders.length === 0 ? (
               <Card className="p-8 text-center">
@@ -369,11 +619,16 @@ export default function DriverDashboard() {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-semibold">
-                          {order.orders?.seller_stores?.store_name || "Unknown Store"}
+                          {order.orders?.seller_stores?.store_name || "Delivery"}
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           {new Date(order.created_at).toLocaleDateString()}
                         </p>
+                        {order.distance_km && (
+                          <p className="text-xs text-muted-foreground">
+                            {order.distance_km.toFixed(1)} km
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <Badge className="bg-green-500">Delivered</Badge>
@@ -390,6 +645,7 @@ export default function DriverDashboard() {
             )}
           </TabsContent>
 
+          {/* Wallet Tab */}
           <TabsContent value="wallet">
             <Card>
               <CardHeader>
@@ -400,18 +656,18 @@ export default function DriverDashboard() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="p-4 rounded-lg bg-muted">
                       <p className="text-sm text-muted-foreground">Available Balance</p>
-                      <p className="text-3xl font-bold">{wallet?.current_balance_etb.toFixed(2)} ETB</p>
+                      <p className="text-3xl font-bold">{wallet?.current_balance_etb?.toFixed(2) || "0.00"} ETB</p>
                     </div>
                     <div className="p-4 rounded-lg bg-muted">
                       <p className="text-sm text-muted-foreground">Total Earned</p>
-                      <p className="text-3xl font-bold">{wallet?.total_earned_etb.toFixed(2)} ETB</p>
+                      <p className="text-3xl font-bold">{wallet?.total_earned_etb?.toFixed(2) || "0.00"} ETB</p>
                     </div>
                   </div>
 
                   <div className="border-t pt-4">
                     <h4 className="font-semibold mb-2">Rate</h4>
                     <p className="text-muted-foreground">
-                      You earn <span className="font-bold text-primary">25 ETB per kilometer</span> for each delivery.
+                      You earn <span className="font-bold text-primary">{DRIVER_RATE_PER_KM} ETB per kilometer</span> for each delivery.
                     </p>
                   </div>
 

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { LocationPicker } from "@/components/LocationPicker";
 
 export default function SellerSetup() {
   const navigate = useNavigate();
@@ -19,7 +20,10 @@ export default function SellerSetup() {
     storeName: "",
     storeSlug: "",
     contactEmail: "",
-    contactPhone: ""
+    contactPhone: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
+    locationAddress: ""
   });
 
   useEffect(() => {
@@ -45,7 +49,10 @@ export default function SellerSetup() {
         storeName: data.store_name,
         storeSlug: data.store_slug,
         contactEmail: data.contact_email || "",
-        contactPhone: data.contact_phone || ""
+        contactPhone: data.contact_phone || "",
+        latitude: data.latitude ? parseFloat(data.latitude) : null,
+        longitude: data.longitude ? parseFloat(data.longitude) : null,
+        locationAddress: data.location_address || ""
       });
     }
   };
@@ -55,6 +62,15 @@ export default function SellerSetup() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
+  };
+
+  const handleLocationChange = (lat: number, lng: number, address?: string) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      locationAddress: address || prev.locationAddress
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,7 +90,10 @@ export default function SellerSetup() {
             store_name: formData.storeName,
             store_slug: slug,
             contact_email: formData.contactEmail,
-            contact_phone: formData.contactPhone
+            contact_phone: formData.contactPhone,
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            location_address: formData.locationAddress
           })
           .eq("id", existingStore.id);
 
@@ -92,7 +111,10 @@ export default function SellerSetup() {
             store_name: formData.storeName,
             store_slug: slug,
             contact_email: formData.contactEmail,
-            contact_phone: formData.contactPhone
+            contact_phone: formData.contactPhone,
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+            location_address: formData.locationAddress
           });
 
         if (error) throw error;
@@ -134,7 +156,7 @@ export default function SellerSetup() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="storeName">Store Name *</Label>
                 <Input
@@ -170,15 +192,38 @@ export default function SellerSetup() {
               </div>
 
               <div>
-                <Label htmlFor="contactPhone">Contact Phone</Label>
+                <Label htmlFor="contactPhone">Contact Phone *</Label>
                 <Input
                   id="contactPhone"
                   value={formData.contactPhone}
                   onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                  placeholder="+251..."
+                  required
                 />
               </div>
 
-              <Button type="submit" disabled={loading}>
+              {/* Store Location */}
+              <div className="border-t pt-4">
+                <LocationPicker
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  address={formData.locationAddress}
+                  onLocationChange={handleLocationChange}
+                  label="Store Location (for delivery pickup)"
+                />
+                {formData.locationAddress && (
+                  <div className="mt-2">
+                    <Label className="text-xs">Address</Label>
+                    <Input
+                      value={formData.locationAddress}
+                      onChange={(e) => setFormData({ ...formData, locationAddress: e.target.value })}
+                      placeholder="Store address"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <Button type="submit" disabled={loading} className="w-full">
                 {loading ? "Saving..." : existingStore ? "Update Store" : "Create Store"}
               </Button>
             </form>
