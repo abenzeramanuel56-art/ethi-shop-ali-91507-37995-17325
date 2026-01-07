@@ -114,6 +114,9 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_confirmed_delivery: boolean | null
+          customer_latitude: number | null
+          customer_longitude: number | null
+          customer_phone: string | null
           delivered_at: string | null
           distance_km: number | null
           driver_earning_etb: number | null
@@ -122,12 +125,18 @@ export type Database = {
           order_id: string
           pickup_at: string | null
           seller_confirmed_pickup: boolean | null
+          seller_latitude: number | null
+          seller_longitude: number | null
+          seller_phone: string | null
           status: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           customer_confirmed_delivery?: boolean | null
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_phone?: string | null
           delivered_at?: string | null
           distance_km?: number | null
           driver_earning_etb?: number | null
@@ -136,12 +145,18 @@ export type Database = {
           order_id: string
           pickup_at?: string | null
           seller_confirmed_pickup?: boolean | null
+          seller_latitude?: number | null
+          seller_longitude?: number | null
+          seller_phone?: string | null
           status?: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           customer_confirmed_delivery?: boolean | null
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_phone?: string | null
           delivered_at?: string | null
           distance_km?: number | null
           driver_earning_etb?: number | null
@@ -150,6 +165,9 @@ export type Database = {
           order_id?: string
           pickup_at?: string | null
           seller_confirmed_pickup?: boolean | null
+          seller_latitude?: number | null
+          seller_longitude?: number | null
+          seller_phone?: string | null
           status?: string
           updated_at?: string | null
         }
@@ -284,6 +302,8 @@ export type Database = {
           city: string
           created_at: string | null
           customer_id: string
+          customer_latitude: number | null
+          customer_longitude: number | null
           delivery_fee_etb: number | null
           driver_assigned: boolean | null
           id: string
@@ -305,6 +325,8 @@ export type Database = {
           city: string
           created_at?: string | null
           customer_id: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
           delivery_fee_etb?: number | null
           driver_assigned?: boolean | null
           id?: string
@@ -326,6 +348,8 @@ export type Database = {
           city?: string
           created_at?: string | null
           customer_id?: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
           delivery_fee_etb?: number | null
           driver_assigned?: boolean | null
           id?: string
@@ -352,6 +376,78 @@ export type Database = {
           },
           {
             foreignKeyName: "orders_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "seller_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_driver_orders: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          city: string | null
+          created_at: string
+          customer_latitude: number | null
+          customer_longitude: number | null
+          customer_phone: string | null
+          distance_km: number | null
+          estimated_earning_etb: number | null
+          id: string
+          order_id: string
+          seller_id: string | null
+          seller_latitude: number | null
+          seller_longitude: number | null
+          seller_phone: string | null
+          shipping_address: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          city?: string | null
+          created_at?: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_phone?: string | null
+          distance_km?: number | null
+          estimated_earning_etb?: number | null
+          id?: string
+          order_id: string
+          seller_id?: string | null
+          seller_latitude?: number | null
+          seller_longitude?: number | null
+          seller_phone?: string | null
+          shipping_address?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          city?: string | null
+          created_at?: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_phone?: string | null
+          distance_km?: number | null
+          estimated_earning_etb?: number | null
+          id?: string
+          order_id?: string
+          seller_id?: string | null
+          seller_latitude?: number | null
+          seller_longitude?: number | null
+          seller_phone?: string | null
+          shipping_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_driver_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_driver_orders_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "seller_stores"
@@ -657,6 +753,9 @@ export type Database = {
           contact_phone: string | null
           created_at: string | null
           id: string
+          latitude: number | null
+          location_address: string | null
+          longitude: number | null
           store_name: string
           store_slug: string
           updated_at: string | null
@@ -667,6 +766,9 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           id?: string
+          latitude?: number | null
+          location_address?: string | null
+          longitude?: number | null
           store_name: string
           store_slug: string
           updated_at?: string | null
@@ -677,6 +779,9 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           id?: string
+          latitude?: number | null
+          location_address?: string | null
+          longitude?: number | null
           store_name?: string
           store_slug?: string
           updated_at?: string | null

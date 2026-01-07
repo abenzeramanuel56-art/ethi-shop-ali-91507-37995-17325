@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Trash2, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingBag, MapPin, Loader2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 interface CartItem {
   id: string;
@@ -19,7 +20,7 @@ interface CartItem {
   quantity: number;
   image_url?: string;
   store_type?: string;
-  reseller_id?: string;
+  seller_id?: string;
   reseller_profit_etb?: number;
 }
 
@@ -35,6 +36,9 @@ const Cart = () => {
   const [phone, setPhone] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cbe" | "telebirr" | "">("");
+  const [customerLatitude, setCustomerLatitude] = useState<number | null>(null);
+  const [customerLongitude, setCustomerLongitude] = useState<number | null>(null);
+  const { loading: locationLoading, requestLocation } = useGeolocation();
 
   useEffect(() => {
     checkAuth();
@@ -96,6 +100,17 @@ const Cart = () => {
     return cartItems.reduce((sum, item) => sum + (item.price_etb * item.quantity), 0);
   };
 
+  const handleGetLocation = async () => {
+    try {
+      const coords = await requestLocation();
+      setCustomerLatitude(coords.latitude);
+      setCustomerLongitude(coords.longitude);
+      toast.success("Location captured successfully!");
+    } catch (err) {
+      toast.error("Failed to get your location. Please enable location access.");
+    }
+  };
+
   const handleCheckout = async () => {
     if (!shippingAddress || !city || !phone) {
       toast.error(t('cart.fillShipping'));
@@ -110,6 +125,18 @@ const Cart = () => {
     if (cartItems.length === 0) {
       toast.error(t('cart.emptyCart'));
       return;
+    }
+
+    // Request location if not already captured
+    if (!customerLatitude || !customerLongitude) {
+      try {
+        const coords = await requestLocation();
+        setCustomerLatitude(coords.latitude);
+        setCustomerLongitude(coords.longitude);
+      } catch (err) {
+        // Continue without location if user denies
+        console.log("Location not captured, continuing without it");
+      }
     }
 
     setSubmitting(true);
@@ -127,7 +154,6 @@ const Cart = () => {
 
         if (uploadError) {
           console.error('Upload error:', uploadError);
-          // Continue without payment proof if upload fails
         } else {
           const { data: { publicUrl } } = supabase.storage
             .from('payment-proofs')
@@ -136,14 +162,14 @@ const Cart = () => {
         }
       }
 
-      // Determine store type and reseller ID
-      const hasResellerItems = cartItems.some(i => i.store_type === "reseller");
-      const storeType = hasResellerItems ? "reseller" : "admin";
-      const resellerId = hasResellerItems 
-        ? cartItems.find(i => i.store_type === "reseller")?.reseller_id || null 
+      // Determine store type and seller ID
+      const hasSellerItems = cartItems.some(i => i.store_type === "seller" || i.store_type === "reseller");
+      const storeType = hasSellerItems ? "seller" : "admin";
+      const sellerId = hasSellerItems 
+        ? cartItems.find(i => i.store_type === "seller" || i.store_type === "reseller")?.seller_id || null 
         : null;
 
-      // Create order
+      // Create order with customer location
       const { data: order, error: orderError } = await (supabase as any)
         .from("orders")
         .insert({
@@ -156,7 +182,9 @@ const Cart = () => {
           payment_method: paymentMethod,
           status: "pending_payment",
           store_type: storeType,
-          reseller_id: resellerId
+          seller_id: sellerId,
+          customer_latitude: customerLatitude,
+          customer_longitude: customerLongitude
         })
         .select()
         .single();
@@ -325,6 +353,38 @@ const Cart = () => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                     />
+                  </div>
+
+                  {/* Delivery Location */}
+                  <div className="space-y-2">
+                    <Label>Delivery Location</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGetLocation}
+                      disabled={locationLoading}
+                      className="w-full"
+                    >
+                      {locationLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Getting Location...
+                        </>
+                      ) : (
+                        <>
+                          <MapPin className="h-4 w-4 mr-2" />
+                          {customerLatitude ? "Location Captured ✓" : "Share My Location"}
+                        </>
+                      )}
+                    </Button>
+                    {customerLatitude && customerLongitude && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        📍 {customerLatitude.toFixed(4)}, {customerLongitude.toFixed(4)}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Share your location for accurate delivery
+                    </p>
                   </div>
 
                   <div className="space-y-2">

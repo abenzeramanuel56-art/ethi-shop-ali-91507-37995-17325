@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Camera, Upload, Check, AlertCircle } from "lucide-react";
-import { FaceAuthentication } from "@/components/FaceAuthentication";
+import { Store, Camera, Check } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export default function ApplyReseller() {
+export default function ApplySeller() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -23,11 +22,7 @@ export default function ApplyReseller() {
   const [phone, setPhone] = useState("");
   const [idFrontPhoto, setIdFrontPhoto] = useState<File | null>(null);
   const [idBackPhoto, setIdBackPhoto] = useState<File | null>(null);
-  const [facePhoto, setFacePhoto] = useState<Blob | null>(null);
-  const [faceDescriptor, setFaceDescriptor] = useState<number[] | null>(null);
   const [existingApplication, setExistingApplication] = useState<any>(null);
-  const [showFaceAuth, setShowFaceAuth] = useState(false);
-  const [faceVerified, setFaceVerified] = useState(false);
   const [step, setStep] = useState(1);
 
   useEffect(() => {
@@ -46,7 +41,6 @@ export default function ApplyReseller() {
       return;
     }
 
-    // Check if user already has an application
     const { data } = await (supabase as any)
       .from("seller_applications")
       .select("*")
@@ -64,7 +58,6 @@ export default function ApplyReseller() {
   };
 
   const validatePhone = (phone: string) => {
-    // Ethiopian phone number format: +251 or 0 followed by 9 digits
     const phoneRegex = /^(\+251|0)?[79]\d{8}$/;
     return phoneRegex.test(phone.replace(/\s/g, ''));
   };
@@ -81,45 +74,6 @@ export default function ApplyReseller() {
     }
   };
 
-  const handleFaceAuthComplete = (photo: Blob, descriptor: number[]) => {
-    setFacePhoto(photo);
-    setFaceDescriptor(descriptor);
-    setFaceVerified(true);
-    setShowFaceAuth(false);
-    toast({
-      title: t('face.successTitle'),
-      description: t('face.successDesc')
-    });
-  };
-
-  const checkForDuplicateFace = async (descriptor: number[]): Promise<boolean> => {
-    // Check if this face has been used for another application
-    const { data: existingApps } = await (supabase as any)
-      .from("seller_applications")
-      .select("id, face_descriptor")
-      .not("face_descriptor", "is", null);
-
-    if (!existingApps) return false;
-
-    for (const app of existingApps) {
-      if (app.face_descriptor) {
-        const storedDescriptor = app.face_descriptor as number[];
-        // Calculate Euclidean distance between face descriptors
-        let distance = 0;
-        for (let i = 0; i < descriptor.length; i++) {
-          distance += Math.pow((descriptor[i] || 0) - (storedDescriptor[i] || 0), 2);
-        }
-        distance = Math.sqrt(distance);
-        
-        // If distance is less than 0.6, faces are considered the same
-        if (distance < 0.6) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -134,7 +88,6 @@ export default function ApplyReseller() {
       return;
     }
 
-    // Validation
     if (!validateEmail(email)) {
       toast({
         title: t('apply.invalidEmail'),
@@ -172,30 +125,9 @@ export default function ApplyReseller() {
       return;
     }
 
-    if (!faceVerified || !facePhoto || !faceDescriptor) {
-      toast({
-        title: t('face.required'),
-        description: t('face.requiredDesc'),
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Check for duplicate face
-      const isDuplicate = await checkForDuplicateFace(faceDescriptor);
-      if (isDuplicate) {
-        toast({
-          title: t('apply.duplicateAccount'),
-          description: t('apply.duplicateAccountDesc'),
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
-
       // Upload ID front photo
       const frontExt = idFrontPhoto.name.split('.').pop();
       const frontFileName = `${user.id}/id-front-${Date.now()}.${frontExt}`;
@@ -224,19 +156,6 @@ export default function ApplyReseller() {
         .from("id-photos")
         .getPublicUrl(backFileName);
 
-      // Upload face photo
-      const faceFileName = `${user.id}/face-${Date.now()}.jpg`;
-      
-      const { error: faceUploadError } = await supabase.storage
-        .from("id-photos")
-        .upload(faceFileName, facePhoto);
-
-      if (faceUploadError) throw faceUploadError;
-
-      const { data: { publicUrl: faceUrl } } = supabase.storage
-        .from("id-photos")
-        .getPublicUrl(faceFileName);
-
       // Create application
       const { error: insertError } = await (supabase as any)
         .from("seller_applications")
@@ -249,9 +168,7 @@ export default function ApplyReseller() {
           phone,
           id_photo_url: frontUrl,
           id_front_photo_url: frontUrl,
-          id_back_photo_url: backUrl,
-          face_photo_url: faceUrl,
-          face_descriptor: faceDescriptor
+          id_back_photo_url: backUrl
         });
 
       if (insertError) throw insertError;
@@ -261,7 +178,7 @@ export default function ApplyReseller() {
         description: t('apply.submittedDesc')
       });
 
-      navigate("/");
+      navigate("/application-submitted");
     } catch (error: any) {
       toast({
         title: t('common.error'),
@@ -322,20 +239,6 @@ export default function ApplyReseller() {
     );
   }
 
-  if (showFaceAuth) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <FaceAuthentication
-            onComplete={handleFaceAuthComplete}
-            onCancel={() => setShowFaceAuth(false)}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -351,14 +254,14 @@ export default function ApplyReseller() {
 
           {/* Progress Steps */}
           <div className="flex justify-center mb-8">
-            {[1, 2, 3].map((s) => (
+            {[1, 2].map((s) => (
               <div key={s} className="flex items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
                   step >= s ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                 }`}>
                   {step > s ? <Check className="h-5 w-5" /> : s}
                 </div>
-                {s < 3 && (
+                {s < 2 && (
                   <div className={`w-16 h-1 ${step > s ? 'bg-primary' : 'bg-muted'}`} />
                 )}
               </div>
@@ -499,67 +402,21 @@ export default function ApplyReseller() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
-                        {t('common.back')}
-                      </Button>
+                    <div className="flex gap-4">
                       <Button 
                         type="button" 
-                        onClick={() => setStep(3)} 
+                        variant="outline"
+                        onClick={() => setStep(1)} 
                         className="flex-1"
-                        disabled={!idFrontPhoto || !idBackPhoto}
                       >
-                        {t('common.next')}
-                      </Button>
-                    </div>
-                  </>
-                )}
-
-                {step === 3 && (
-                  <>
-                    <h3 className="font-semibold text-lg mb-4">{t('apply.faceVerification')}</h3>
-                    
-                    <div className="space-y-4">
-                      <div className="p-4 bg-muted rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
-                          <div>
-                            <p className="font-medium">{t('face.whyNeeded')}</p>
-                            <p className="text-sm text-muted-foreground">{t('face.whyNeededDesc')}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {faceVerified ? (
-                        <div className="p-6 border-2 border-green-500 rounded-lg text-center">
-                          <Check className="h-12 w-12 mx-auto text-green-500 mb-2" />
-                          <p className="font-medium text-green-600">{t('face.verified')}</p>
-                        </div>
-                      ) : (
-                        <Button
-                          type="button"
-                          onClick={() => setShowFaceAuth(true)}
-                          variant="outline"
-                          className="w-full h-24"
-                        >
-                          <div className="text-center">
-                            <Camera className="h-8 w-8 mx-auto mb-2" />
-                            <span>{t('face.startVerification')}</span>
-                          </div>
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">
                         {t('common.back')}
                       </Button>
                       <Button 
                         type="submit" 
-                        disabled={loading || !faceVerified} 
                         className="flex-1"
+                        disabled={loading || !idFrontPhoto || !idBackPhoto}
                       >
-                        {loading ? t('apply.submitting') : t('apply.submit')}
+                        {loading ? t('common.loading') : t('apply.submit')}
                       </Button>
                     </div>
                   </>
