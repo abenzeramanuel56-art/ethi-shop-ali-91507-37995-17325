@@ -76,6 +76,9 @@ interface Order {
   created_at: string;
   updated_at: string;
   reseller_id: string | null;
+  seller_id: string | null;
+  customer_latitude: number | null;
+  customer_longitude: number | null;
   order_items?: OrderItem[];
 }
 
@@ -284,6 +287,11 @@ const AdminDashboard = () => {
         } catch (emailError) {
           console.error("Failed to send confirmation email:", emailError);
         }
+
+        // Create pending driver order for local seller orders
+        if (currentOrder && (currentOrder.reseller_id || currentOrder.seller_id)) {
+          await createPendingDriverOrder(currentOrder);
+        }
       }
 
       // Send tracking notification if tracking number was added/updated
@@ -304,6 +312,61 @@ const AdminDashboard = () => {
       fetchData();
     } catch (error: any) {
       toast.error("Failed to update order");
+    }
+  };
+
+  const createPendingDriverOrder = async (order: any) => {
+    try {
+      // Get seller store info with location
+      const sellerId = order.seller_id || order.reseller_id;
+      const { data: sellerStore } = await (supabase as any)
+        .from("seller_stores")
+        .select("latitude, longitude, contact_phone, location_address")
+        .eq("id", sellerId)
+        .maybeSingle();
+
+      // Calculate distance if we have both locations
+      let distanceKm = null;
+      let estimatedEarning = null;
+      
+      if (sellerStore?.latitude && sellerStore?.longitude && 
+          order.customer_latitude && order.customer_longitude) {
+        const R = 6371;
+        const dLat = (order.customer_latitude - sellerStore.latitude) * Math.PI / 180;
+        const dLon = (order.customer_longitude - sellerStore.longitude) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(sellerStore.latitude * Math.PI / 180) * Math.cos(order.customer_latitude * Math.PI / 180) *
+          Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        distanceKm = R * c;
+        estimatedEarning = distanceKm * 25; // 25 ETB per km
+      }
+
+      // Create pending driver order
+      const { error: pendingError } = await (supabase as any)
+        .from("pending_driver_orders")
+        .insert({
+          order_id: order.id,
+          seller_id: sellerId,
+          seller_latitude: sellerStore?.latitude || null,
+          seller_longitude: sellerStore?.longitude || null,
+          seller_phone: sellerStore?.contact_phone || null,
+          customer_latitude: order.customer_latitude || null,
+          customer_longitude: order.customer_longitude || null,
+          customer_phone: order.phone,
+          shipping_address: order.shipping_address,
+          city: order.city,
+          distance_km: distanceKm,
+          estimated_earning_etb: estimatedEarning
+        });
+
+      if (pendingError) {
+        console.error("Failed to create pending driver order:", pendingError);
+      } else {
+        toast.success("Order sent to drivers for pickup!");
+      }
+    } catch (err) {
+      console.error("Error creating pending driver order:", err);
     }
   };
 

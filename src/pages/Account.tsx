@@ -150,6 +150,143 @@ const Account = () => {
     fetchData();
   };
 
+  const handleConfirmDelivery = async (orderId: string) => {
+    try {
+      // Find the driver order for this order
+      const { data: driverOrder } = await (supabase as any)
+        .from("driver_orders")
+        .select("id, driver_id, driver_earning_etb, orders!inner(seller_id, reseller_id)")
+        .eq("order_id", orderId)
+        .eq("status", "awaiting_customer_confirmation")
+        .maybeSingle();
+
+      if (!driverOrder) {
+        toast.error("Could not find delivery information");
+        return;
+      }
+
+      // Update driver order to delivered
+      await (supabase as any)
+        .from("driver_orders")
+        .update({
+          customer_confirmed_delivery: true,
+          delivered_at: new Date().toISOString(),
+          status: "delivered"
+        })
+        .eq("id", driverOrder.id);
+
+      // Update order status
+      await (supabase as any)
+        .from("orders")
+        .update({ status: "delivered" })
+        .eq("id", orderId);
+
+      // Credit driver wallet
+      const driverEarning = driverOrder.driver_earning_etb || 0;
+      if (driverEarning > 0) {
+        const { data: driverWallet } = await (supabase as any)
+          .from("driver_wallets")
+          .select("*")
+          .eq("user_id", driverOrder.driver_id)
+          .maybeSingle();
+
+        if (driverWallet) {
+          await (supabase as any)
+            .from("driver_wallets")
+            .update({
+              current_balance_etb: driverWallet.current_balance_etb + driverEarning,
+              total_earned_etb: driverWallet.total_earned_etb + driverEarning
+            })
+            .eq("user_id", driverOrder.driver_id);
+        } else {
+          await (supabase as any)
+            .from("driver_wallets")
+            .insert({
+              user_id: driverOrder.driver_id,
+              current_balance_etb: driverEarning,
+              total_earned_etb: driverEarning
+            });
+        }
+
+        // Notify driver
+        await (supabase as any)
+          .from("notifications")
+          .insert({
+            user_id: driverOrder.driver_id,
+            title: "Payment received! 💰",
+            message: `${driverEarning.toFixed(2)} ETB has been credited to your wallet for the delivery.`,
+            type: "payment"
+          });
+      }
+
+      // Credit seller wallet (if exists)
+      const sellerId = driverOrder.orders?.seller_id || driverOrder.orders?.reseller_id;
+      if (sellerId) {
+        // Get seller store to find the user_id
+        const { data: sellerStore } = await (supabase as any)
+          .from("seller_stores")
+          .select("user_id")
+          .eq("id", sellerId)
+          .maybeSingle();
+
+        if (sellerStore) {
+          // Get order items to calculate seller profit
+          const { data: orderItemsData } = await (supabase as any)
+            .from("order_items")
+            .select("reseller_profit_etb")
+            .eq("order_id", orderId);
+
+          const totalProfit = (orderItemsData || []).reduce(
+            (sum: number, item: any) => sum + (item.reseller_profit_etb || 0), 
+            0
+          );
+
+          if (totalProfit > 0) {
+            const { data: sellerWallet } = await (supabase as any)
+              .from("seller_wallets")
+              .select("*")
+              .eq("user_id", sellerStore.user_id)
+              .maybeSingle();
+
+            if (sellerWallet) {
+              await (supabase as any)
+                .from("seller_wallets")
+                .update({
+                  current_balance_etb: sellerWallet.current_balance_etb + totalProfit,
+                  total_earned_etb: sellerWallet.total_earned_etb + totalProfit
+                })
+                .eq("user_id", sellerStore.user_id);
+            } else {
+              await (supabase as any)
+                .from("seller_wallets")
+                .insert({
+                  user_id: sellerStore.user_id,
+                  current_balance_etb: totalProfit,
+                  total_earned_etb: totalProfit
+                });
+            }
+
+            // Notify seller
+            await (supabase as any)
+              .from("notifications")
+              .insert({
+                user_id: sellerStore.user_id,
+                title: "Sale completed! 💰",
+                message: `${totalProfit.toFixed(2)} ETB has been credited to your wallet.`,
+                type: "payment"
+              });
+          }
+        }
+      }
+
+      toast.success("Delivery confirmed! Thank you for your order.");
+      fetchData();
+    } catch (error: any) {
+      console.error("Confirm delivery error:", error);
+      toast.error("Failed to confirm delivery");
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       pending: "bg-warning text-warning-foreground",
@@ -159,7 +296,7 @@ const Account = () => {
       pending_payment: "bg-warning text-warning-foreground",
       payment_verified: "bg-info text-info-foreground",
       ordered_on_aliexpress: "bg-primary text-primary-foreground",
-      shipped: "bg-info text-info-foreground",
+      shipped: "bg-purple-500 text-white",
       delivered: "bg-success text-success-foreground",
       approved: "bg-success text-success-foreground",
       processed: "bg-success text-success-foreground",
@@ -257,6 +394,16 @@ const Account = () => {
                           <Badge className={getStatusColor(order.status)}>
                             {order.status.replace("_", " ")}
                           </Badge>
+                          {order.status === "shipped" && (
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleConfirmDelivery(order.id)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Confirm Received
+                            </Button>
+                          )}
                           {order.status === "delivered" && (
                             <Dialog open={refundDialogOpen && selectedOrderForRefund?.id === order.id} onOpenChange={(open) => {
                               setRefundDialogOpen(open);
