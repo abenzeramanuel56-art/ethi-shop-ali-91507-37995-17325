@@ -243,6 +243,13 @@ export default function DriverDashboard() {
 
   const confirmPickup = async (driverOrderId: string) => {
     try {
+      // Get the order details first
+      const { data: driverOrder } = await (supabase as any)
+        .from("driver_orders")
+        .select("order_id, customer_phone")
+        .eq("id", driverOrderId)
+        .single();
+
       const { error } = await (supabase as any)
         .from("driver_orders")
         .update({ 
@@ -253,7 +260,32 @@ export default function DriverDashboard() {
         .eq("id", driverOrderId);
 
       if (error) throw error;
-      toast.success("Pickup confirmed! Now deliver to the customer.");
+
+      // Update order status
+      await (supabase as any)
+        .from("orders")
+        .update({ status: "shipped" })
+        .eq("id", driverOrder.order_id);
+
+      // Get customer ID from the order and send notification
+      const { data: orderData } = await (supabase as any)
+        .from("orders")
+        .select("customer_id")
+        .eq("id", driverOrder.order_id)
+        .single();
+
+      if (orderData?.customer_id) {
+        await (supabase as any)
+          .from("notifications")
+          .insert({
+            user_id: orderData.customer_id,
+            title: "Driver picked up your order! 🚚",
+            message: "Your order is on its way! The driver has picked up your package and is heading to your location.",
+            type: "order"
+          });
+      }
+
+      toast.success("Pickup confirmed! Customer has been notified. Now deliver to the customer.");
       if (userId) fetchDriverData(userId);
     } catch (error: any) {
       toast.error("Failed to confirm pickup");
@@ -262,17 +294,41 @@ export default function DriverDashboard() {
 
   const confirmDelivery = async (driverOrderId: string) => {
     try {
+      // Get the driver order with order details
+      const { data: driverOrder } = await (supabase as any)
+        .from("driver_orders")
+        .select("order_id, driver_earning_etb")
+        .eq("id", driverOrderId)
+        .single();
+
       const { error } = await (supabase as any)
         .from("driver_orders")
         .update({ 
-          customer_confirmed_delivery: true,
-          delivered_at: new Date().toISOString(),
-          status: "delivered"
+          status: "awaiting_customer_confirmation"
         })
         .eq("id", driverOrderId);
 
       if (error) throw error;
-      toast.success("Delivery confirmed! Payment credited to your wallet.");
+
+      // Get customer ID and send notification asking for confirmation
+      const { data: orderData } = await (supabase as any)
+        .from("orders")
+        .select("customer_id")
+        .eq("id", driverOrder.order_id)
+        .single();
+
+      if (orderData?.customer_id) {
+        await (supabase as any)
+          .from("notifications")
+          .insert({
+            user_id: orderData.customer_id,
+            title: "Confirm your delivery! 📦",
+            message: "The driver has delivered your order. Please go to your account to confirm that you received it.",
+            type: "order"
+          });
+      }
+
+      toast.success("Customer notified! Waiting for them to confirm receipt.");
       if (userId) fetchDriverData(userId);
     } catch (error: any) {
       toast.error("Failed to confirm delivery");
@@ -283,6 +339,7 @@ export default function DriverDashboard() {
     switch (status) {
       case "pending": return "bg-yellow-500";
       case "picked_up": return "bg-blue-500";
+      case "awaiting_customer_confirmation": return "bg-purple-500";
       case "delivered": return "bg-green-500";
       case "cancelled": return "bg-red-500";
       default: return "bg-gray-500";
@@ -306,6 +363,7 @@ export default function DriverDashboard() {
 
   const activeOrders = myOrders.filter(o => o.status === "pending");
   const inTransitOrders = myOrders.filter(o => o.status === "picked_up");
+  const awaitingConfirmationOrders = myOrders.filter(o => o.status === "awaiting_customer_confirmation");
   const completedOrders = myOrders.filter(o => o.status === "delivered");
 
   return (
@@ -349,7 +407,7 @@ export default function DriverDashboard() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeOrders.length + inTransitOrders.length}</div>
+              <div className="text-2xl font-bold">{activeOrders.length + inTransitOrders.length + awaitingConfirmationOrders.length}</div>
             </CardContent>
           </Card>
 
@@ -379,6 +437,9 @@ export default function DriverDashboard() {
             </TabsTrigger>
             <TabsTrigger value="transit">
               In Transit ({inTransitOrders.length})
+            </TabsTrigger>
+            <TabsTrigger value="awaiting">
+              Awaiting Confirmation ({awaitingConfirmationOrders.length})
             </TabsTrigger>
             <TabsTrigger value="completed">
               Completed ({completedOrders.length})
@@ -599,6 +660,50 @@ export default function DriverDashboard() {
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Confirm Delivery
                     </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {/* Awaiting Customer Confirmation Tab */}
+          <TabsContent value="awaiting" className="space-y-4">
+            {awaitingConfirmationOrders.length === 0 ? (
+              <Card className="p-8 text-center">
+                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No orders awaiting customer confirmation</p>
+              </Card>
+            ) : (
+              awaitingConfirmationOrders.map((order) => (
+                <Card key={order.id} className="border-l-4 border-l-purple-500">
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-semibold">
+                          {order.orders?.seller_stores?.store_name || "Delivery"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Order #{order.order_id.slice(0, 8)}
+                        </p>
+                      </div>
+                      <Badge className="bg-purple-500">Awaiting Confirmation</Badge>
+                    </div>
+
+                    <div className="p-3 bg-purple-50 rounded-lg mb-4">
+                      <p className="text-sm text-purple-800">
+                        ⏳ Waiting for customer to confirm they received the order.
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        Once confirmed, {order.driver_earning_etb?.toFixed(2) || "0.00"} ETB will be credited to your wallet.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <span className="text-sm">Pending Earning:</span>
+                      <span className="text-lg font-bold text-purple-600">
+                        {order.driver_earning_etb?.toFixed(2) || "0.00"} ETB
+                      </span>
+                    </div>
                   </CardContent>
                 </Card>
               ))
