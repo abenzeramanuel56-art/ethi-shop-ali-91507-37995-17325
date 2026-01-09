@@ -16,13 +16,26 @@ export function useGeolocation() {
   });
 
   const requestLocation = useCallback(() => {
+    // Check if geolocation is supported
     if (!navigator.geolocation) {
+      const errorMsg = 'Geolocation is not supported by your browser';
       setState(prev => ({
         ...prev,
-        error: 'Geolocation is not supported by your browser',
+        error: errorMsg,
         loading: false,
       }));
-      return Promise.reject('Geolocation not supported');
+      return Promise.reject(errorMsg);
+    }
+
+    // Check if we're on HTTPS (required for geolocation in most browsers)
+    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+      const errorMsg = 'Location access requires a secure connection (HTTPS)';
+      setState(prev => ({
+        ...prev,
+        error: errorMsg,
+        loading: false,
+      }));
+      return Promise.reject(errorMsg);
     }
 
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -45,15 +58,16 @@ export function useGeolocation() {
           let errorMessage = 'Failed to get location';
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              errorMessage = 'Location permission denied. Please enable location access.';
+              errorMessage = 'Location permission denied. Please enable location access in your browser settings and try again.';
               break;
             case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information unavailable';
+              errorMessage = 'Location information unavailable. Please check your device GPS settings.';
               break;
             case error.TIMEOUT:
-              errorMessage = 'Location request timed out';
+              errorMessage = 'Location request timed out. Please try again.';
               break;
           }
+          console.error('Geolocation error:', error.code, error.message);
           setState(prev => ({
             ...prev,
             error: errorMessage,
@@ -63,7 +77,7 @@ export function useGeolocation() {
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 15000,
           maximumAge: 0,
         }
       );

@@ -343,11 +343,12 @@ const AdminDashboard = () => {
       }
 
       // Create pending driver order
-      const { error: pendingError } = await (supabase as any)
+      console.log("Creating pending driver order for order:", order.id);
+      const { data: insertedData, error: pendingError } = await (supabase as any)
         .from("pending_driver_orders")
         .insert({
           order_id: order.id,
-          seller_id: sellerId,
+          seller_id: sellerId || null,
           seller_latitude: sellerStore?.latitude || null,
           seller_longitude: sellerStore?.longitude || null,
           seller_phone: sellerStore?.contact_phone || null,
@@ -358,15 +359,19 @@ const AdminDashboard = () => {
           city: order.city,
           distance_km: distanceKm,
           estimated_earning_etb: estimatedEarning
-        });
+        })
+        .select();
 
       if (pendingError) {
         console.error("Failed to create pending driver order:", pendingError);
+        toast.error("Failed to send order to drivers: " + pendingError.message);
       } else {
+        console.log("Pending driver order created:", insertedData);
         toast.success("Order sent to drivers for pickup!");
       }
     } catch (err) {
       console.error("Error creating pending driver order:", err);
+      toast.error("Error sending order to drivers");
     }
   };
 
