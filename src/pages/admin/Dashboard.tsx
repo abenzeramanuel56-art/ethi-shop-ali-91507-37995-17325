@@ -288,8 +288,8 @@ const AdminDashboard = () => {
           console.error("Failed to send confirmation email:", emailError);
         }
 
-        // Create pending driver order for local seller orders
-        if (currentOrder && (currentOrder.reseller_id || currentOrder.seller_id)) {
+        // Create pending driver order for ALL verified orders (local delivery)
+        if (currentOrder) {
           await createPendingDriverOrder(currentOrder);
         }
       }
