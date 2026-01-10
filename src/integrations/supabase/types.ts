@@ -1142,6 +1142,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      driver_accept_pending_order: {
+        Args: { p_pending_id: string }
+        Returns: string
+      }
+      driver_confirm_delivery: {
+        Args: { p_driver_order_id: string }
+        Returns: boolean
+      }
+      driver_confirm_pickup: {
+        Args: { p_driver_order_id: string }
+        Returns: boolean
+      }
       get_store_by_slug: {
         Args: { p_slug: string }
         Returns: {
