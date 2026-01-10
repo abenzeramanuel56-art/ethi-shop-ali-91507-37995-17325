@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { SimpleMap } from "@/components/SimpleMap";
-import { calculateDistance, DRIVER_RATE_PER_KM } from "@/hooks/useGeolocation";
+import { DRIVER_RATE_PER_KM } from "@/hooks/useGeolocation";
 import { 
   Truck, Package, DollarSign, MapPin, Phone, 
   CheckCircle, Clock, Navigation, Bell
@@ -186,106 +186,43 @@ export default function DriverDashboard() {
     if (!userId) return;
 
     try {
-      // Calculate distance if we have coordinates
-      let distanceKm = pendingOrder.distance_km;
-      let earning = pendingOrder.estimated_earning_etb;
+      const { error } = await (supabase as any).rpc("driver_accept_pending_order", {
+        p_pending_id: pendingOrder.id,
+      });
 
-      if (pendingOrder.seller_latitude && pendingOrder.seller_longitude && 
-          pendingOrder.customer_latitude && pendingOrder.customer_longitude) {
-        distanceKm = calculateDistance(
-          pendingOrder.seller_latitude,
-          pendingOrder.seller_longitude,
-          pendingOrder.customer_latitude,
-          pendingOrder.customer_longitude
-        );
-        earning = distanceKm * DRIVER_RATE_PER_KM;
-      }
-
-      // Mark pending order as accepted
-      const { error: updateError } = await (supabase as any)
-        .from("pending_driver_orders")
-        .update({
-          accepted_by: userId,
-          accepted_at: new Date().toISOString()
-        })
-        .eq("id", pendingOrder.id)
-        .is("accepted_by", null);
-
-      if (updateError) throw updateError;
-
-      // Create driver order
-      const { error: insertError } = await (supabase as any)
-        .from("driver_orders")
-        .insert({
-          driver_id: userId,
-          order_id: pendingOrder.order_id,
-          status: "pending",
-          distance_km: distanceKm,
-          driver_earning_etb: earning,
-          seller_latitude: pendingOrder.seller_latitude,
-          seller_longitude: pendingOrder.seller_longitude,
-          seller_phone: pendingOrder.seller_phone,
-          customer_latitude: pendingOrder.customer_latitude,
-          customer_longitude: pendingOrder.customer_longitude,
-          customer_phone: pendingOrder.customer_phone
-        });
-
-      if (insertError) throw insertError;
+      if (error) throw error;
 
       toast.success("Order accepted! Go pick up from the seller.");
-      fetchPendingOrders();
-      fetchDriverData(userId);
+      await fetchPendingOrders();
+      await fetchDriverData(userId);
     } catch (error: any) {
-      toast.error("Failed to accept order. It may have been taken by another driver.");
+      const raw = typeof error?.message === "string" ? error.message : "";
+
+      if (raw.includes("pending_order_not_available")) {
+        toast.error("This order was already taken by another driver.");
+      } else if (raw.includes("not_a_driver")) {
+        toast.error("Your account is not registered as a driver.");
+      } else if (raw.includes("not_authenticated")) {
+        toast.error("Please sign in again and try.");
+      } else {
+        toast.error("Failed to accept order. Please try again.");
+      }
+
       fetchPendingOrders();
     }
   };
 
   const confirmPickup = async (driverOrderId: string) => {
     try {
-      // Get the order details first
-      const { data: driverOrder } = await (supabase as any)
-        .from("driver_orders")
-        .select("order_id, customer_phone")
-        .eq("id", driverOrderId)
-        .single();
-
-      const { error } = await (supabase as any)
-        .from("driver_orders")
-        .update({ 
-          seller_confirmed_pickup: true,
-          pickup_at: new Date().toISOString(),
-          status: "picked_up"
-        })
-        .eq("id", driverOrderId);
+      const { error } = await (supabase as any).rpc("driver_confirm_pickup", {
+        p_driver_order_id: driverOrderId,
+      });
 
       if (error) throw error;
 
-      // Update order status
-      await (supabase as any)
-        .from("orders")
-        .update({ status: "shipped" })
-        .eq("id", driverOrder.order_id);
-
-      // Get customer ID from the order and send notification
-      const { data: orderData } = await (supabase as any)
-        .from("orders")
-        .select("customer_id")
-        .eq("id", driverOrder.order_id)
-        .single();
-
-      if (orderData?.customer_id) {
-        await (supabase as any)
-          .from("notifications")
-          .insert({
-            user_id: orderData.customer_id,
-            title: "Driver picked up your order! 🚚",
-            message: "Your order is on its way! The driver has picked up your package and is heading to your location.",
-            type: "order"
-          });
-      }
-
-      toast.success("Pickup confirmed! Customer has been notified. Now deliver to the customer.");
+      toast.success(
+        "Pickup confirmed! Customer has been notified. Now deliver to the customer."
+      );
       if (userId) fetchDriverData(userId);
     } catch (error: any) {
       toast.error("Failed to confirm pickup");
@@ -294,39 +231,11 @@ export default function DriverDashboard() {
 
   const confirmDelivery = async (driverOrderId: string) => {
     try {
-      // Get the driver order with order details
-      const { data: driverOrder } = await (supabase as any)
-        .from("driver_orders")
-        .select("order_id, driver_earning_etb")
-        .eq("id", driverOrderId)
-        .single();
-
-      const { error } = await (supabase as any)
-        .from("driver_orders")
-        .update({ 
-          status: "awaiting_customer_confirmation"
-        })
-        .eq("id", driverOrderId);
+      const { error } = await (supabase as any).rpc("driver_confirm_delivery", {
+        p_driver_order_id: driverOrderId,
+      });
 
       if (error) throw error;
-
-      // Get customer ID and send notification asking for confirmation
-      const { data: orderData } = await (supabase as any)
-        .from("orders")
-        .select("customer_id")
-        .eq("id", driverOrder.order_id)
-        .single();
-
-      if (orderData?.customer_id) {
-        await (supabase as any)
-          .from("notifications")
-          .insert({
-            user_id: orderData.customer_id,
-            title: "Confirm your delivery! 📦",
-            message: "The driver has delivered your order. Please go to your account to confirm that you received it.",
-            type: "order"
-          });
-      }
 
       toast.success("Customer notified! Waiting for them to confirm receipt.");
       if (userId) fetchDriverData(userId);
