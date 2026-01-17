@@ -225,7 +225,17 @@ export default function DriverDashboard() {
       );
       if (userId) fetchDriverData(userId);
     } catch (error: any) {
-      toast.error("Failed to confirm pickup");
+      const raw = typeof error?.message === "string" ? error.message : "";
+
+      if (raw.includes("driver_order_not_found")) {
+        toast.error("Order not found for your driver account.");
+      } else if (raw.includes("not_a_driver")) {
+        toast.error("Your account is not registered as a driver.");
+      } else if (raw.includes("not_authenticated")) {
+        toast.error("Please sign in again and try.");
+      } else {
+        toast.error(raw ? `Failed to confirm pickup: ${raw}` : "Failed to confirm pickup");
+      }
     }
   };
 
@@ -240,7 +250,13 @@ export default function DriverDashboard() {
       toast.success("Customer notified! Waiting for them to confirm receipt.");
       if (userId) fetchDriverData(userId);
     } catch (error: any) {
-      toast.error("Failed to confirm delivery");
+      const raw = typeof error?.message === "string" ? error.message : "";
+
+      if (raw.includes("driver_order_not_found_or_invalid_status")) {
+        toast.error("You can only confirm delivery after pickup (In Transit).");
+      } else {
+        toast.error(raw ? `Failed to confirm delivery: ${raw}` : "Failed to confirm delivery");
+      }
     }
   };
 
