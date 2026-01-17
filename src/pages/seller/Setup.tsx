@@ -75,6 +75,17 @@ export default function SellerSetup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Require location for store creation/update
+    if (!formData.latitude || !formData.longitude) {
+      toast({
+        title: "Location Required",
+        description: "Please set your store location. This is required for delivery pickup.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -209,8 +220,13 @@ export default function SellerSetup() {
                   longitude={formData.longitude}
                   address={formData.locationAddress}
                   onLocationChange={handleLocationChange}
-                  label="Store Location (for delivery pickup)"
+                  label="Store Location (Required for delivery pickup) *"
                 />
+                {!formData.latitude && (
+                  <p className="text-sm text-destructive mt-2">
+                    ⚠️ Store location is required. You won't be able to post products without setting your location.
+                  </p>
+                )}
                 {formData.locationAddress && (
                   <div className="mt-2">
                     <Label className="text-xs">Address</Label>

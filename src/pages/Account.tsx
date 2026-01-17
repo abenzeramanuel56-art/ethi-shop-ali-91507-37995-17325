@@ -152,138 +152,25 @@ const Account = () => {
 
   const handleConfirmDelivery = async (orderId: string) => {
     try {
-      // Find the driver order for this order
-      const { data: driverOrder } = await (supabase as any)
-        .from("driver_orders")
-        .select("id, driver_id, driver_earning_etb, orders!inner(seller_id, reseller_id)")
-        .eq("order_id", orderId)
-        .eq("status", "awaiting_customer_confirmation")
-        .maybeSingle();
+      const { error } = await (supabase as any).rpc("customer_confirm_delivery", {
+        p_order_id: orderId,
+      });
 
-      if (!driverOrder) {
-        toast.error("Could not find delivery information");
-        return;
-      }
-
-      // Update driver order to delivered
-      await (supabase as any)
-        .from("driver_orders")
-        .update({
-          customer_confirmed_delivery: true,
-          delivered_at: new Date().toISOString(),
-          status: "delivered"
-        })
-        .eq("id", driverOrder.id);
-
-      // Update order status
-      await (supabase as any)
-        .from("orders")
-        .update({ status: "delivered" })
-        .eq("id", orderId);
-
-      // Credit driver wallet
-      const driverEarning = driverOrder.driver_earning_etb || 0;
-      if (driverEarning > 0) {
-        const { data: driverWallet } = await (supabase as any)
-          .from("driver_wallets")
-          .select("*")
-          .eq("user_id", driverOrder.driver_id)
-          .maybeSingle();
-
-        if (driverWallet) {
-          await (supabase as any)
-            .from("driver_wallets")
-            .update({
-              current_balance_etb: driverWallet.current_balance_etb + driverEarning,
-              total_earned_etb: driverWallet.total_earned_etb + driverEarning
-            })
-            .eq("user_id", driverOrder.driver_id);
-        } else {
-          await (supabase as any)
-            .from("driver_wallets")
-            .insert({
-              user_id: driverOrder.driver_id,
-              current_balance_etb: driverEarning,
-              total_earned_etb: driverEarning
-            });
-        }
-
-        // Notify driver
-        await (supabase as any)
-          .from("notifications")
-          .insert({
-            user_id: driverOrder.driver_id,
-            title: "Payment received! 💰",
-            message: `${driverEarning.toFixed(2)} ETB has been credited to your wallet for the delivery.`,
-            type: "payment"
-          });
-      }
-
-      // Credit seller wallet (if exists)
-      const sellerId = driverOrder.orders?.seller_id || driverOrder.orders?.reseller_id;
-      if (sellerId) {
-        // Get seller store to find the user_id
-        const { data: sellerStore } = await (supabase as any)
-          .from("seller_stores")
-          .select("user_id")
-          .eq("id", sellerId)
-          .maybeSingle();
-
-        if (sellerStore) {
-          // Get order items to calculate seller profit
-          const { data: orderItemsData } = await (supabase as any)
-            .from("order_items")
-            .select("reseller_profit_etb")
-            .eq("order_id", orderId);
-
-          const totalProfit = (orderItemsData || []).reduce(
-            (sum: number, item: any) => sum + (item.reseller_profit_etb || 0), 
-            0
-          );
-
-          if (totalProfit > 0) {
-            const { data: sellerWallet } = await (supabase as any)
-              .from("seller_wallets")
-              .select("*")
-              .eq("user_id", sellerStore.user_id)
-              .maybeSingle();
-
-            if (sellerWallet) {
-              await (supabase as any)
-                .from("seller_wallets")
-                .update({
-                  current_balance_etb: sellerWallet.current_balance_etb + totalProfit,
-                  total_earned_etb: sellerWallet.total_earned_etb + totalProfit
-                })
-                .eq("user_id", sellerStore.user_id);
-            } else {
-              await (supabase as any)
-                .from("seller_wallets")
-                .insert({
-                  user_id: sellerStore.user_id,
-                  current_balance_etb: totalProfit,
-                  total_earned_etb: totalProfit
-                });
-            }
-
-            // Notify seller
-            await (supabase as any)
-              .from("notifications")
-              .insert({
-                user_id: sellerStore.user_id,
-                title: "Sale completed! 💰",
-                message: `${totalProfit.toFixed(2)} ETB has been credited to your wallet.`,
-                type: "payment"
-              });
-          }
-        }
-      }
+      if (error) throw error;
 
       toast.success("Delivery confirmed! Thank you for your order.");
       fetchData();
     } catch (error: any) {
       console.error("Confirm delivery error:", error);
-      toast.error("Failed to confirm delivery");
+      
+      const msg = error?.message || "";
+      if (msg.includes("delivery_not_ready_for_confirmation")) {
+        toast.error("Delivery is not ready for confirmation yet.");
+      } else if (msg.includes("order_not_found")) {
+        toast.error("Order not found or you don't have permission.");
+      } else {
+        toast.error("Failed to confirm delivery");
+      }
     }
   };
 
@@ -394,7 +281,7 @@ const Account = () => {
                           <Badge className={getStatusColor(order.status)}>
                             {order.status.replace("_", " ")}
                           </Badge>
-                          {order.status === "shipped" && (
+                          {(order.status === "shipped" || order.status === "awaiting_customer_confirmation") && (
                             <Button 
                               size="sm" 
                               className="bg-green-600 hover:bg-green-700"

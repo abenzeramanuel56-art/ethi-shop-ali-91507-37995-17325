@@ -115,13 +115,10 @@ export default function AdminPunishments() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("user_bans")
-        .insert({
-          user_id: selectedUserId,
-          banned_by: (await supabase.auth.getUser()).data.user?.id,
-          reason: banReason
-        });
+      const { error } = await (supabase as any).rpc("admin_ban_user", {
+        p_user_id: selectedUserId,
+        p_reason: banReason
+      });
 
       if (error) throw error;
 
@@ -163,17 +160,11 @@ export default function AdminPunishments() {
 
     setLoading(true);
     try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + parseInt(suspendDays));
-
-      const { error } = await supabase
-        .from("user_suspensions")
-        .insert({
-          user_id: selectedUserId,
-          suspended_by: (await supabase.auth.getUser()).data.user?.id,
-          reason: suspendReason,
-          expires_at: expiresAt.toISOString()
-        });
+      const { error } = await (supabase as any).rpc("admin_suspend_user", {
+        p_user_id: selectedUserId,
+        p_reason: suspendReason,
+        p_days: parseInt(suspendDays)
+      });
 
       if (error) throw error;
 

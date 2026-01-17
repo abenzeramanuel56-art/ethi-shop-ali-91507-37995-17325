@@ -28,6 +28,7 @@ export default function SellerProducts() {
   const [loading, setLoading] = useState(true);
   const [myProducts, setMyProducts] = useState<Product[]>([]);
   const [storeId, setStoreId] = useState<string>("");
+  const [storeHasLocation, setStoreHasLocation] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [productImage, setProductImage] = useState<File | null>(null);
   const [newProduct, setNewProduct] = useState({
@@ -36,6 +37,8 @@ export default function SellerProducts() {
     price_etb: "",
     category: "other"
   });
+
+  const PLATFORM_FEE_PERCENT = 10;
 
   useEffect(() => {
     checkAccess();
@@ -50,7 +53,7 @@ export default function SellerProducts() {
 
     const { data: store } = await (supabase as any)
       .from("seller_stores")
-      .select("id")
+      .select("id, latitude, longitude")
       .eq("user_id", session.session.user.id)
       .maybeSingle();
 
@@ -60,8 +63,14 @@ export default function SellerProducts() {
     }
 
     setStoreId(store.id);
+    setStoreHasLocation(store.latitude != null && store.longitude != null);
     fetchMyProducts(store.id);
     setLoading(false);
+  };
+
+  const calculateProfit = (price: number) => {
+    const platformFee = price * (PLATFORM_FEE_PERCENT / 100);
+    return price - platformFee;
   };
 
   const fetchMyProducts = async (storeId: string) => {
@@ -75,6 +84,12 @@ export default function SellerProducts() {
   };
 
   const handleAddProduct = async () => {
+    if (!storeHasLocation) {
+      toast.error("Please set your store location first in Store Settings");
+      navigate("/seller/setup");
+      return;
+    }
+    
     if (!newProduct.name || !newProduct.price_etb) {
       toast.error("Please fill in required fields");
       return;
@@ -159,11 +174,34 @@ export default function SellerProducts() {
             <Store className="h-6 w-6" />
             <h1 className="text-3xl font-bold">My Products</h1>
           </div>
-          <Button onClick={() => setShowAddForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
+          <div className="flex items-center gap-2">
+            {!storeHasLocation && (
+              <Button variant="outline" onClick={() => navigate("/seller/setup")}>
+                Set Store Location
+              </Button>
+            )}
+            <Button onClick={() => setShowAddForm(true)} disabled={!storeHasLocation}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
+          </div>
         </div>
+
+        {!storeHasLocation && (
+          <Card className="mb-6 border-destructive">
+            <CardContent className="pt-6">
+              <p className="text-destructive font-medium">
+                ⚠️ Store location is required before you can add products.
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Please go to Store Settings and set your location for delivery pickup.
+              </p>
+              <Button className="mt-4" onClick={() => navigate("/seller/setup")}>
+                Go to Store Settings
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {showAddForm && (
           <Card className="mb-8">
@@ -198,6 +236,19 @@ export default function SellerProducts() {
                     onChange={(e) => setNewProduct({ ...newProduct, price_etb: e.target.value })}
                     placeholder="0.00"
                   />
+                  {newProduct.price_etb && parseFloat(newProduct.price_etb) > 0 && (
+                    <div className="mt-2 p-2 bg-muted rounded text-sm">
+                      <p className="text-muted-foreground">
+                        Customer pays: <span className="font-bold text-foreground">{parseFloat(newProduct.price_etb).toFixed(2)} ETB</span>
+                      </p>
+                      <p className="text-muted-foreground">
+                        Platform fee (10%): <span className="text-destructive">-{(parseFloat(newProduct.price_etb) * 0.1).toFixed(2)} ETB</span>
+                      </p>
+                      <p className="text-green-600 font-medium">
+                        Your profit: {calculateProfit(parseFloat(newProduct.price_etb)).toFixed(2)} ETB
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -269,9 +320,14 @@ export default function SellerProducts() {
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {product.description}
                           </p>
-                          <p className="text-lg font-bold text-primary mt-1">
-                            {product.price_etb} ETB
-                          </p>
+                          <div className="mt-1">
+                            <p className="text-lg font-bold text-primary">
+                              {product.price_etb} ETB
+                            </p>
+                            <p className="text-sm text-green-600">
+                              Your profit: {calculateProfit(product.price_etb).toFixed(2)} ETB
+                            </p>
+                          </div>
                           <Badge className="mt-2">{product.category}</Badge>
                         </div>
                         <Button
