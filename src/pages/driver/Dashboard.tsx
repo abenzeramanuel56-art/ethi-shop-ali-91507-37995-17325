@@ -398,6 +398,23 @@ export default function DriverDashboard() {
                       </div>
                     </div>
 
+                    {/* Contact Info for Available Orders */}
+                    <div className="space-y-2 mb-4 p-3 bg-muted rounded-lg">
+                      <p className="font-medium text-sm">Contact Information:</p>
+                      {order.seller_phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4" />
+                          <span>Seller: <a href={`tel:${order.seller_phone}`} className="text-primary underline">{order.seller_phone}</a></span>
+                        </div>
+                      )}
+                      {order.customer_phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4" />
+                          <span>Customer: <a href={`tel:${order.customer_phone}`} className="text-primary underline">{order.customer_phone}</a></span>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Map Preview */}
                     {order.seller_latitude && order.customer_latitude && (
                       <SimpleMap

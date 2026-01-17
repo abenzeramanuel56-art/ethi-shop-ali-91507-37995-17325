@@ -1134,6 +1134,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_ban_user: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: string
+      }
+      admin_suspend_user: {
+        Args: { p_days: number; p_reason: string; p_user_id: string }
+        Returns: string
+      }
+      customer_confirm_delivery: {
+        Args: { p_order_id: string }
+        Returns: boolean
+      }
       deduct_from_wallet: {
         Args: {
           deduction_amount: number
