@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Loader2, Navigation } from "lucide-react";
-import { useGeolocation } from "@/hooks/useGeolocation";
+import { MapPin, Loader2, Navigation, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface LocationPickerProps {
   latitude: number | null;
@@ -22,17 +22,80 @@ export function LocationPicker({
   label = "Location",
   showManualInput = true,
 }: LocationPickerProps) {
-  const { loading, error, requestLocation } = useGeolocation();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [manualLat, setManualLat] = useState(latitude?.toString() || "");
   const [manualLng, setManualLng] = useState(longitude?.toString() || "");
   const [manualAddress, setManualAddress] = useState(address || "");
+  const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
+
+  // Check permission status on mount
+  useEffect(() => {
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
+        setPermissionStatus(result.state);
+        result.onchange = () => setPermissionStatus(result.state);
+      }).catch(() => {
+        // Some browsers don't support this
+      });
+    }
+  }, []);
 
   const handleGetLocation = async () => {
+    setError(null);
+    setLoading(true);
+
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser. Please enter location manually.");
+      setLoading(false);
+      return;
+    }
+
+    // Check if we're on HTTPS (required for geolocation in most browsers)
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (window.location.protocol !== 'https:' && !isLocalhost) {
+      setError("Location access requires a secure connection (HTTPS). Please enter your location manually below.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const coords = await requestLocation();
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos),
+          (err) => reject(err),
+          {
+            enableHighAccuracy: false, // Use false for faster response
+            timeout: 30000, // 30 second timeout
+            maximumAge: 60000, // Accept cached position up to 1 minute old
+          }
+        );
+      });
+
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
       onLocationChange(coords.latitude, coords.longitude);
-    } catch (err) {
-      console.error("Failed to get location:", err);
+      setManualLat(coords.latitude.toString());
+      setManualLng(coords.longitude.toString());
+      setError(null);
+    } catch (err: any) {
+      let errorMessage = "Failed to get location. Please enter manually below.";
+      
+      if (err.code === 1) { // PERMISSION_DENIED
+        errorMessage = "Location permission denied. Please enable location access in your browser settings, or enter your location manually below.";
+      } else if (err.code === 2) { // POSITION_UNAVAILABLE
+        errorMessage = "Location information unavailable. Please check your device GPS settings, or enter location manually below.";
+      } else if (err.code === 3) { // TIMEOUT
+        errorMessage = "Location request timed out. Please try again or enter location manually below.";
+      }
+      
+      console.error("Geolocation error:", err);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,8 +104,18 @@ export function LocationPicker({
     const lng = parseFloat(manualLng);
     if (!isNaN(lat) && !isNaN(lng)) {
       onLocationChange(lat, lng, manualAddress || undefined);
+      setError(null);
     }
   };
+
+  // Common Ethiopian city coordinates for quick selection
+  const quickLocations = [
+    { name: "Addis Ababa", lat: 9.0192, lng: 38.7525 },
+    { name: "Dire Dawa", lat: 9.6, lng: 41.85 },
+    { name: "Mekelle", lat: 13.4967, lng: 39.4767 },
+    { name: "Bahir Dar", lat: 11.5936, lng: 37.3908 },
+    { name: "Hawassa", lat: 7.0622, lng: 38.4769 },
+  ];
 
   return (
     <div className="space-y-4">
@@ -68,8 +141,20 @@ export function LocationPicker({
         )}
       </Button>
 
+      {permissionStatus === 'denied' && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Location access is blocked. Please enable it in your browser settings or enter location manually.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {error && (
-        <p className="text-sm text-destructive">{error}</p>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {latitude && longitude && (
@@ -83,7 +168,27 @@ export function LocationPicker({
 
       {showManualInput && (
         <div className="space-y-3 pt-2 border-t">
-          <p className="text-sm text-muted-foreground">Or enter manually:</p>
+          <p className="text-sm text-muted-foreground">Or enter manually / select a city:</p>
+          
+          {/* Quick city selection */}
+          <div className="flex flex-wrap gap-2">
+            {quickLocations.map((loc) => (
+              <Button
+                key={loc.name}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setManualLat(loc.lat.toString());
+                  setManualLng(loc.lng.toString());
+                  setManualAddress(loc.name);
+                  onLocationChange(loc.lat, loc.lng, loc.name);
+                }}
+              >
+                {loc.name}
+              </Button>
+            ))}
+          </div>
           
           <div className="grid grid-cols-2 gap-2">
             <div>
