@@ -816,6 +816,116 @@ export type Database = {
         }
         Relationships: []
       }
+      service_orders: {
+        Row: {
+          admin_notes: string | null
+          completed_at: string | null
+          created_at: string | null
+          customer_id: string
+          customer_phone: string
+          hours: number | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          payment_proof_url: string | null
+          quantity: number | null
+          seller_id: string
+          service_id: string
+          status: string
+          total_etb: number
+          updated_at: string | null
+          verification_code: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          customer_id: string
+          customer_phone: string
+          hours?: number | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          quantity?: number | null
+          seller_id: string
+          service_id: string
+          status?: string
+          total_etb: number
+          updated_at?: string | null
+          verification_code?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          customer_id?: string
+          customer_phone?: string
+          hours?: number | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          quantity?: number | null
+          seller_id?: string
+          service_id?: string
+          status?: string
+          total_etb?: number
+          updated_at?: string | null
+          verification_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_orders_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          category: string
+          created_at: string | null
+          custom_category: string | null
+          description: string
+          id: string
+          is_active: boolean | null
+          price_etb: number
+          price_type: string
+          seller_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          custom_category?: string | null
+          description: string
+          id?: string
+          is_active?: boolean | null
+          price_etb: number
+          price_type?: string
+          seller_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          custom_category?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          price_etb?: number
+          price_type?: string
+          seller_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           id: string
@@ -1134,6 +1244,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_approve_driver_application: {
+        Args: { p_admin_notes?: string; p_application_id: string }
+        Returns: undefined
+      }
+      admin_approve_seller_application: {
+        Args: { p_admin_notes?: string; p_application_id: string }
+        Returns: undefined
+      }
       admin_ban_user: {
         Args: { p_reason: string; p_user_id: string }
         Returns: string
@@ -1142,9 +1260,13 @@ export type Database = {
         Args: { p_days: number; p_reason: string; p_user_id: string }
         Returns: string
       }
+      complete_service_order: {
+        Args: { p_order_id: string; p_verification_code: string }
+        Returns: undefined
+      }
       customer_confirm_delivery: {
         Args: { p_order_id: string }
-        Returns: boolean
+        Returns: undefined
       }
       deduct_from_wallet: {
         Args: {
