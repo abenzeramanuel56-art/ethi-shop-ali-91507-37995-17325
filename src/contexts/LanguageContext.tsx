@@ -21,6 +21,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.signIn': 'Sign In',
     'nav.account': 'Account',
     'nav.cart': 'Cart',
+    'nav.services': 'Services',
+    'nav.seller': 'Seller Dashboard',
+    'nav.driver': 'Driver Dashboard',
     
     // Language selector
     'lang.select': 'Language',
@@ -44,6 +47,13 @@ const translations: Record<Language, Record<string, string>> = {
     'home.reseller.title': 'Become a Reseller',
     'home.reseller.subtitle': 'Start your own store and earn profits',
     'home.reseller.apply': 'Become a Reseller',
+    'home.seller.title': 'Join Our Platform',
+    'home.seller.subtitle': 'Become a seller or driver and start earning',
+    'home.seller.become': 'Become a Reseller',
+    'home.seller.apply': 'Become a Reseller',
+    'home.driver.become': 'Become a Driver',
+    'home.driver.apply': 'Become a Driver',
+    'home.services.browse': 'Browse Services',
     
     // Products page
     'products.title': 'Browse Products',
@@ -370,6 +380,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.signIn': 'ግባ',
     'nav.account': 'መለያ',
     'nav.cart': 'ጋሪ',
+    'nav.services': 'አገልግሎቶች',
+    'nav.seller': 'የሻጭ ዳሽቦርድ',
+    'nav.driver': 'የሾፌር ዳሽቦርድ',
     
     // Language selector
     'lang.select': 'ቋንቋ',
@@ -393,6 +406,13 @@ const translations: Record<Language, Record<string, string>> = {
     'home.reseller.title': 'ሻጭ ይሁኑ',
     'home.reseller.subtitle': 'የራስዎን መደብር ይክፈቱ እና ትርፍ ያግኙ',
     'home.reseller.apply': 'ሻጭ ይሁኑ',
+    'home.seller.title': 'መድረካችንን ይቀላቀሉ',
+    'home.seller.subtitle': 'ሻጭ ወይም ሾፌር ይሁኑ እና ገቢ ማግኘት ይጀምሩ',
+    'home.seller.become': 'ሻጭ ይሁኑ',
+    'home.seller.apply': 'ሻጭ ይሁኑ',
+    'home.driver.become': 'ሾፌር ይሁኑ',
+    'home.driver.apply': 'ሾፌር ይሁኑ',
+    'home.services.browse': 'አገልግሎቶችን ይመልከቱ',
     
     // Products page
     'products.title': 'ምርቶችን ይመልከቱ',

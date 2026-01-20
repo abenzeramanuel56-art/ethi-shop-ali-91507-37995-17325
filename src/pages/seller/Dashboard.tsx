@@ -185,6 +185,7 @@ export default function SellerDashboard() {
         <Tabs defaultValue="products">
           <TabsList>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
             <TabsTrigger value="store">Store Settings</TabsTrigger>
@@ -198,6 +199,22 @@ export default function SellerDashboard() {
               <CardContent>
                 <Button onClick={() => navigate("/seller/products")}>
                   Manage Products
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="services">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Services</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Offer services like tutoring, maintenance, tech support, and more.
+                </p>
+                <Button onClick={() => navigate("/seller/services")}>
+                  Manage Services
                 </Button>
               </CardContent>
             </Card>

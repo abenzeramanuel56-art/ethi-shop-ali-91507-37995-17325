@@ -99,6 +99,11 @@ export const Navbar = () => {
                 {t('nav.browse')}
               </Button>
             </Link>
+            <Link to="/services">
+              <Button variant="ghost" size="sm" className="hidden md:inline-flex">
+                {t('nav.services')}
+              </Button>
+            </Link>
             <Link to="/request-item">
               <Button variant="default" size="sm" className="hidden md:inline-flex">
                 {t('nav.request')}
