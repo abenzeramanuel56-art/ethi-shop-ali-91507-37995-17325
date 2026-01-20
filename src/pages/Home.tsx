@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
-import { ArrowRight, Package, Shield, TrendingUp, Truck } from "lucide-react";
+import { ArrowRight, Package, Shield, TrendingUp, Truck, Wrench } from "lucide-react";
 import heroImage from "@/assets/hero-shopping.jpg";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -33,14 +33,15 @@ const Home = () => {
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
-              <Link to="/request-item">
+              <Link to="/services">
                 <Button size="lg" variant="secondary" className="gap-2">
-                  {t('home.hero.request')}
+                  <Wrench className="h-5 w-5" />
+                  {t('home.services.browse')}
                 </Button>
               </Link>
-              <Link to="/apply-seller">
+              <Link to="/request-item">
                 <Button size="lg" variant="outline" className="gap-2">
-                  {t('home.seller.apply')}
+                  {t('home.hero.request')}
                 </Button>
               </Link>
             </div>
@@ -109,10 +110,10 @@ const Home = () => {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/apply-seller">
-              <Button size="lg">{t('home.seller.apply')}</Button>
+              <Button size="lg">{t('home.seller.become')}</Button>
             </Link>
             <Link to="/apply-driver">
-              <Button size="lg" variant="secondary">{t('home.driver.apply')}</Button>
+              <Button size="lg" variant="secondary">{t('home.driver.become')}</Button>
             </Link>
           </div>
         </div>

@@ -18,13 +18,17 @@ import ApplicationSubmitted from "./pages/ApplicationSubmitted";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminApplications from "./pages/admin/Applications";
 import AdminSupportTickets from "./pages/admin/SupportTickets";
+import AdminServiceOrders from "./pages/admin/ServiceOrders";
 import SellerDashboard from "./pages/seller/Dashboard";
 import SellerSetup from "./pages/seller/Setup";
 import SellerProducts from "./pages/seller/Products";
 import SellerOrders from "./pages/seller/Orders";
 import SellerWallet from "./pages/seller/Wallet";
+import SellerServices from "./pages/seller/Services";
 import DriverDashboard from "./pages/driver/Dashboard";
 import Store from "./pages/Store";
+import Services from "./pages/Services";
+import OrderService from "./pages/OrderService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,17 +49,21 @@ const App = () => (
             <Route path="/account" element={<Account />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/order-service/:serviceId" element={<OrderService />} />
             <Route path="/apply-seller" element={<ApplySeller />} />
             <Route path="/apply-driver" element={<ApplyDriver />} />
             <Route path="/application-submitted" element={<ApplicationSubmitted />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/applications" element={<AdminApplications />} />
             <Route path="/admin/support-tickets" element={<AdminSupportTickets />} />
+            <Route path="/admin/service-orders" element={<AdminServiceOrders />} />
             <Route path="/seller" element={<SellerDashboard />} />
             <Route path="/seller/setup" element={<SellerSetup />} />
             <Route path="/seller/products" element={<SellerProducts />} />
             <Route path="/seller/orders" element={<SellerOrders />} />
             <Route path="/seller/wallet" element={<SellerWallet />} />
+            <Route path="/seller/services" element={<SellerServices />} />
             <Route path="/driver" element={<DriverDashboard />} />
             <Route path="/store/:storeSlug" element={<Store />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
