@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, DollarSign, Briefcase, Upload, Loader2 } from "lucide-react";
+import { Clock, DollarSign, Briefcase, Upload, Loader2, MapPin } from "lucide-react";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 interface Service {
   id: string;
@@ -33,6 +34,10 @@ export default function OrderService() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState("");
+  const { loading: locationLoading, requestLocation } = useGeolocation();
+  const [customerLatitude, setCustomerLatitude] = useState<number | null>(null);
+  const [customerLongitude, setCustomerLongitude] = useState<number | null>(null);
   
   // Form state
   const [hours, setHours] = useState(1);
@@ -65,15 +70,40 @@ export default function OrderService() {
     }
     setUserId(user.id);
     
-    // Get user phone from profile
+    // Get user phone and name from profile
     const { data: profile } = await supabase
       .from("profiles")
-      .select("phone")
+      .select("phone, full_name, latitude, longitude")
       .eq("id", user.id)
       .single();
     
     if (profile?.phone) {
       setPhone(profile.phone);
+    }
+    if (profile?.full_name) {
+      setCustomerName(profile.full_name);
+    }
+    if (profile?.latitude && profile?.longitude) {
+      setCustomerLatitude(profile.latitude);
+      setCustomerLongitude(profile.longitude);
+    }
+  };
+
+  const handleGetLocation = async () => {
+    try {
+      const coords = await requestLocation();
+      setCustomerLatitude(coords.latitude);
+      setCustomerLongitude(coords.longitude);
+      toast({
+        title: "Location Captured",
+        description: "Your location has been saved for this order.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Location Error",
+        description: err || "Failed to get your location. Please enable location access.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -159,7 +189,7 @@ export default function OrderService() {
         paymentProofUrl = urlData.publicUrl;
       }
 
-      // Create service order
+      // Create service order with location
       const { error } = await supabase
         .from("service_orders")
         .insert({
@@ -173,6 +203,9 @@ export default function OrderService() {
           payment_proof_url: paymentProofUrl,
           payment_method: paymentMethod,
           customer_phone: phone,
+          customer_name: customerName,
+          customer_latitude: customerLatitude,
+          customer_longitude: customerLongitude,
           notes,
         });
 
@@ -283,6 +316,35 @@ export default function OrderService() {
                   placeholder="09XXXXXXXX"
                   required
                 />
+              </div>
+
+              {/* Your Location */}
+              <div className="space-y-2">
+                <Label>Your Location</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGetLocation}
+                  disabled={locationLoading}
+                  className="w-full"
+                >
+                  {locationLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Getting Location...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="h-4 w-4 mr-2" />
+                      {customerLatitude ? "Location Captured ✓" : "Share My Location"}
+                    </>
+                  )}
+                </Button>
+                {customerLatitude && customerLongitude && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    📍 Location saved for the service provider
+                  </p>
+                )}
               </div>
 
               {/* Notes */}

@@ -822,6 +822,9 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           customer_id: string
+          customer_latitude: number | null
+          customer_longitude: number | null
+          customer_name: string | null
           customer_phone: string
           hours: number | null
           id: string
@@ -829,6 +832,7 @@ export type Database = {
           payment_method: string | null
           payment_proof_url: string | null
           quantity: number | null
+          seller_confirmed: boolean | null
           seller_id: string
           service_id: string
           status: string
@@ -841,6 +845,9 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           customer_id: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_name?: string | null
           customer_phone: string
           hours?: number | null
           id?: string
@@ -848,6 +855,7 @@ export type Database = {
           payment_method?: string | null
           payment_proof_url?: string | null
           quantity?: number | null
+          seller_confirmed?: boolean | null
           seller_id: string
           service_id: string
           status?: string
@@ -860,6 +868,9 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           customer_id?: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          customer_name?: string | null
           customer_phone?: string
           hours?: number | null
           id?: string
@@ -867,6 +878,7 @@ export type Database = {
           payment_method?: string | null
           payment_proof_url?: string | null
           quantity?: number | null
+          seller_confirmed?: boolean | null
           seller_id?: string
           service_id?: string
           status?: string
@@ -1305,6 +1317,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      seller_confirm_service_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       send_notification_to_all: {
         Args: {
           notification_message: string
@@ -1324,6 +1340,7 @@ export type Database = {
         | "shipped"
         | "delivered"
         | "cancelled"
+        | "awaiting_customer_confirmation"
       product_category:
         | "electronics"
         | "fashion"
@@ -1470,6 +1487,7 @@ export const Constants = {
         "shipped",
         "delivered",
         "cancelled",
+        "awaiting_customer_confirmation",
       ],
       product_category: [
         "electronics",
