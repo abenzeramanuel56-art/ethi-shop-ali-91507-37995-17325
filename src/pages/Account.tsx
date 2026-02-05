@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Truck, CheckCircle, Clock, RotateCcw } from "lucide-react";
+import { Package, Truck, CheckCircle, Clock, RotateCcw, Briefcase, Key, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -52,6 +52,26 @@ interface RefundRequest {
   admin_notes: string | null;
 }
 
+interface ServiceOrder {
+  id: string;
+  service_id: string;
+  total_etb: number;
+  status: string;
+  verification_code: string | null;
+  created_at: string;
+  hours: number | null;
+  quantity: number;
+  seller_confirmed: boolean;
+  services?: {
+    title: string;
+    category: string;
+  };
+  seller_stores?: {
+    store_name: string;
+    contact_phone: string | null;
+  };
+}
+
 const REFUND_REASONS = [
   { value: 'wrong_item', labelKey: 'refund.wrongItem' },
   { value: 'damaged', labelKey: 'refund.damaged' },
@@ -69,6 +89,7 @@ const Account = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
+  const [serviceOrders, setServiceOrders] = useState<ServiceOrder[]>([]);
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<Order | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [refundDetails, setRefundDetails] = useState("");
@@ -87,10 +108,17 @@ const Account = () => {
 
   const fetchData = async () => {
     try {
-      const [quotesResponse, ordersResponse, refundsResponse] = await Promise.all([
+      const [quotesResponse, ordersResponse, refundsResponse, serviceOrdersResponse] = await Promise.all([
         supabase.from("quote_requests").select("*").order("created_at", { ascending: false }),
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
         supabase.from("refund_requests").select("*").order("created_at", { ascending: false }),
+        supabase.from("service_orders").select(`
+          *,
+          services (
+            title,
+            category
+          )
+        `).order("created_at", { ascending: false }),
       ]);
 
       if (quotesResponse.error) throw quotesResponse.error;
@@ -99,6 +127,21 @@ const Account = () => {
       setQuoteRequests(quotesResponse.data || []);
       setOrders(ordersResponse.data || []);
       setRefundRequests(refundsResponse.data || []);
+      
+      // Fetch seller stores for service orders
+      if (serviceOrdersResponse.data) {
+        const ordersWithStores = await Promise.all(
+          serviceOrdersResponse.data.map(async (order) => {
+            const { data: store } = await supabase
+              .from("seller_stores")
+              .select("store_name, contact_phone")
+              .eq("id", order.seller_id)
+              .single();
+            return { ...order, seller_stores: store };
+          })
+        );
+        setServiceOrders(ordersWithStores as ServiceOrder[]);
+      }
 
       if (ordersResponse.data && ordersResponse.data.length > 0) {
         const itemsMap: Record<string, OrderItem[]> = {};
@@ -248,6 +291,7 @@ const Account = () => {
         <Tabs defaultValue="orders" className="w-full">
           <TabsList>
             <TabsTrigger value="orders">{t('account.orders')}</TabsTrigger>
+            <TabsTrigger value="services">Service Orders</TabsTrigger>
             <TabsTrigger value="quotes">{t('account.quoteRequests')}</TabsTrigger>
             <TabsTrigger value="refunds">{t('account.refunds')}</TabsTrigger>
           </TabsList>
@@ -446,6 +490,116 @@ const Account = () => {
                             </p>
                           )}
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="services" className="mt-6">
+            {loading ? (
+              <div className="text-center text-muted-foreground">{t('common.loading')}</div>
+            ) : serviceOrders.length === 0 ? (
+              <Card className="p-12 text-center">
+                <p className="text-lg text-muted-foreground">No service orders yet</p>
+                <Button className="mt-4" onClick={() => navigate("/services")}>
+                  Browse Services
+                </Button>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {serviceOrders.map((order) => (
+                  <Card key={order.id} className="overflow-hidden">
+                    <CardHeader className="bg-muted/30">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="flex items-center gap-2">
+                            <Briefcase className="h-5 w-5" />
+                            {order.services?.title || "Service Order"}
+                          </CardTitle>
+                          <CardDescription>
+                            Ordered on {new Date(order.created_at).toLocaleDateString()}
+                          </CardDescription>
+                        </div>
+                        <Badge className={getStatusColor(order.status)}>
+                          {order.status.replace(/_/g, " ").toUpperCase()}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div className="flex justify-between border-b pb-3">
+                          <span className="font-semibold">Total:</span>
+                          <span className="text-2xl font-bold text-primary">
+                            {order.total_etb.toLocaleString()} ETB
+                          </span>
+                        </div>
+
+                        {order.hours && (
+                          <p className="text-sm text-muted-foreground">
+                            Hours booked: {order.hours}
+                          </p>
+                        )}
+
+                        {/* Show verification code for in_progress orders */}
+                        {(order.status === "in_progress" || order.status === "payment_verified") && order.verification_code && (
+                          <div className="rounded-lg border-2 border-primary bg-primary/5 p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Key className="h-5 w-5 text-primary" />
+                              <h4 className="font-semibold text-primary">Your Verification Code</h4>
+                            </div>
+                            <div className="font-mono text-2xl font-bold tracking-widest text-center bg-background rounded p-3 border">
+                              {order.verification_code}
+                            </div>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              ⚠️ Only share this code with the service provider AFTER they complete the service. This releases your payment to them.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Show seller contact for confirmed orders */}
+                        {order.seller_confirmed && order.seller_stores?.contact_phone && (
+                          <div className="rounded-lg bg-success/10 p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Phone className="h-5 w-5 text-success" />
+                              <h4 className="font-semibold text-success">Service Provider Contact</h4>
+                            </div>
+                            <p className="font-medium">{order.seller_stores.store_name}</p>
+                            <a 
+                              href={`tel:${order.seller_stores.contact_phone}`}
+                              className="text-primary hover:underline"
+                            >
+                              {order.seller_stores.contact_phone}
+                            </a>
+                          </div>
+                        )}
+
+                        {order.status === "pending_payment" && (
+                          <div className="rounded-lg border bg-warning/10 p-4 text-sm">
+                            <p className="font-medium">⏳ Waiting for payment verification</p>
+                            <p className="text-muted-foreground">
+                              Please upload your payment proof and wait for admin verification.
+                            </p>
+                          </div>
+                        )}
+
+                        {order.status === "payment_submitted" && (
+                          <div className="rounded-lg border bg-info/10 p-4 text-sm">
+                            <p className="font-medium">📤 Payment submitted</p>
+                            <p className="text-muted-foreground">
+                              Your payment is being verified. You'll be notified once approved.
+                            </p>
+                          </div>
+                        )}
+
+                        {order.status === "completed" && (
+                          <div className="rounded-lg bg-success/10 p-4 flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-success" />
+                            <span className="font-medium text-success">Service Completed</span>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

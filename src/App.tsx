@@ -25,6 +25,7 @@ import SellerProducts from "./pages/seller/Products";
 import SellerOrders from "./pages/seller/Orders";
 import SellerWallet from "./pages/seller/Wallet";
 import SellerServices from "./pages/seller/Services";
+import SellerServiceOrders from "./pages/seller/ServiceOrders";
 import DriverDashboard from "./pages/driver/Dashboard";
 import Store from "./pages/Store";
 import Services from "./pages/Services";
@@ -64,6 +65,7 @@ const App = () => (
             <Route path="/seller/orders" element={<SellerOrders />} />
             <Route path="/seller/wallet" element={<SellerWallet />} />
             <Route path="/seller/services" element={<SellerServices />} />
+            <Route path="/seller/service-orders" element={<SellerServiceOrders />} />
             <Route path="/driver" element={<DriverDashboard />} />
             <Route path="/store/:storeSlug" element={<Store />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

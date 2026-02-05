@@ -33,9 +33,10 @@ export default function SellerWallet() {
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"telebirr" | "cbe">("telebirr");
+  const [paymentMethod, setPaymentMethod] = useState<"telebirr" | "cbe" | "bunna" | "awash" | "abyssinia">("telebirr");
   const [accountDetail1, setAccountDetail1] = useState("");
   const [accountDetail2, setAccountDetail2] = useState("");
+  const [accountName, setAccountName] = useState("");
 
   useEffect(() => {
     fetchWalletData();
@@ -97,8 +98,8 @@ export default function SellerWallet() {
         user_id: user.id,
         amount_etb: amount,
         payment_method: paymentMethod,
-        account_detail_1: accountDetail1,
-        account_detail_2: accountDetail2 || null,
+        account_detail_1: paymentMethod === "telebirr" ? accountDetail1 : accountName,
+        account_detail_2: paymentMethod === "telebirr" ? null : accountDetail1,
         status: "pending"
       });
 
@@ -119,6 +120,7 @@ export default function SellerWallet() {
     setWithdrawAmount("");
     setAccountDetail1("");
     setAccountDetail2("");
+    setAccountName("");
     await fetchWalletData();
   };
 
@@ -176,14 +178,26 @@ export default function SellerWallet() {
 
                 <div>
                   <Label>Payment Method *</Label>
-                  <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "telebirr" | "cbe")}>
+                  <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="telebirr" id="telebirr" />
                       <Label htmlFor="telebirr">TeleBirr</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="cbe" id="cbe" />
-                      <Label htmlFor="cbe">CBE</Label>
+                      <Label htmlFor="cbe">CBE (Commercial Bank of Ethiopia)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="bunna" id="bunna" />
+                      <Label htmlFor="bunna">Bunna Bank</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="awash" id="awash" />
+                      <Label htmlFor="awash">Awash Bank</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="abyssinia" id="abyssinia" />
+                      <Label htmlFor="abyssinia">Bank of Abyssinia</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -201,14 +215,15 @@ export default function SellerWallet() {
                   </div>
                 )}
 
-                {paymentMethod === "cbe" && (
+                {paymentMethod !== "telebirr" && (
                   <>
                     <div>
                       <Label htmlFor="accountName">Account Holder Name *</Label>
                       <Input
                         id="accountName"
-                        value={accountDetail1}
-                        onChange={(e) => setAccountDetail1(e.target.value)}
+                        value={accountName}
+                        onChange={(e) => setAccountName(e.target.value)}
+                        placeholder="Full name as on bank account"
                         required
                       />
                     </div>
@@ -216,15 +231,16 @@ export default function SellerWallet() {
                       <Label htmlFor="accountNumber">Account Number *</Label>
                       <Input
                         id="accountNumber"
-                        value={accountDetail2}
-                        onChange={(e) => setAccountDetail2(e.target.value)}
+                        value={accountDetail1}
+                        onChange={(e) => setAccountDetail1(e.target.value)}
+                        placeholder="Your bank account number"
                         required
                       />
                     </div>
                   </>
                 )}
 
-                <Button type="submit">Submit Request</Button>
+                <Button type="submit" className="w-full">Submit Withdrawal Request</Button>
               </form>
             </CardContent>
           </Card>

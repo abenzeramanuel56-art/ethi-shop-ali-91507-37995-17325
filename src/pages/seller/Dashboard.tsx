@@ -213,9 +213,14 @@ export default function SellerDashboard() {
                 <p className="text-muted-foreground mb-4">
                   Offer services like tutoring, maintenance, tech support, and more.
                 </p>
-                <Button onClick={() => navigate("/seller/services")}>
-                  Manage Services
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={() => navigate("/seller/services")}>
+                    Manage Services
+                  </Button>
+                  <Button onClick={() => navigate("/seller/service-orders")} variant="outline">
+                    View Service Orders
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
