@@ -16,26 +16,10 @@ export function useGeolocation() {
   });
 
   const requestLocation = useCallback(() => {
-    // Check if geolocation is supported
     if (!navigator.geolocation) {
       const errorMsg = 'Geolocation is not supported by your browser';
-      setState(prev => ({
-        ...prev,
-        error: errorMsg,
-        loading: false,
-      }));
-      return Promise.reject(errorMsg);
-    }
-
-    // Check if we're on HTTPS (required for geolocation in most browsers)
-    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-      const errorMsg = 'Location access requires a secure connection (HTTPS)';
-      setState(prev => ({
-        ...prev,
-        error: errorMsg,
-        loading: false,
-      }));
-      return Promise.reject(errorMsg);
+      setState(prev => ({ ...prev, error: errorMsg, loading: false }));
+      return Promise.reject(new Error(errorMsg));
     }
 
     setState(prev => ({ ...prev, loading: true, error: null }));
@@ -47,38 +31,29 @@ export function useGeolocation() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
           };
-          setState({
-            ...coords,
-            error: null,
-            loading: false,
-          });
+          setState({ ...coords, error: null, loading: false });
           resolve(coords);
         },
         (error) => {
           let errorMessage = 'Failed to get location';
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              errorMessage = 'Location permission denied. Please enable location access in your browser settings and try again.';
+              errorMessage = 'Location permission denied. Please enable location access in your browser settings.';
               break;
             case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information unavailable. Please check your device GPS settings.';
+              errorMessage = 'Location information unavailable. Please check your GPS settings.';
               break;
             case error.TIMEOUT:
               errorMessage = 'Location request timed out. Please try again.';
               break;
           }
-          console.error('Geolocation error:', error.code, error.message);
-          setState(prev => ({
-            ...prev,
-            error: errorMessage,
-            loading: false,
-          }));
-          reject(errorMessage);
+          setState(prev => ({ ...prev, error: errorMessage, loading: false }));
+          reject(new Error(errorMessage));
         },
         {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
+          enableHighAccuracy: false, // false = faster, works on more devices
+          timeout: 20000,
+          maximumAge: 120000, // accept 2min cached position
         }
       );
     });
@@ -88,13 +63,8 @@ export function useGeolocation() {
 }
 
 // Calculate distance between two points using Haversine formula
-export function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371; // Earth's radius in kilometers
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
@@ -109,7 +79,6 @@ function toRad(deg: number): number {
   return deg * (Math.PI / 180);
 }
 
-// Driver rate per kilometer
 export const DRIVER_RATE_PER_KM = 25;
 
 export function calculateDriverEarning(distanceKm: number): number {
