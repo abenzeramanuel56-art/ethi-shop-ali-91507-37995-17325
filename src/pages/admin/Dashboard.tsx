@@ -456,7 +456,17 @@ const AdminDashboard = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 py-12">
-        <h1 className="mb-8 text-4xl font-bold text-foreground">Admin Dashboard</h1>
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
+          <Button
+            onClick={() => navigate("/admin/maintenance")}
+            size="lg"
+            className="btn-glow bg-gradient-to-r from-destructive to-primary text-white font-bold shadow-2xl"
+          >
+            <Power className="h-5 w-5 mr-2" />
+            Site Control · Shut Down / Start
+          </Button>
+        </div>
 
         {/* Stats Cards */}
         <div className="mb-8 grid gap-4 md:grid-cols-4">
