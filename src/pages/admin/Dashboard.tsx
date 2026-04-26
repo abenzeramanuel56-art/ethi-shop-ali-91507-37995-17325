@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DollarSign, Package, ShoppingCart, Users, Plus } from "lucide-react";
+import { DollarSign, Package, ShoppingCart, Users, Plus, Power } from "lucide-react";
 import AdminSellers from "./Sellers";
 import AdminWithdrawals from "./Withdrawals";
 import AdminMessaging from "./Messaging";
