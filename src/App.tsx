@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BannedUserCheck } from "@/components/BannedUserCheck";
 import { AdvertisementPlayer } from "@/components/AdvertisementPlayer";
+import { MaintenanceWrapper } from "@/components/MaintenanceWrapper";
+import AdminMaintenance from "./pages/admin/Maintenance";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Products from "./pages/Products";
