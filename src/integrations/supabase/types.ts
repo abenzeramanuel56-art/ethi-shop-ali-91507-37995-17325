@@ -59,6 +59,140 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      digital_product_orders: {
+        Row: {
+          admin_notes: string | null
+          buyer_id: string
+          created_at: string | null
+          digital_product_id: string
+          download_code: string | null
+          download_count: number | null
+          id: string
+          payment_method: string | null
+          payment_proof_url: string | null
+          price_etb: number
+          seller_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          buyer_id: string
+          created_at?: string | null
+          digital_product_id: string
+          download_code?: string | null
+          download_count?: number | null
+          id?: string
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          price_etb: number
+          seller_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          buyer_id?: string
+          created_at?: string | null
+          digital_product_id?: string
+          download_code?: string | null
+          download_count?: number | null
+          id?: string
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          price_etb?: number
+          seller_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_product_orders_digital_product_id_fkey"
+            columns: ["digital_product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_products: {
+        Row: {
+          ai_verification_notes: string | null
+          ai_verification_status: string
+          created_at: string | null
+          description: string
+          file_name: string | null
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          is_active: boolean | null
+          price_etb: number
+          product_type: string
+          seller_id: string
+          store_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_verification_notes?: string | null
+          ai_verification_status?: string
+          created_at?: string | null
+          description: string
+          file_name?: string | null
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          is_active?: boolean | null
+          price_etb: number
+          product_type: string
+          seller_id: string
+          store_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_verification_notes?: string | null
+          ai_verification_status?: string
+          created_at?: string | null
+          description?: string
+          file_name?: string | null
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          is_active?: boolean | null
+          price_etb?: number
+          product_type?: string
+          seller_id?: string
+          store_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       driver_applications: {
         Row: {
           admin_notes: string | null
@@ -113,6 +247,8 @@ export type Database = {
       driver_orders: {
         Row: {
           created_at: string | null
+          current_latitude: number | null
+          current_longitude: number | null
           customer_confirmed_delivery: boolean | null
           customer_latitude: number | null
           customer_longitude: number | null
@@ -122,6 +258,7 @@ export type Database = {
           driver_earning_etb: number | null
           driver_id: string
           id: string
+          location_updated_at: string | null
           order_id: string
           pickup_at: string | null
           seller_confirmed_pickup: boolean | null
@@ -133,6 +270,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_latitude?: number | null
+          current_longitude?: number | null
           customer_confirmed_delivery?: boolean | null
           customer_latitude?: number | null
           customer_longitude?: number | null
@@ -142,6 +281,7 @@ export type Database = {
           driver_earning_etb?: number | null
           driver_id: string
           id?: string
+          location_updated_at?: string | null
           order_id: string
           pickup_at?: string | null
           seller_confirmed_pickup?: boolean | null
@@ -153,6 +293,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_latitude?: number | null
+          current_longitude?: number | null
           customer_confirmed_delivery?: boolean | null
           customer_latitude?: number | null
           customer_longitude?: number | null
@@ -162,6 +304,7 @@ export type Database = {
           driver_earning_etb?: number | null
           driver_id?: string
           id?: string
+          location_updated_at?: string | null
           order_id?: string
           pickup_at?: string | null
           seller_confirmed_pickup?: boolean | null
@@ -186,6 +329,9 @@ export type Database = {
           created_at: string | null
           current_balance_etb: number
           id: string
+          last_latitude: number | null
+          last_location_updated_at: string | null
+          last_longitude: number | null
           total_earned_etb: number
           updated_at: string | null
           user_id: string
@@ -194,6 +340,9 @@ export type Database = {
           created_at?: string | null
           current_balance_etb?: number
           id?: string
+          last_latitude?: number | null
+          last_location_updated_at?: string | null
+          last_longitude?: number | null
           total_earned_etb?: number
           updated_at?: string | null
           user_id: string
@@ -202,6 +351,9 @@ export type Database = {
           created_at?: string | null
           current_balance_etb?: number
           id?: string
+          last_latitude?: number | null
+          last_location_updated_at?: string | null
+          last_longitude?: number | null
           total_earned_etb?: number
           updated_at?: string | null
           user_id?: string
@@ -1256,6 +1408,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_advance_order_status: {
+        Args: {
+          p_new_status: Database["public"]["Enums"]["order_status"]
+          p_order_id: string
+        }
+        Returns: undefined
+      }
       admin_approve_driver_application: {
         Args: { p_admin_notes?: string; p_application_id: string }
         Returns: undefined
@@ -1268,6 +1427,7 @@ export type Database = {
         Args: { p_reason: string; p_user_id: string }
         Returns: string
       }
+      admin_factory_reset_transactional: { Args: never; Returns: undefined }
       admin_suspend_user: {
         Args: { p_days: number; p_reason: string; p_user_id: string }
         Returns: string
@@ -1299,6 +1459,10 @@ export type Database = {
       driver_confirm_pickup: {
         Args: { p_driver_order_id: string }
         Returns: boolean
+      }
+      driver_update_location: {
+        Args: { p_driver_order_id: string; p_lat: number; p_lng: number }
+        Returns: undefined
       }
       get_store_by_slug: {
         Args: { p_slug: string }
