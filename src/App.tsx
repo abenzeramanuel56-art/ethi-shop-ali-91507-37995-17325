@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BannedUserCheck } from "@/components/BannedUserCheck";
 import { AdvertisementPlayer } from "@/components/AdvertisementPlayer";
+import { MaintenanceWrapper } from "@/components/MaintenanceWrapper";
+import AdminMaintenance from "./pages/admin/Maintenance";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Products from "./pages/Products";
@@ -41,36 +43,39 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <BannedUserCheck>
-          <AdvertisementPlayer />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/request-item" element={<RequestItem />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/order-service/:serviceId" element={<OrderService />} />
-            <Route path="/apply-seller" element={<ApplySeller />} />
-            <Route path="/apply-driver" element={<ApplyDriver />} />
-            <Route path="/application-submitted" element={<ApplicationSubmitted />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/applications" element={<AdminApplications />} />
-            <Route path="/admin/support-tickets" element={<AdminSupportTickets />} />
-            <Route path="/admin/service-orders" element={<AdminServiceOrders />} />
-            <Route path="/seller" element={<SellerDashboard />} />
-            <Route path="/seller/setup" element={<SellerSetup />} />
-            <Route path="/seller/products" element={<SellerProducts />} />
-            <Route path="/seller/orders" element={<SellerOrders />} />
-            <Route path="/seller/wallet" element={<SellerWallet />} />
-            <Route path="/seller/services" element={<SellerServices />} />
-            <Route path="/seller/service-orders" element={<SellerServiceOrders />} />
-            <Route path="/driver" element={<DriverDashboard />} />
-            <Route path="/store/:storeSlug" element={<Store />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <MaintenanceWrapper>
+            <AdvertisementPlayer />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/request-item" element={<RequestItem />} />
+              <Route path="/account" element={<Account />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/order-service/:serviceId" element={<OrderService />} />
+              <Route path="/apply-seller" element={<ApplySeller />} />
+              <Route path="/apply-driver" element={<ApplyDriver />} />
+              <Route path="/application-submitted" element={<ApplicationSubmitted />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/applications" element={<AdminApplications />} />
+              <Route path="/admin/support-tickets" element={<AdminSupportTickets />} />
+              <Route path="/admin/service-orders" element={<AdminServiceOrders />} />
+              <Route path="/admin/maintenance" element={<AdminMaintenance />} />
+              <Route path="/seller" element={<SellerDashboard />} />
+              <Route path="/seller/setup" element={<SellerSetup />} />
+              <Route path="/seller/products" element={<SellerProducts />} />
+              <Route path="/seller/orders" element={<SellerOrders />} />
+              <Route path="/seller/wallet" element={<SellerWallet />} />
+              <Route path="/seller/services" element={<SellerServices />} />
+              <Route path="/seller/service-orders" element={<SellerServiceOrders />} />
+              <Route path="/driver" element={<DriverDashboard />} />
+              <Route path="/store/:storeSlug" element={<Store />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </MaintenanceWrapper>
         </BannedUserCheck>
       </BrowserRouter>
     </TooltipProvider>
