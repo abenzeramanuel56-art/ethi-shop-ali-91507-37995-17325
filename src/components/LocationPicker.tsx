@@ -27,6 +27,18 @@ export function LocationPicker({
   const [manualLat, setManualLat] = useState(latitude?.toString() || "");
   const [manualLng, setManualLng] = useState(longitude?.toString() || "");
   const [manualAddress, setManualAddress] = useState(address || "");
+
+  // Live-sync manual inputs to parent when both are valid numbers
+  useEffect(() => {
+    const lat = parseFloat(manualLat);
+    const lng = parseFloat(manualLng);
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      if (lat !== latitude || lng !== longitude) {
+        onLocationChange(lat, lng, manualAddress || undefined);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualLat, manualLng, manualAddress]);
   const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
 
   // Check permission status on mount
