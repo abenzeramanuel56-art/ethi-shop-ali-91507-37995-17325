@@ -183,9 +183,10 @@ export default function SellerDashboard() {
         </div>
 
         <Tabs defaultValue="products">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="digital">Digital</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
             <TabsTrigger value="store">Store Settings</TabsTrigger>
@@ -221,6 +222,22 @@ export default function SellerDashboard() {
                     View Service Orders
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="digital">
+            <Card>
+              <CardHeader>
+                <CardTitle>Digital Products (Apps & Files)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Sell code, apps, documents, or media files. Each upload is verified by AI before going live.
+                </p>
+                <Button onClick={() => navigate("/seller/digital-products")}>
+                  Manage Digital Products
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

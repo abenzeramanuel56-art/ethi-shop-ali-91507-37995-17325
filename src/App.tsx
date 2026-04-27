@@ -28,10 +28,13 @@ import SellerOrders from "./pages/seller/Orders";
 import SellerWallet from "./pages/seller/Wallet";
 import SellerServices from "./pages/seller/Services";
 import SellerServiceOrders from "./pages/seller/ServiceOrders";
+import SellerDigitalProducts from "./pages/seller/DigitalProducts";
 import DriverDashboard from "./pages/driver/Dashboard";
+import DriverWallet from "./pages/driver/Wallet";
 import Store from "./pages/Store";
 import Services from "./pages/Services";
 import OrderService from "./pages/OrderService";
+import DigitalMarket from "./pages/DigitalMarket";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,7 +73,10 @@ const App = () => (
               <Route path="/seller/wallet" element={<SellerWallet />} />
               <Route path="/seller/services" element={<SellerServices />} />
               <Route path="/seller/service-orders" element={<SellerServiceOrders />} />
+              <Route path="/seller/digital-products" element={<SellerDigitalProducts />} />
               <Route path="/driver" element={<DriverDashboard />} />
+              <Route path="/driver/wallet" element={<DriverWallet />} />
+              <Route path="/digital-market" element={<DigitalMarket />} />
               <Route path="/store/:storeSlug" element={<Store />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

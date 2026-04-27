@@ -87,6 +87,11 @@ export const Navbar = () => {
                 {t('nav.services')}
               </Button>
             </Link>
+            <Link to="/digital-market">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                Digital
+              </Button>
+            </Link>
             <Link to="/request-item">
               <Button size="sm" className="ml-1">
                 {t('nav.request')}
@@ -162,6 +167,9 @@ export const Navbar = () => {
             </Link>
             <Link to="/services" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" size="sm" className="w-full justify-start">{t('nav.services')}</Button>
+            </Link>
+            <Link to="/digital-market" onClick={() => setMobileOpen(false)}>
+              <Button variant="ghost" size="sm" className="w-full justify-start">Digital Market</Button>
             </Link>
             <Link to="/request-item" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" size="sm" className="w-full justify-start">{t('nav.request')}</Button>

@@ -100,6 +100,36 @@ export default function DriverDashboard() {
     };
   }, [isDriver]);
 
+  // Live GPS tracking — broadcast driver location every 15s while there are active deliveries
+  useEffect(() => {
+    if (!isDriver) return;
+    const activeIds = myOrders
+      .filter(o => o.status === "pending" || o.status === "picked_up")
+      .map(o => o.id);
+    if (activeIds.length === 0) return;
+    if (!navigator.geolocation) return;
+
+    const broadcast = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          activeIds.forEach((id) => {
+            (supabase as any).rpc("driver_update_location", {
+              p_driver_order_id: id,
+              p_lat: pos.coords.latitude,
+              p_lng: pos.coords.longitude,
+            });
+          });
+        },
+        (err) => console.warn("GPS error", err.message),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    };
+
+    broadcast();
+    const interval = setInterval(broadcast, 15000);
+    return () => clearInterval(interval);
+  }, [isDriver, myOrders]);
+
   const checkDriverStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -718,8 +748,8 @@ export default function DriverDashboard() {
                     </p>
                   </div>
 
-                  <Button className="w-full" disabled={!wallet || wallet.current_balance_etb < 100}>
-                    Request Withdrawal (Min. 100 ETB)
+                  <Button className="w-full" onClick={() => navigate("/driver/wallet")}>
+                    Manage Withdrawals
                   </Button>
                 </div>
               </CardContent>
