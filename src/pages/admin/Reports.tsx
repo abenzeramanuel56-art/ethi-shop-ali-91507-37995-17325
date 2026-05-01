@@ -38,25 +38,28 @@ export default function AdminReports() {
 
   const fetchReports = async () => {
     try {
-      const { data: reportsData, error } = await supabase
+      const { data: reportsData, error } = await (supabase as any)
         .from("store_reports")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch related data
       const reportsWithDetails = await Promise.all(
-        (reportsData || []).map(async (report) => {
-          const [storeData, profileData] = await Promise.all([
-            (supabase as any).from("seller_stores").select("store_name, store_slug").eq("id", report.store_id).single(),
-            supabase.from("profiles").select("full_name").eq("id", report.reporter_id).single()
+        (reportsData || []).map(async (report: any) => {
+          const [storeData, profileData, productData, digitalData] = await Promise.all([
+            report.store_id ? (supabase as any).from("seller_stores").select("store_name, store_slug").eq("id", report.store_id).maybeSingle() : Promise.resolve({ data: null }),
+            supabase.from("profiles").select("full_name").eq("id", report.reporter_id).maybeSingle(),
+            report.product_id ? (supabase as any).from("products").select("name").eq("id", report.product_id).maybeSingle() : Promise.resolve({ data: null }),
+            report.digital_product_id ? (supabase as any).from("digital_products").select("title").eq("id", report.digital_product_id).maybeSingle() : Promise.resolve({ data: null }),
           ]);
 
           return {
             ...report,
-            reseller_stores: storeData.data || { store_name: "Unknown", store_slug: "" },
-            profiles: profileData.data || { full_name: "Unknown" }
+            reseller_stores: storeData.data || { store_name: report.product_id ? "(Product report)" : report.digital_product_id ? "(Digital product report)" : "Unknown", store_slug: "" },
+            profiles: profileData.data || { full_name: "Unknown" },
+            product_name: productData?.data?.name || null,
+            digital_product_title: digitalData?.data?.title || null,
           };
         })
       );
