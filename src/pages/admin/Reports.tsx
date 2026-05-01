@@ -117,8 +117,9 @@ export default function AdminReports() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 flex-wrap">
                       {report.reseller_stores?.store_name}
+                      <Badge variant="outline" className="text-xs uppercase">{report.report_type || 'store'}</Badge>
                       <Badge variant={
                         report.status === 'resolved' ? 'default' :
                         report.status === 'reviewed' ? 'secondary' : 'outline'
@@ -126,6 +127,11 @@ export default function AdminReports() {
                         {report.status}
                       </Badge>
                     </CardTitle>
+                    {(report.product_name || report.digital_product_title) && (
+                      <p className="text-sm font-semibold mt-1">
+                        Item: {report.product_name || report.digital_product_title}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground mt-1">
                       Reported by: {report.profiles?.full_name}
                     </p>
@@ -133,14 +139,16 @@ export default function AdminReports() {
                       {new Date(report.created_at).toLocaleString()}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`/store/${report.reseller_stores?.store_slug}`, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View Store
-                  </Button>
+                  {report.reseller_stores?.store_slug && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`/store/${report.reseller_stores?.store_slug}`, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Store
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
