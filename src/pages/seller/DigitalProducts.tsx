@@ -64,6 +64,7 @@ export default function SellerDigitalProducts() {
         title: title.trim(),
         description: description.trim(),
         product_type: productType,
+        category,
         file_url: pub.publicUrl,
         file_name: file.name,
         file_size_bytes: file.size,
