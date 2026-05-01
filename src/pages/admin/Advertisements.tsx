@@ -19,6 +19,8 @@ interface Advertisement {
   time_gap_minutes: number;
   is_active: boolean;
   display_order: number;
+  trigger_type?: string;
+  trigger_path?: string | null;
 }
 
 export default function AdminAdvertisements() {
@@ -30,6 +32,9 @@ export default function AdminAdvertisements() {
   const [quizDifficulty, setQuizDifficulty] = useState("simple");
   const [displayDuration, setDisplayDuration] = useState("15");
   const [timeGap, setTimeGap] = useState("30");
+  const [triggerType, setTriggerType] = useState("on_interval");
+  const [triggerPath, setTriggerPath] = useState("/digital-market");
+
 
   useEffect(() => {
     fetchAdvertisements();
@@ -92,7 +97,7 @@ export default function AdminAdvertisements() {
         : 0;
 
       // Create advertisement
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("advertisements")
         .insert({
           title,
@@ -102,6 +107,8 @@ export default function AdminAdvertisements() {
           display_duration_seconds: parseInt(displayDuration),
           time_gap_minutes: parseInt(timeGap),
           display_order: maxOrder,
+          trigger_type: triggerType,
+          trigger_path: triggerType === "on_specific_page" ? triggerPath.trim() : null,
           created_by: user.id
         });
 
@@ -113,6 +120,8 @@ export default function AdminAdvertisements() {
       setQuizDifficulty("simple");
       setDisplayDuration("15");
       setTimeGap("30");
+      setTriggerType("on_interval");
+      setTriggerPath("/digital-market");
       fetchAdvertisements();
     } catch (error: any) {
       toast.error("Failed to create advertisement: " + error.message);
@@ -248,6 +257,26 @@ export default function AdminAdvertisements() {
                 max="1440"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>When to Show *</Label>
+              <Select value={triggerType} onValueChange={setTriggerType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="on_open">When user opens the website (once per session)</SelectItem>
+                  <SelectItem value="on_route_change">Every time the user navigates to a new page</SelectItem>
+                  <SelectItem value="on_interval">Every X minutes (uses Time Gap above)</SelectItem>
+                  <SelectItem value="on_specific_page">When user visits a specific page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {triggerType === "on_specific_page" && (
+              <div className="space-y-2">
+                <Label>Path (e.g. /digital-market, /products, /services)</Label>
+                <Input value={triggerPath} onChange={(e) => setTriggerPath(e.target.value)} placeholder="/digital-market" />
+              </div>
+            )}
           </div>
 
           <Button onClick={handleCreateAd} disabled={loading} className="w-full">
@@ -299,6 +328,9 @@ export default function AdminAdvertisements() {
                     <p className="font-medium">{ad.title}</p>
                     <p className="text-sm text-muted-foreground">
                       {ad.media_type === 'video' ? 'Video' : 'Image'} • {ad.display_duration_seconds}s • Every {ad.time_gap_minutes}min • Quiz: {ad.quiz_difficulty}
+                    </p>
+                    <p className="text-xs text-primary">
+                      Trigger: {ad.trigger_type || 'on_interval'}{ad.trigger_path ? ` (${ad.trigger_path})` : ''}
                     </p>
                   </div>
 

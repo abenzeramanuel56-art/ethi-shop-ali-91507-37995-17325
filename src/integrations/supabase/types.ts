@@ -27,6 +27,8 @@ export type Database = {
           quiz_difficulty: string
           time_gap_minutes: number
           title: string
+          trigger_path: string | null
+          trigger_type: string
           updated_at: string | null
         }
         Insert: {
@@ -41,6 +43,8 @@ export type Database = {
           quiz_difficulty?: string
           time_gap_minutes?: number
           title: string
+          trigger_path?: string | null
+          trigger_type?: string
           updated_at?: string | null
         }
         Update: {
@@ -55,6 +59,8 @@ export type Database = {
           quiz_difficulty?: string
           time_gap_minutes?: number
           title?: string
+          trigger_path?: string | null
+          trigger_type?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -143,6 +149,7 @@ export type Database = {
         Row: {
           ai_verification_notes: string | null
           ai_verification_status: string
+          category: string
           created_at: string | null
           description: string
           file_name: string | null
@@ -160,6 +167,7 @@ export type Database = {
         Insert: {
           ai_verification_notes?: string | null
           ai_verification_status?: string
+          category?: string
           created_at?: string | null
           description: string
           file_name?: string | null
@@ -177,6 +185,7 @@ export type Database = {
         Update: {
           ai_verification_notes?: string | null
           ai_verification_status?: string
+          category?: string
           created_at?: string | null
           description?: string
           file_name?: string | null
@@ -1116,34 +1125,43 @@ export type Database = {
           admin_notes: string | null
           created_at: string | null
           description: string | null
+          digital_product_id: string | null
           id: string
+          product_id: string | null
           reason: string
+          report_type: string
           reporter_id: string
           reviewed_at: string | null
           status: string | null
-          store_id: string
+          store_id: string | null
         }
         Insert: {
           admin_notes?: string | null
           created_at?: string | null
           description?: string | null
+          digital_product_id?: string | null
           id?: string
+          product_id?: string | null
           reason: string
+          report_type?: string
           reporter_id: string
           reviewed_at?: string | null
           status?: string | null
-          store_id: string
+          store_id?: string | null
         }
         Update: {
           admin_notes?: string | null
           created_at?: string | null
           description?: string | null
+          digital_product_id?: string | null
           id?: string
+          product_id?: string | null
           reason?: string
+          report_type?: string
           reporter_id?: string
           reviewed_at?: string | null
           status?: string | null
-          store_id?: string
+          store_id?: string | null
         }
         Relationships: [
           {

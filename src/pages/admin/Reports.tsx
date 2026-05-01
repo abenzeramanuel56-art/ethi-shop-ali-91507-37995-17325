@@ -11,20 +11,18 @@ import { Flag, ExternalLink } from "lucide-react";
 
 interface StoreReport {
   id: string;
-  store_id: string;
+  store_id: string | null;
   reporter_id: string;
   reason: string;
   description: string;
   status: string;
   admin_notes: string | null;
   created_at: string;
-  reseller_stores: {
-    store_name: string;
-    store_slug: string;
-  };
-  profiles: {
-    full_name: string;
-  };
+  report_type?: string;
+  product_name?: string | null;
+  digital_product_title?: string | null;
+  reseller_stores: { store_name: string; store_slug: string; };
+  profiles: { full_name: string; };
 }
 
 export default function AdminReports() {
@@ -38,25 +36,28 @@ export default function AdminReports() {
 
   const fetchReports = async () => {
     try {
-      const { data: reportsData, error } = await supabase
+      const { data: reportsData, error } = await (supabase as any)
         .from("store_reports")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch related data
       const reportsWithDetails = await Promise.all(
-        (reportsData || []).map(async (report) => {
-          const [storeData, profileData] = await Promise.all([
-            (supabase as any).from("seller_stores").select("store_name, store_slug").eq("id", report.store_id).single(),
-            supabase.from("profiles").select("full_name").eq("id", report.reporter_id).single()
+        (reportsData || []).map(async (report: any) => {
+          const [storeData, profileData, productData, digitalData] = await Promise.all([
+            report.store_id ? (supabase as any).from("seller_stores").select("store_name, store_slug").eq("id", report.store_id).maybeSingle() : Promise.resolve({ data: null }),
+            supabase.from("profiles").select("full_name").eq("id", report.reporter_id).maybeSingle(),
+            report.product_id ? (supabase as any).from("products").select("name").eq("id", report.product_id).maybeSingle() : Promise.resolve({ data: null }),
+            report.digital_product_id ? (supabase as any).from("digital_products").select("title").eq("id", report.digital_product_id).maybeSingle() : Promise.resolve({ data: null }),
           ]);
 
           return {
             ...report,
-            reseller_stores: storeData.data || { store_name: "Unknown", store_slug: "" },
-            profiles: profileData.data || { full_name: "Unknown" }
+            reseller_stores: storeData.data || { store_name: report.product_id ? "(Product report)" : report.digital_product_id ? "(Digital product report)" : "Unknown", store_slug: "" },
+            profiles: profileData.data || { full_name: "Unknown" },
+            product_name: productData?.data?.name || null,
+            digital_product_title: digitalData?.data?.title || null,
           };
         })
       );
@@ -116,8 +117,9 @@ export default function AdminReports() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 flex-wrap">
                       {report.reseller_stores?.store_name}
+                      <Badge variant="outline" className="text-xs uppercase">{report.report_type || 'store'}</Badge>
                       <Badge variant={
                         report.status === 'resolved' ? 'default' :
                         report.status === 'reviewed' ? 'secondary' : 'outline'
@@ -125,6 +127,11 @@ export default function AdminReports() {
                         {report.status}
                       </Badge>
                     </CardTitle>
+                    {(report.product_name || report.digital_product_title) && (
+                      <p className="text-sm font-semibold mt-1">
+                        Item: {report.product_name || report.digital_product_title}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground mt-1">
                       Reported by: {report.profiles?.full_name}
                     </p>
@@ -132,14 +139,16 @@ export default function AdminReports() {
                       {new Date(report.created_at).toLocaleString()}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(`/store/${report.reseller_stores?.store_slug}`, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    View Store
-                  </Button>
+                  {report.reseller_stores?.store_slug && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`/store/${report.reseller_stores?.store_slug}`, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Store
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">

@@ -10,6 +10,7 @@ import { ShoppingCart, Search, SlidersHorizontal, Store, Zap } from "lucide-reac
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ReportItemDialog from "@/components/ReportItemDialog";
 
 interface Product {
   id: string;
@@ -192,6 +193,7 @@ const Products = () => {
           <Button className="flex-1 h-8 text-xs font-bold btn-glow" onClick={() => handleBuyNow(product)}>
             Buy Now
           </Button>
+          <ReportItemDialog itemId={product.id} itemName={product.name} reportType="product" storeId={product.seller_id || undefined} triggerLabel="" variant="ghost" size="icon" />
         </div>
       </div>
     </div>

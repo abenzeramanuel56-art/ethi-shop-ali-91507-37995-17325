@@ -1,4 +1,4 @@
-// Verifies an uploaded digital product (code or file) matches its description using Lovable AI.
+// Verifies an uploaded digital product (code, app, website, file, document, video) matches its description using Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const corsHeaders = {
@@ -37,7 +37,6 @@ Deno.serve(async (req) => {
 
     // Download the file from storage
     const url = product.file_url as string;
-    // Extract storage path from public/signed URL
     const marker = "/digital-products/";
     const idx = url.indexOf(marker);
     const path = idx >= 0 ? url.substring(idx + marker.length).split("?")[0] : url;
@@ -53,38 +52,60 @@ Deno.serve(async (req) => {
     }
 
     let contentSample = "";
-    let analysisType: "code" | "binary" = "code";
+    let analysisType: "code" | "text" | "binary" = "binary";
+    const fileName = (product.file_name as string) || "unknown";
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    const codeExts = ['js','jsx','ts','tsx','py','java','c','cpp','cs','go','rb','php','html','htm','css','scss','vue','svelte','json','yml','yaml','sh','sql','rs','swift','kt','dart'];
+    const textExts = ['txt','md','csv','rtf','log'];
 
-    if (product.product_type === "code") {
-      const text = await fileData.text();
-      contentSample = text.slice(0, 8000); // first 8k chars
-      analysisType = "code";
-    } else {
-      // For files, check size + extension from filename, sample text if textual
-      try {
+    try {
+      if (codeExts.includes(ext)) {
+        contentSample = (await fileData.text()).slice(0, 12000);
+        analysisType = "code";
+      } else if (textExts.includes(ext) || product.product_type === "code") {
         const text = await fileData.text();
         if (/[\x00-\x08\x0E-\x1F]/.test(text.slice(0, 200))) {
-          contentSample = `[Binary file: ${product.file_name || "unknown"}, size: ${product.file_size_bytes || 0} bytes]`;
+          contentSample = `[Binary file: ${fileName}, size: ${product.file_size_bytes || 0} bytes]`;
           analysisType = "binary";
         } else {
-          contentSample = text.slice(0, 8000);
+          contentSample = text.slice(0, 12000);
+          analysisType = codeExts.includes(ext) ? "code" : "text";
         }
-      } catch {
-        contentSample = `[Binary file: ${product.file_name || "unknown"}, size: ${product.file_size_bytes || 0} bytes]`;
+      } else {
+        contentSample = `[Binary file: ${fileName}, size: ${product.file_size_bytes || 0} bytes, extension: .${ext}]`;
         analysisType = "binary";
       }
+    } catch {
+      contentSample = `[Unreadable file: ${fileName}, size: ${product.file_size_bytes || 0} bytes]`;
+      analysisType = "binary";
     }
 
-    const systemPrompt = `You are a content verification assistant for a digital marketplace. You decide if an uploaded ${product.product_type} matches the seller's description. Reply with strict JSON: {"matches": true|false, "confidence": 0-100, "reason": "short reason"}. Be lenient — if the content is plausibly related to the description, mark matches=true. Only reject if it is clearly unrelated, empty, malicious, or spam.`;
+    const category = product.category || "other";
+    const systemPrompt = `You are a strict content verification assistant for a digital marketplace.
+You decide if the uploaded ${analysisType} file actually matches the seller's stated TITLE, DESCRIPTION, and CATEGORY.
+
+CATEGORY-SPECIFIC RULES:
+- "apps" or "websites": expects code (HTML/JS/TS/Python/etc.) or a packaged app (apk, exe, zip with code). If you can read the code, verify it implements features hinted at in the description (e.g. login, dashboard, game, calculator). Reject if the code is empty, "Hello World", placeholder, or completely unrelated to the description.
+- "code": expects source code matching the language and purpose described.
+- "courses": expects video, PDF, slides, or zip with lessons. For text/PDF samples, check the topic matches.
+- "videos": expects mp4/mov/webm extensions.
+- "documents": expects pdf/doc/docx/txt/md, content topic should match.
+- "other": be lenient.
+
+Reply with strict JSON: {"matches": true|false, "confidence": 0-100, "reason": "short reason"}.
+Reject if: file is empty, clearly unrelated, malicious, just a placeholder, or wrong file type for the category.
+Approve if the content is plausibly what the description claims.`;
 
     const userPrompt = `TITLE: ${product.title}
 DESCRIPTION: ${product.description}
-TYPE: ${product.product_type}
-FILE NAME: ${product.file_name || "unknown"}
+CATEGORY: ${category}
+PRODUCT TYPE: ${product.product_type}
+FILE NAME: ${fileName}
+FILE EXTENSION: .${ext}
 FILE SIZE: ${product.file_size_bytes || 0} bytes
 ANALYSIS MODE: ${analysisType}
 
-CONTENT SAMPLE:
+CONTENT SAMPLE (truncated):
 ${contentSample}`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -105,7 +126,6 @@ ${contentSample}`;
     if (!aiRes.ok) {
       const txt = await aiRes.text();
       console.error("AI error", aiRes.status, txt);
-      // Fall back to approving if AI is down (don't block sellers)
       await admin.from("digital_products").update({
         ai_verification_status: "approved",
         ai_verification_notes: "Auto-approved (verification service unavailable)."
@@ -127,7 +147,6 @@ ${contentSample}`;
       ai_verification_notes: notes,
     }).eq("id", productId);
 
-    // Notify seller
     await admin.from("notifications").insert({
       user_id: product.seller_id,
       title: status === "approved" ? "Digital Product Approved ✓" : "Digital Product Rejected ✗",
