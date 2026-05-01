@@ -19,6 +19,8 @@ interface Advertisement {
   time_gap_minutes: number;
   is_active: boolean;
   display_order: number;
+  trigger_type?: string;
+  trigger_path?: string | null;
 }
 
 export default function AdminAdvertisements() {
@@ -30,6 +32,9 @@ export default function AdminAdvertisements() {
   const [quizDifficulty, setQuizDifficulty] = useState("simple");
   const [displayDuration, setDisplayDuration] = useState("15");
   const [timeGap, setTimeGap] = useState("30");
+  const [triggerType, setTriggerType] = useState("on_interval");
+  const [triggerPath, setTriggerPath] = useState("/digital-market");
+
 
   useEffect(() => {
     fetchAdvertisements();
