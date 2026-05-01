@@ -97,7 +97,7 @@ export default function AdminAdvertisements() {
         : 0;
 
       // Create advertisement
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("advertisements")
         .insert({
           title,
@@ -107,6 +107,8 @@ export default function AdminAdvertisements() {
           display_duration_seconds: parseInt(displayDuration),
           time_gap_minutes: parseInt(timeGap),
           display_order: maxOrder,
+          trigger_type: triggerType,
+          trigger_path: triggerType === "on_specific_page" ? triggerPath.trim() : null,
           created_by: user.id
         });
 
@@ -118,6 +120,8 @@ export default function AdminAdvertisements() {
       setQuizDifficulty("simple");
       setDisplayDuration("15");
       setTimeGap("30");
+      setTriggerType("on_interval");
+      setTriggerPath("/digital-market");
       fetchAdvertisements();
     } catch (error: any) {
       toast.error("Failed to create advertisement: " + error.message);
