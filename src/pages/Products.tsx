@@ -10,6 +10,7 @@ import { ShoppingCart, Search, SlidersHorizontal, Store, Zap } from "lucide-reac
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ReportItemDialog from "@/components/ReportItemDialog";
 
 interface Product {
   id: string;
