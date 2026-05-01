@@ -257,6 +257,26 @@ export default function AdminAdvertisements() {
                 max="1440"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>When to Show *</Label>
+              <Select value={triggerType} onValueChange={setTriggerType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="on_open">When user opens the website (once per session)</SelectItem>
+                  <SelectItem value="on_route_change">Every time the user navigates to a new page</SelectItem>
+                  <SelectItem value="on_interval">Every X minutes (uses Time Gap above)</SelectItem>
+                  <SelectItem value="on_specific_page">When user visits a specific page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {triggerType === "on_specific_page" && (
+              <div className="space-y-2">
+                <Label>Path (e.g. /digital-market, /products, /services)</Label>
+                <Input value={triggerPath} onChange={(e) => setTriggerPath(e.target.value)} placeholder="/digital-market" />
+              </div>
+            )}
           </div>
 
           <Button onClick={handleCreateAd} disabled={loading} className="w-full">
