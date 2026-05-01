@@ -11,20 +11,18 @@ import { Flag, ExternalLink } from "lucide-react";
 
 interface StoreReport {
   id: string;
-  store_id: string;
+  store_id: string | null;
   reporter_id: string;
   reason: string;
   description: string;
   status: string;
   admin_notes: string | null;
   created_at: string;
-  reseller_stores: {
-    store_name: string;
-    store_slug: string;
-  };
-  profiles: {
-    full_name: string;
-  };
+  report_type?: string;
+  product_name?: string | null;
+  digital_product_title?: string | null;
+  reseller_stores: { store_name: string; store_slug: string; };
+  profiles: { full_name: string; };
 }
 
 export default function AdminReports() {
