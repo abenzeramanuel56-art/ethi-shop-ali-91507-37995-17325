@@ -128,10 +128,22 @@ export default function SellerDigitalProducts() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <Label>Category *</Label>
+                    <select className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
+                      <option value="apps">📱 Apps</option>
+                      <option value="websites">🌐 Websites</option>
+                      <option value="code">💻 Code / Scripts</option>
+                      <option value="courses">🎓 Courses</option>
+                      <option value="videos">🎬 Videos</option>
+                      <option value="documents">📄 Documents</option>
+                      <option value="other">✨ Other</option>
+                    </select>
+                  </div>
+                  <div>
                     <Label>Type *</Label>
                     <select className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={productType} onChange={(e) => setProductType(e.target.value as any)}>
                       <option value="code">Code (.js, .py, .html, .zip etc.)</option>
-                      <option value="file">File (PDF, doc, image, etc.)</option>
+                      <option value="file">File (PDF, doc, image, video, etc.)</option>
                     </select>
                   </div>
                   <div>
