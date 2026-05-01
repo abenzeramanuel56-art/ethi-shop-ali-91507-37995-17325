@@ -192,6 +192,7 @@ const Products = () => {
           <Button className="flex-1 h-8 text-xs font-bold btn-glow" onClick={() => handleBuyNow(product)}>
             Buy Now
           </Button>
+          <ReportItemDialog itemId={product.id} itemName={product.name} reportType="product" storeId={product.seller_id || undefined} triggerLabel="" variant="ghost" size="icon" />
         </div>
       </div>
     </div>
