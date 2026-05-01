@@ -25,6 +25,7 @@ export default function SellerDigitalProducts() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [productType, setProductType] = useState<"code" | "file">("code");
+  const [category, setCategory] = useState<string>("apps");
   const [price, setPrice] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
