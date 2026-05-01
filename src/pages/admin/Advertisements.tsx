@@ -329,6 +329,9 @@ export default function AdminAdvertisements() {
                     <p className="text-sm text-muted-foreground">
                       {ad.media_type === 'video' ? 'Video' : 'Image'} • {ad.display_duration_seconds}s • Every {ad.time_gap_minutes}min • Quiz: {ad.quiz_difficulty}
                     </p>
+                    <p className="text-xs text-primary">
+                      Trigger: {ad.trigger_type || 'on_interval'}{ad.trigger_path ? ` (${ad.trigger_path})` : ''}
+                    </p>
                   </div>
 
                   <div className="flex items-center gap-4">
