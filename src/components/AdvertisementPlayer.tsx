@@ -71,6 +71,8 @@ export function AdvertisementPlayer() {
   // Try to play an ad based on triggers
   const tryPlay = useCallback((reason: 'on_open' | 'on_route_change' | 'on_interval' | 'on_specific_page', path?: string) => {
     if (showAd || advertisements.length === 0) return;
+    // Don't disturb admins while they manage the platform
+    if (location.pathname.startsWith('/admin')) return;
     const shown = getShownSet();
     const now = Date.now();
 
