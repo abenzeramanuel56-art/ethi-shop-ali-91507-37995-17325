@@ -94,16 +94,21 @@ export function LocationPicker({
       setManualLng(coords.longitude.toString());
       setError(null);
     } catch (err: any) {
-      let errorMessage = "Failed to get location. Please enter manually below.";
-      
+      const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+      let errorMessage = "Failed to get location. Please pick a city or enter coordinates manually below.";
+
       if (err.code === 1) { // PERMISSION_DENIED
-        errorMessage = "Location permission denied. Please enable location access in your browser settings, or enter your location manually below.";
+        if (inIframe) {
+          errorMessage = "The preview window blocks location access. Open the live site in a new tab to grant location, or just pick your city / type coordinates below — both work the same.";
+        } else {
+          errorMessage = "Location permission denied. Enable location access in your browser settings, or pick your city / type coordinates below.";
+        }
       } else if (err.code === 2) { // POSITION_UNAVAILABLE
-        errorMessage = "Location information unavailable. Please check your device GPS settings, or enter location manually below.";
+        errorMessage = "Location unavailable. Check your device GPS, or pick your city / type coordinates below.";
       } else if (err.code === 3) { // TIMEOUT
-        errorMessage = "Location request timed out. Please try again or enter location manually below.";
+        errorMessage = "Location request timed out. Try again, or pick your city below.";
       }
-      
+
       console.error("Geolocation error:", err);
       setError(errorMessage);
     } finally {

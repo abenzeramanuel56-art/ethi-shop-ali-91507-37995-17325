@@ -2,7 +2,7 @@ import React from "react";
 
 export default function RotatingBadge() {
   return (
-    <div aria-hidden className="fixed bottom-4 right-4 z-50 pointer-events-none">
+    <div aria-hidden className="fixed bottom-20 right-4 sm:bottom-4 z-50 pointer-events-none">
       <div
         style={{
           width: 80,
