@@ -370,7 +370,7 @@ const translations: Record<Language, Record<string, string>> = {
   },
   am: {
     // Navbar
-    'nav.brand': 'አሊኤክስፕረስ ኢትዮጵያ',
+    'nav.brand': 'አቤኒ ኤክስፕረስ',
     'nav.browse': 'ምርቶችን ይመልከቱ',
     'nav.request': 'ዕቃ ይጠይቁ',
     'nav.support': 'ድጋፍ',
