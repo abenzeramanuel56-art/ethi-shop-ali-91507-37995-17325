@@ -11,7 +11,7 @@ interface LanguageContextType {
 const translations: Record<Language, Record<string, string>> = {
   en: {
     // Navbar
-    'nav.brand': 'AliExpress Ethiopia',
+    'nav.brand': 'Abeni Express',
     'nav.browse': 'Browse Products',
     'nav.request': 'Request Item',
     'nav.support': 'Support',
@@ -31,8 +31,8 @@ const translations: Record<Language, Record<string, string>> = {
     'lang.am': 'አማርኛ',
     
     // Home page
-    'home.hero.title': 'Shop from AliExpress with Ethiopian Birr',
-    'home.hero.subtitle': 'The easiest way to order products from AliExpress delivered to Ethiopia',
+    'home.hero.title': 'Ethiopia\'s Independent Marketplace',
+    'home.hero.subtitle': 'Shop verified products and services from local sellers, paid in Ethiopian Birr, delivered by our driver network across Ethiopia.',
     'home.hero.browse': 'Browse Products',
     'home.hero.request': 'Request Custom Item',
     'home.features.title': 'Why Shop With Us?',
@@ -57,7 +57,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Products page
     'products.title': 'Browse Products',
-    'products.subtitle': 'Curated selection of popular AliExpress products',
+    'products.subtitle': 'Curated products from independent local sellers',
     'products.search': 'Search products...',
     'products.showing': 'Showing',
     'products.of': 'of',
@@ -370,7 +370,7 @@ const translations: Record<Language, Record<string, string>> = {
   },
   am: {
     // Navbar
-    'nav.brand': 'አሊኤክስፕረስ ኢትዮጵያ',
+    'nav.brand': 'አቤኒ ኤክስፕረስ',
     'nav.browse': 'ምርቶችን ይመልከቱ',
     'nav.request': 'ዕቃ ይጠይቁ',
     'nav.support': 'ድጋፍ',
@@ -390,8 +390,8 @@ const translations: Record<Language, Record<string, string>> = {
     'lang.am': 'አማርኛ',
     
     // Home page
-    'home.hero.title': 'በኢትዮጵያ ብር ከአሊኤክስፕረስ ይግዙ',
-    'home.hero.subtitle': 'ከአሊኤክስፕረስ ምርቶችን ወደ ኢትዮጵያ ለማስመጣት ቀላሉ መንገድ',
+    'home.hero.title': 'የኢትዮጵያ ራሱን የቻለ ገበያ',
+    'home.hero.subtitle': 'ከአካባቢ ሻጮች የተረጋገጡ ምርቶችንና አገልግሎቶችን በኢትዮጵያ ብር ይግዙ — በሾፌሮቻችን አማካኝነት ወደ እርስዎ ይደርሳል።',
     'home.hero.browse': 'ምርቶችን ይመልከቱ',
     'home.hero.request': 'ዕቃ ይጠይቁ',
     'home.features.title': 'ለምን ከኛ ይገዙ?',
@@ -416,7 +416,7 @@ const translations: Record<Language, Record<string, string>> = {
     
     // Products page
     'products.title': 'ምርቶችን ይመልከቱ',
-    'products.subtitle': 'የተመረጡ የአሊኤክስፕረስ ምርቶች',
+    'products.subtitle': 'ከአካባቢ ሻጮች የተመረጡ ምርቶች',
     'products.search': 'ምርቶችን ይፈልጉ...',
     'products.showing': 'እያሳየ',
     'products.of': 'ከ',

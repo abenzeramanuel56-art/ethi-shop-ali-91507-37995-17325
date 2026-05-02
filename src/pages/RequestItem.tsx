@@ -13,7 +13,7 @@ import { z } from "zod";
 
 const requestSchema = z.object({
   productName: z.string().min(3, "Product name must be at least 3 characters"),
-  aliexpressUrl: z.string().url("Please enter a valid AliExpress URL"),
+  aliexpressUrl: z.string().url("Please enter a valid product URL"),
   quantity: z.number().min(1, "Quantity must be at least 1"),
   notes: z.string().optional(),
 });
@@ -125,7 +125,7 @@ const RequestItem = () => {
           <div className="mb-8">
             <h1 className="mb-2 text-4xl font-bold text-foreground">Request an Item</h1>
             <p className="text-lg text-muted-foreground">
-              Found something you like on AliExpress? Submit a quote request here.
+              Found something you want from another website? Submit a quote request and we'll source it for you.
             </p>
           </div>
 
@@ -150,11 +150,11 @@ const RequestItem = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="aliexpressUrl">AliExpress Product URL *</Label>
+                  <Label htmlFor="aliexpressUrl">Product URL *</Label>
                   <Input
                     id="aliexpressUrl"
                     type="url"
-                    placeholder="https://www.aliexpress.com/item/..."
+                    placeholder="https://example.com/product/..."
                     value={aliexpressUrl}
                     onChange={(e) => setAliexpressUrl(e.target.value)}
                     required

@@ -53,8 +53,8 @@ export default function ReportItemDialog({ itemId, itemName, reportType, storeId
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size}>
-          <Flag className="h-4 w-4 mr-1" /> {triggerLabel}
+        <Button variant={variant} size={size} title={`Report ${itemName}`} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+          <Flag className="h-4 w-4" /> {triggerLabel ? <span className="ml-1">{triggerLabel}</span> : null}
         </Button>
       </DialogTrigger>
       <DialogContent>

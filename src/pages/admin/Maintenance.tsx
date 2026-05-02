@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Loader2, Power, AlertTriangle, RotateCcw } from "lucide-react";
 
@@ -17,6 +27,8 @@ export default function AdminMaintenance() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
 
   useEffect(() => { init(); }, []);
 
@@ -53,17 +65,23 @@ export default function AdminMaintenance() {
     toast.success("Message saved");
   };
 
-  const factoryReset = async () => {
-    const confirmText = prompt('Type "RESET" (in capitals) to wipe ALL transactional data (orders, deliveries, notifications, withdrawals). Users, products, services, stores stay intact.');
-    if (confirmText !== "RESET") { toast.info("Cancelled"); return; }
+  const runFactoryReset = async () => {
+    if (resetConfirmText !== "RESET") return;
     setResetting(true);
     const { error } = await (supabase as any).rpc("admin_factory_reset_transactional");
     setResetting(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error("Factory reset failed: " + error.message);
+      return;
+    }
     toast.success("Factory reset complete!");
+    setResetDialogOpen(false);
+    setResetConfirmText("");
   };
 
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div></div>;
+
+  const confirmValid = resetConfirmText === "RESET";
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,12 +129,59 @@ export default function AdminMaintenance() {
             <p className="text-sm text-muted-foreground">
               Factory Reset wipes all transactional data: orders, order items, driver deliveries, service orders, notifications, withdrawals, refund requests, digital purchases, and resets all wallet balances to zero. Users, products, services, stores, and applications are kept.
             </p>
-            <Button onClick={factoryReset} disabled={resetting} variant="destructive">
-              {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RotateCcw className="h-4 w-4 mr-2" /> Factory Reset</>}
+            <Button onClick={() => setResetDialogOpen(true)} variant="destructive">
+              <RotateCcw className="h-4 w-4 mr-2" /> Factory Reset
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={resetDialogOpen} onOpenChange={(o) => { setResetDialogOpen(o); if (!o) setResetConfirmText(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" /> Confirm Factory Reset
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">This permanently deletes <strong>all orders, deliveries, service orders, digital purchases, notifications, withdrawals, refund requests, and wallet balances</strong>.</span>
+              <span className="block">Users, products, services, stores, and applications are kept.</span>
+              <span className="block font-semibold text-destructive">This cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2 py-2">
+            <Label htmlFor="reset-confirm">Type <strong>RESET</strong> (in capital letters) to confirm:</Label>
+            <Input
+              id="reset-confirm"
+              value={resetConfirmText}
+              onChange={(e) => setResetConfirmText(e.target.value)}
+              placeholder="RESET"
+              autoComplete="off"
+              className={
+                resetConfirmText.length > 0
+                  ? confirmValid
+                    ? "border-success focus-visible:ring-success"
+                    : "border-destructive focus-visible:ring-destructive"
+                  : ""
+              }
+            />
+            {resetConfirmText.length > 0 && !confirmValid && (
+              <p className="text-xs text-destructive">Type the word RESET exactly (all capitals).</p>
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); runFactoryReset(); }}
+              disabled={!confirmValid || resetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RotateCcw className="h-4 w-4 mr-2" /> Wipe Data</>}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
