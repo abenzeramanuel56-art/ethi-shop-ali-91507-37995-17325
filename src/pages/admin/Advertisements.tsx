@@ -292,7 +292,11 @@ export default function AdminAdvertisements() {
         </CardHeader>
         <CardContent>
           {advertisements.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">No advertisements yet</p>
+            <div className="text-center py-8 space-y-2">
+              <Megaphone className="h-10 w-10 mx-auto text-muted-foreground/50" />
+              <p className="font-medium">No advertisements yet</p>
+              <p className="text-sm text-muted-foreground">Create your first ad above — it will play to customers based on the trigger you choose.</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {advertisements.map((ad, index) => (
