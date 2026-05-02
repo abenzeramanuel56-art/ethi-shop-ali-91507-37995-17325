@@ -13,7 +13,7 @@ import { z } from "zod";
 
 const requestSchema = z.object({
   productName: z.string().min(3, "Product name must be at least 3 characters"),
-  aliexpressUrl: z.string().url("Please enter a valid AliExpress URL"),
+  aliexpressUrl: z.string().url("Please enter a valid product URL"),
   quantity: z.number().min(1, "Quantity must be at least 1"),
   notes: z.string().optional(),
 });
