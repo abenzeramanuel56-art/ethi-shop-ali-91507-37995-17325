@@ -31,6 +31,7 @@ const Home = () => {
             </div>
 
             <h1 className="mb-6 text-5xl font-black leading-tight text-foreground md:text-6xl lg:text-7xl tracking-tight">
+              <span className="sr-only">Abeni Express — </span>
               {t('home.hero.title').split(' ').slice(0, 2).join(' ')}
               <span className="block gradient-text">{t('home.hero.title').split(' ').slice(2).join(' ')}</span>
             </h1>
@@ -180,6 +181,13 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-8" style={{ background: 'hsl(var(--card))' }}>
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>© 2026 Abeni Express. Secure local &amp; international trade in Ethiopia.</p>
+        </div>
+      </footer>
     </div>
   );
 };

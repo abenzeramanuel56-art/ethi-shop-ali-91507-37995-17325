@@ -65,9 +65,14 @@ export const Navbar = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: 'hsl(var(--primary))' }}>
-              <Zap className="h-5 w-5 text-white" />
+          <Link to="/" className="flex items-center gap-2.5 group" aria-label="Abeni Express Logo">
+            <div
+              role="img"
+              aria-label="Abeni Express Logo"
+              className="relative flex h-9 w-9 items-center justify-center rounded-xl"
+              style={{ background: 'hsl(var(--primary))' }}
+            >
+              <Zap className="h-5 w-5 text-white" aria-hidden="true" />
               <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ boxShadow: 'var(--glow-primary)' }} />
             </div>
             <span className="text-xl font-black tracking-tight text-foreground">

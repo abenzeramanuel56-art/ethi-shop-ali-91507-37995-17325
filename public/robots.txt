@@ -10,5 +10,10 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
 User-agent: *
 Allow: /
+
+Sitemap: https://abeniexpress.netlify.app/sitemap.xml
