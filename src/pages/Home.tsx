@@ -31,6 +31,7 @@ const Home = () => {
             </div>
 
             <h1 className="mb-6 text-5xl font-black leading-tight text-foreground md:text-6xl lg:text-7xl tracking-tight">
+              <span className="sr-only">Abeni Express — </span>
               {t('home.hero.title').split(' ').slice(0, 2).join(' ')}
               <span className="block gradient-text">{t('home.hero.title').split(' ').slice(2).join(' ')}</span>
             </h1>
