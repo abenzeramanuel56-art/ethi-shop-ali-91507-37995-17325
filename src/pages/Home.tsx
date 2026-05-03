@@ -181,6 +181,13 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-8" style={{ background: 'hsl(var(--card))' }}>
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>© 2026 Abeni Express. Secure local &amp; international trade in Ethiopia.</p>
+        </div>
+      </footer>
     </div>
   );
 };
