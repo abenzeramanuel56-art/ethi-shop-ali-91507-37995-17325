@@ -13,6 +13,7 @@ import { MessageCircle, Sparkles, Send } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { AbeniAgentChat } from "@/components/AbeniAgentChat";
 
 const SUPPORT_CATEGORIES = [
   "Why is my account banned?",
@@ -249,6 +250,7 @@ export default function Support() {
           <p className="text-muted-foreground mb-8">{t('support.subtitle')}</p>
 
           <div className="grid gap-8">
+            <AbeniAgentChat onForwarded={fetchMyTickets} />
             <Card className="border-2">
               <CardHeader>
                 <CardTitle>{t('support.submitTicket')}</CardTitle>
