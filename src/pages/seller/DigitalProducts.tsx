@@ -74,7 +74,7 @@ export default function SellerDigitalProducts() {
       if (insErr) throw insErr;
 
       // Trigger AI verification (fire & forget — toast on completion)
-      toast.success("Uploaded! Lovable AI is verifying your product...");
+      toast.success("Uploaded! Abeni Express AI is verifying your product...");
       const { error: fnErr } = await supabase.functions.invoke("verify-digital-product", { body: { productId: inserted.id } });
       if (fnErr) {
         console.error("verify error", fnErr);
@@ -106,7 +106,7 @@ export default function SellerDigitalProducts() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-black">Digital Products</h1>
-            <p className="text-sm text-muted-foreground mt-1">Sell apps, code, files. Lovable AI verifies each upload.</p>
+            <p className="text-sm text-muted-foreground mt-1">Sell apps, code, files. Abeni Express AI deeply inspects every upload.</p>
           </div>
           <Button onClick={() => setShowForm(!showForm)} className="btn-glow">
             <Upload className="h-4 w-4 mr-2" /> {showForm ? "Cancel" : "Upload New"}
@@ -124,7 +124,7 @@ export default function SellerDigitalProducts() {
                 </div>
                 <div>
                   <Label>Description (min 30 chars) *</Label>
-                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} required placeholder="Describe what your code/file does. The AI uses this to verify the upload matches." />
+                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} required placeholder="Describe what your code/file does. Abeni Express AI reads the file in detail and compares it with this description." />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -157,7 +157,7 @@ export default function SellerDigitalProducts() {
                   {file && <p className="text-xs text-muted-foreground mt-1">{file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB</p>}
                 </div>
                 <Button type="submit" disabled={uploading} className="w-full btn-glow">
-                  {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading...</> : "Upload & Verify with AI"}
+                  {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Uploading...</> : "Upload & Verify with Abeni Express AI"}
                 </Button>
               </form>
             </CardContent>
@@ -181,7 +181,7 @@ export default function SellerDigitalProducts() {
                     {p.ai_verification_status === "rejected" && <Badge variant="outline" className="text-destructive border-destructive/50"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{p.description}</p>
-                  {p.ai_verification_notes && <p className="text-xs italic text-muted-foreground mt-1">AI: {p.ai_verification_notes}</p>}
+                  {p.ai_verification_notes && <p className="text-xs italic text-muted-foreground mt-1">{p.ai_verification_notes}</p>}
                   <div className="text-sm font-bold text-primary mt-2">{Number(p.price_etb).toLocaleString()} ETB</div>
                 </div>
                 <Button size="icon" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
