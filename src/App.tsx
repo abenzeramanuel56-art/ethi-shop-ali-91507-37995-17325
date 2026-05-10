@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BannedUserCheck } from "@/components/BannedUserCheck";
 import { AdvertisementPlayer } from "@/components/AdvertisementPlayer";
 import { MaintenanceWrapper } from "@/components/MaintenanceWrapper";
+import { FloatingAbeniAgent } from "@/components/FloatingAbeniAgent";
 import AdminMaintenance from "./pages/admin/Maintenance";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
@@ -45,6 +46,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <FloatingAbeniAgent />
         <BannedUserCheck>
           <MaintenanceWrapper>
             <AdvertisementPlayer />
