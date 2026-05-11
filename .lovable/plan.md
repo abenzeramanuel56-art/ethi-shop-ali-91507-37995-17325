@@ -1,81 +1,121 @@
-## Goals
 
-Fix five issues the user reported on the live site.
+# Abeni Express — Multi-area upgrade plan
 
----
-
-### 1. Seller can't get current location
-
-`LocationPicker` already calls `navigator.geolocation.getCurrentPosition` from a button click (good), but the preview iframe blocks geolocation by default unless the parent page grants permission to the iframe. That's why the browser says "can't get permission" even though the user clicks Allow.
-
-**Fix:** explicitly allow geolocation inside iframes by ensuring our app sends the right Permissions-Policy and that the LocationPicker handles the iframe-permission-denied case with a clearer message + a "copy these coordinates" fallback. Concretely:
-- Add a `Permissions-Policy: geolocation=(self)` meta tag in `index.html` so geolocation is allowed when the app is embedded.
-- In `LocationPicker.tsx`, when `err.code === 1` (permission denied) and we detect we're inside an iframe (`window.self !== window.top`), show a tailored message: "The preview blocks location. Open the live site (Open in new tab) to grant access, or pick your city below / type coordinates."
-- Make the "Quick city" buttons more prominent on the seller setup page so a seller is never stuck.
-
-### 2. Factory reset says "need cause or clause"
-
-Looking at `src/pages/admin/Maintenance.tsx`, the factory reset uses a JS `prompt()` asking the admin to type the word **`RESET`** (in capital letters). The user is misreading this as needing a "cause/clause".
-
-**Fix:** replace the `prompt()` with a proper styled confirmation dialog (shadcn AlertDialog) that:
-- Clearly explains what will be wiped.
-- Has a single "Type RESET to confirm" input with a live-validated red/green border.
-- Only enables the destructive button when the input equals `RESET`.
-
-Also surface the underlying RPC error inline (the RPC `admin_factory_reset_transactional` already exists and works — the problem is purely the prompt UX).
-
-### 3. Advertisement feature
-
-The system is already implemented (`AdvertisementPlayer` mounted in `App.tsx`, admin page `/admin/advertisements` with trigger types). It likely just looks broken because no ads exist yet.
-
-**Fix:**
-- Add a small empty-state hint in `/admin/advertisements` telling admin "Create your first ad — it will play based on the trigger you choose."
-- Add a "Test Now" button on each ad row that previews it immediately for the admin (calls the same player overlay).
-- Verify the player isn't being suppressed on `/admin/*` routes (we will skip ads on admin routes to avoid disturbing admin work).
-
-### 4. Report product / store option
-
-Already wired:
-- `ReportItemDialog` is mounted on `/products` and `/digital-market` cards (flag icon).
-- `ReportStoreDialog` is mounted on the `Store` page.
-
-The user probably can't find the flag icon. **Fix:** make the report button more visible — give it a label "Report" on hover, increase the icon's contrast, and add a "Report this store" link in the store header next to the store name.
-
-### 5. Homepage AliExpress wording + rotating badge position
-
-The homepage and many strings still say "Shop from AliExpress with Ethiopian Birr", "AliExpress Ethiopia", etc. Also `RotatingBadge` is currently rendered from `Navbar` (so technically already at bottom-right via `fixed bottom-4 right-4`), but the user wants confirmation it stays at the bottom of the page.
-
-**Fix:**
-- Update `LanguageContext.tsx` strings (English + Amharic) to remove all AliExpress mentions:
-  - `nav.brand`: `'Abeni Express'` (am: `'አቤኒ ኤክስፕረስ'`)
-  - `home.hero.title`: `'Ethiopia's Independent Marketplace'` (am equivalent)
-  - `home.hero.subtitle`: `'Shop verified products and services from local sellers, paid in Ethiopian Birr, delivered by our driver network.'`
-  - `products.subtitle`: `'Curated products from independent local sellers'`
-- Leave the `RequestItem` page wording intact only if it's the legitimate "request a custom item from any external link" feature; rename "AliExpress URL" to "Product URL" and update placeholder to a generic example.
-- Keep the rotating badge fixed at `bottom-4 right-4` (already correct), and ensure it isn't covered by the bottom nav on mobile by giving it `bottom-20` on small screens.
+This plan groups your asks into 7 work blocks. I'll do them in this order. Tell me if you want to skip any block.
 
 ---
 
-## Files to change
+## 1. Real address (not just city) for everyone
 
-```
-src/contexts/LanguageContext.tsx     — rewrite all AliExpress strings (en + am)
-src/pages/Home.tsx                   — no logic change (uses translations)
-src/pages/RequestItem.tsx            — rename label/placeholder to generic "Product URL"
-src/components/LocationPicker.tsx    — iframe-aware error message + clearer fallback
-index.html                           — add Permissions-Policy meta tag
-src/pages/admin/Maintenance.tsx      — replace prompt() with AlertDialog + typed confirmation
-src/pages/admin/Advertisements.tsx   — add empty state + "Test Now" button
-src/components/AdvertisementPlayer.tsx — skip auto-play on /admin/* routes
-src/pages/Products.tsx               — make Report button more discoverable (label on hover)
-src/pages/DigitalMarket.tsx          — same
-src/pages/Store.tsx                  — add "Report this store" text link in header
-src/components/RotatingBadge.tsx     — bottom-20 on mobile so it isn't hidden
-```
+**Problem:** Today we only save city + lat/lng. You want the **exact street/place address**.
 
-No database or edge-function changes are needed — all the backend pieces (factory reset RPC, advertisements table with trigger_type, store_reports) already exist.
+**Fix:**
+- In `LocationPicker`, after geolocation succeeds, reverse-geocode lat/lng → full address using a free public API (OpenStreetMap Nominatim, no key needed).
+- Store the full address string in `shipping_address` / `seller_stores.location_address`.
+- Show "Detected address: …" under the GPS button so the user can confirm.
 
-## Out of scope
+---
 
-- Renaming the database enum value `ordered_on_aliexpress` (that's an internal status name customers never see in UI).
-- Removing the `aliexpress_url` column on `products` (used internally by admin image fetcher; not visible to customers).
+## 2. Customer cannot order — "absolute location of that place" error
+
+**Problem:** Checkout is blocking the order because location is missing/invalid.
+
+**Fix:**
+- Audit `Cart.tsx` / checkout submit. Make location **required but auto-filled** from profile if missing, with a clear inline message instead of a blocking generic error.
+- If GPS fails, allow ordering as long as a typed address + city is provided.
+
+---
+
+## 3. Vehicle selection (customer) + vehicle-aware driver routing
+
+**Schema changes (migration):**
+- `driver_applications.vehicle_type` already exists ✅. Add `driver_wallets.vehicle_type` (synced on approval) so we can filter fast.
+- Add `orders.preferred_vehicle_type text` (motorbike / car / van / truck / any).
+- Add `pending_driver_orders.preferred_vehicle_type text`.
+
+**Customer side:** In checkout, add a Vehicle picker (Motorbike, Car, Van, Truck, Any). Default = Any.
+
+**Driver side:**
+- During driver application, vehicle_type is already collected — make it **required**.
+- On the driver's pending-orders dashboard, only show orders where `preferred_vehicle_type = 'any' OR = driver.vehicle_type`.
+- Driver realtime notification only fires for matching vehicle.
+
+---
+
+## 4. Driver map view (seller pickup → customer drop-off)
+
+In `src/pages/driver/Dashboard.tsx`:
+- Stage 1 (status = `pending` / `accepted`): show **seller location** on `SimpleMap` + "Open in Google Maps" directions from driver's current GPS to seller.
+- Stage 2 (after `seller_confirmed_pickup = true`): switch the map to show **customer location** + directions from current GPS to customer.
+- Distance + earning recalculated on each stage and shown clearly.
+
+---
+
+## 5. Price calculator — make it 100% correct
+
+Centralize in `src/lib/pricing.ts`:
+- `deliveryFee = max(50, distanceKm * 25)` ETB (driver gets 25 ETB/km, platform adds nothing on delivery).
+- `productSubtotal = sum(item.price_etb * qty)`.
+- `platformCommission = productSubtotal * 0.10` (deducted from seller payout, not added to customer).
+- `customerTotal = productSubtotal + deliveryFee`.
+- `sellerPayout = productSubtotal * 0.90`.
+- `driverPayout = distanceKm * 25`.
+
+Replace ad-hoc math in Cart, Checkout, seller wallet, driver wallet with these helpers.
+
+---
+
+## 6. Storage bucket 404 — admin can't view ID / payment-proof images
+
+**Cause:** UI is requesting public URLs from buckets that either don't exist or aren't named the way the code expects (`id-photos`, `payment-proofs`, `digital-products`, `ad-media`, `support-attachments`).
+
+**Fix (migration):**
+- Ensure all these buckets exist:
+  - `id-photos` (private)
+  - `payment-proofs` (private)
+  - `digital-products` (private)
+  - `ad-media` (public)
+  - `support-attachments` (private) — new, for customer screenshots in agent/tickets
+- Re-apply storage RLS so admins can read all, owners can read/write their own.
+- Switch admin viewing code from `getPublicUrl` → `createSignedUrl(60)` for private buckets.
+
+---
+
+## 7. Agent upgrades
+
+### 7a. Page-aware agent
+`FloatingAbeniAgent` injects a hidden system note like:
+- "User is currently on the COMING SOON page — they cannot use the app yet, only answer general questions and capture interest."
+- "User is on the home page / route X — full app access."
+
+### 7b. Customer screenshot attachments in agent + tickets
+- Add an image upload button in `FloatingAbeniAgent` and `Support.tsx`.
+- Uploads go to `support-attachments/{user_id}/...`.
+- Image is sent to the agent as a multimodal user message (Gemini supports images).
+- When forwarded to admin, the image URL is included in the ticket / replies.
+
+### 7c. Admin chat-style view of forwarded agent conversations
+In `src/pages/admin/SupportTickets.tsx`:
+- Detect tickets created by "Forward to Admin" (we'll mark them with `category = 'agent_forward'` and store the transcript as alternating chat bubbles in `ticket_replies` instead of one big paragraph).
+- Render as left/right chat bubbles labeled **Customer** vs **Abeni Agent** vs **Admin**.
+
+### 7d. Admin → Agent command console (new)
+New page `src/pages/admin/AgentConsole.tsx`:
+- Chat UI where admin types updates ("New rule: refunds now take 48h", "New bank: Dashen added").
+- Stored in new table `agent_instructions (id, admin_id, instruction, created_at, is_active)`.
+- The `abeni-agent` edge function reads the latest active instructions on each call and prepends them to the system prompt — so the agent always knows the newest admin-issued facts.
+
+---
+
+## Technical summary (for reference)
+
+- **New tables:** `agent_instructions`
+- **Altered tables:** `orders` (+preferred_vehicle_type), `pending_driver_orders` (+preferred_vehicle_type), `driver_wallets` (+vehicle_type), `support_tickets` (+attachment_url optional)
+- **New buckets:** `support-attachments`; verify `id-photos`, `payment-proofs`, `digital-products`, `ad-media`
+- **New files:** `src/lib/pricing.ts`, `src/pages/admin/AgentConsole.tsx`
+- **Edited:** `LocationPicker.tsx`, `Cart.tsx` (or checkout page), `ApplyDriver.tsx`, `driver/Dashboard.tsx`, `seller/Wallet.tsx`, `driver/Wallet.tsx`, `FloatingAbeniAgent.tsx`, `Support.tsx`, `admin/SupportTickets.tsx`, `supabase/functions/abeni-agent/index.ts`
+- **Migration:** schema + storage buckets + RLS in one go.
+
+---
+
+Approve this plan and I'll start with **block 6 (storage 404 fix) + block 1 (real address)** first since those unblock everything else, then work down the list.
