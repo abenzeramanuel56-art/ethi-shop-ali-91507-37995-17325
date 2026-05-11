@@ -118,8 +118,8 @@ const Cart = () => {
   };
 
   const handleCheckout = async () => {
-    if (!shippingAddress || !city || !phone) {
-      toast.error(t('cart.fillShipping'));
+    if (!shippingAddress?.trim() || !city?.trim() || !phone?.trim()) {
+      toast.error("Please fill in your address, city and phone number to deliver your order.");
       return;
     }
     if (!paymentMethod) {
@@ -131,7 +131,7 @@ const Cart = () => {
       return;
     }
 
-    // Try to get location silently if not already captured
+    // GPS is OPTIONAL — never block ordering. We try silently if missing.
     let lat = customerLatitude;
     let lng = customerLongitude;
     if (!lat || !lng) {
@@ -141,8 +141,10 @@ const Cart = () => {
         lng = coords.longitude;
         setCustomerLatitude(lat);
         setCustomerLongitude(lng);
+        // Best-effort reverse geocode in background
+        reverseGeocode(coords.latitude, coords.longitude).then((addr) => { if (addr) setDetectedAddress(addr); });
       } catch (err) {
-        // continue without location
+        // Continue without GPS — driver will use the typed address
       }
     }
 
@@ -164,6 +166,9 @@ const Cart = () => {
       const storeType = hasSellerItems ? "seller" : "admin";
       const sellerId = hasSellerItems ? cartItems.find(i => i.store_type === "seller" || i.store_type === "reseller")?.seller_id || null : null;
 
+      const subtotalNow = productSubtotal(cartItems);
+      const feeNow = deliveryFee(0); // recalculated on driver acceptance using real distance
+
       const { data: order, error: orderError } = await (supabase as any)
         .from("orders")
         .insert({
@@ -171,7 +176,8 @@ const Cart = () => {
           shipping_address: shippingAddress,
           city: city,
           phone: phone,
-          total_etb: calculateTotal(),
+          total_etb: subtotalNow + feeNow,
+          delivery_fee_etb: feeNow,
           payment_proof_url: paymentProofUrl,
           payment_method: paymentMethod,
           status: "pending_payment",
@@ -179,6 +185,7 @@ const Cart = () => {
           seller_id: sellerId,
           customer_latitude: lat,
           customer_longitude: lng,
+          preferred_vehicle_type: vehicle,
         })
         .select()
         .single();
