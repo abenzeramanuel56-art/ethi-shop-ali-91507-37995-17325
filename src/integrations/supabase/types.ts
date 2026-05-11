@@ -65,6 +65,30 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_instructions: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          instruction: string
+          is_active: boolean
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          instruction: string
+          is_active?: boolean
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          instruction?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           id: string
@@ -344,6 +368,7 @@ export type Database = {
           total_earned_etb: number
           updated_at: string | null
           user_id: string
+          vehicle_type: string | null
         }
         Insert: {
           created_at?: string | null
@@ -355,6 +380,7 @@ export type Database = {
           total_earned_etb?: number
           updated_at?: string | null
           user_id: string
+          vehicle_type?: string | null
         }
         Update: {
           created_at?: string | null
@@ -366,6 +392,7 @@ export type Database = {
           total_earned_etb?: number
           updated_at?: string | null
           user_id?: string
+          vehicle_type?: string | null
         }
         Relationships: []
       }
@@ -471,6 +498,7 @@ export type Database = {
           payment_method: string | null
           payment_proof_url: string | null
           phone: string
+          preferred_vehicle_type: string | null
           reseller_id: string | null
           seller_id: string | null
           seller_notified: boolean | null
@@ -494,6 +522,7 @@ export type Database = {
           payment_method?: string | null
           payment_proof_url?: string | null
           phone: string
+          preferred_vehicle_type?: string | null
           reseller_id?: string | null
           seller_id?: string | null
           seller_notified?: boolean | null
@@ -517,6 +546,7 @@ export type Database = {
           payment_method?: string | null
           payment_proof_url?: string | null
           phone?: string
+          preferred_vehicle_type?: string | null
           reseller_id?: string | null
           seller_id?: string | null
           seller_notified?: boolean | null
@@ -557,6 +587,7 @@ export type Database = {
           estimated_earning_etb: number | null
           id: string
           order_id: string
+          preferred_vehicle_type: string | null
           seller_id: string | null
           seller_latitude: number | null
           seller_longitude: number | null
@@ -575,6 +606,7 @@ export type Database = {
           estimated_earning_etb?: number | null
           id?: string
           order_id: string
+          preferred_vehicle_type?: string | null
           seller_id?: string | null
           seller_latitude?: number | null
           seller_longitude?: number | null
@@ -593,6 +625,7 @@ export type Database = {
           estimated_earning_etb?: number | null
           id?: string
           order_id?: string
+          preferred_vehicle_type?: string | null
           seller_id?: string | null
           seller_latitude?: number | null
           seller_longitude?: number | null
@@ -1176,6 +1209,7 @@ export type Database = {
       support_tickets: {
         Row: {
           admin_response: string | null
+          attachment_url: string | null
           category: string
           created_at: string
           id: string
@@ -1187,6 +1221,7 @@ export type Database = {
         }
         Insert: {
           admin_response?: string | null
+          attachment_url?: string | null
           category: string
           created_at?: string
           id?: string
@@ -1198,6 +1233,7 @@ export type Database = {
         }
         Update: {
           admin_response?: string | null
+          attachment_url?: string | null
           category?: string
           created_at?: string
           id?: string
@@ -1211,26 +1247,32 @@ export type Database = {
       }
       ticket_replies: {
         Row: {
+          attachment_url: string | null
           created_at: string
           id: string
           is_admin: boolean
           message: string
+          sender_label: string | null
           ticket_id: string
           user_id: string
         }
         Insert: {
+          attachment_url?: string | null
           created_at?: string
           id?: string
           is_admin?: boolean
           message: string
+          sender_label?: string | null
           ticket_id: string
           user_id: string
         }
         Update: {
+          attachment_url?: string | null
           created_at?: string
           id?: string
           is_admin?: boolean
           message?: string
+          sender_label?: string | null
           ticket_id?: string
           user_id?: string
         }
