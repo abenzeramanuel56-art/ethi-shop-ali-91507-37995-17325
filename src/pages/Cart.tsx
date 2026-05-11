@@ -322,13 +322,33 @@ const Cart = () => {
                     📍 {customerLatitude.toFixed(5)}, {customerLongitude?.toFixed(5)}
                   </p>
                 )}
+                {detectedAddress && (
+                  <p className="text-xs text-success bg-success/10 rounded p-2">📍 Detected: {detectedAddress}</p>
+                )}
                 {locationError && (
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20">
                     <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-destructive">{locationError}</p>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">📍 GPS location helps calculate accurate delivery fees</p>
+                <p className="text-xs text-muted-foreground">📍 GPS is optional — typed address still works</p>
+              </div>
+
+              {/* Vehicle preference */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Preferred Delivery Vehicle</Label>
+                <select
+                  value={vehicle}
+                  onChange={(e) => setVehicle(e.target.value as any)}
+                  className="flex h-10 w-full rounded-md border border-border/50 bg-muted/50 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="any">Any available driver</option>
+                  <option value="motorbike">🏍️ Motorbike (small parcels)</option>
+                  <option value="car">🚗 Car (medium parcels)</option>
+                  <option value="van">🚐 Van (bulky items)</option>
+                  <option value="truck">🚛 Truck (heavy / large)</option>
+                </select>
+                <p className="text-xs text-muted-foreground">Only drivers with this vehicle will be notified</p>
               </div>
 
               {/* Payment Method */}
@@ -366,12 +386,14 @@ const Cart = () => {
                 />
               </div>
 
-              <div className="border-t border-border/50 pt-4">
-                <div className="mb-4 flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total</span>
-                  <span className="text-2xl font-black text-primary">{calculateTotal().toLocaleString()} ETB</span>
+              <div className="border-t border-border/50 pt-4 space-y-2">
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{subtotal.toLocaleString()} ETB</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Delivery (min, recalculated by driver)</span><span>{previewDeliveryFee.toLocaleString()} ETB</span></div>
+                <div className="flex justify-between items-center pt-2 border-t border-border/30">
+                  <span className="text-sm font-bold">Total</span>
+                  <span className="text-2xl font-black text-primary">{grandTotal.toLocaleString()} ETB</span>
                 </div>
-                <Button className="w-full btn-glow font-bold h-11" onClick={handleCheckout} disabled={submitting}>
+                <Button className="w-full btn-glow font-bold h-11 mt-2" onClick={handleCheckout} disabled={submitting}>
                   {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Placing Order...</> : t('cart.placeOrder')}
                 </Button>
               </div>
