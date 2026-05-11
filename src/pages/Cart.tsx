@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Trash2, ShoppingBag, MapPin, Loader2, Navigation, CheckCircle2, AlertCircle } from "lucide-react";
+import { Trash2, ShoppingBag, MapPin, Loader2, Navigation, CheckCircle2, AlertCircle, Bike, Car, Truck as TruckIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { deliveryFee, productSubtotal } from "@/lib/pricing";
 
 interface CartItem {
   id: string;
@@ -37,8 +38,14 @@ const Cart = () => {
   const [paymentMethod, setPaymentMethod] = useState<"cbe" | "telebirr" | "">("");
   const [customerLatitude, setCustomerLatitude] = useState<number | null>(null);
   const [customerLongitude, setCustomerLongitude] = useState<number | null>(null);
+  const [detectedAddress, setDetectedAddress] = useState<string>("");
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [vehicle, setVehicle] = useState<"any" | "motorbike" | "car" | "van" | "truck">("any");
   const { loading: locationLoading, requestLocation } = useGeolocation();
+  // distance is unknown at checkout time; use a flat min fee preview
+  const subtotal = productSubtotal(cartItems);
+  const previewDeliveryFee = deliveryFee(0); // min 50 ETB shown until route is known
+  const grandTotal = subtotal + previewDeliveryFee;
 
   useEffect(() => {
     checkAuth();
@@ -84,13 +91,27 @@ const Cart = () => {
 
   const calculateTotal = () => cartItems.reduce((sum, item) => sum + (item.price_etb * item.quantity), 0);
 
+  const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { "Accept-Language": "en" } });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j?.display_name || null;
+    } catch { return null; }
+  };
+
   const handleGetLocation = async () => {
     setLocationError(null);
     try {
       const coords = await requestLocation();
       setCustomerLatitude(coords.latitude);
       setCustomerLongitude(coords.longitude);
-      toast.success("📍 Location captured successfully!");
+      const addr = await reverseGeocode(coords.latitude, coords.longitude);
+      if (addr) {
+        setDetectedAddress(addr);
+        if (!shippingAddress) setShippingAddress(addr);
+      }
+      toast.success("📍 Location captured!");
     } catch (err: any) {
       setLocationError(err?.message || "Failed to get location. You can still order with manual address.");
     }
