@@ -21,6 +21,7 @@ import ApplicationSubmitted from "./pages/ApplicationSubmitted";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminApplications from "./pages/admin/Applications";
 import AdminSupportTickets from "./pages/admin/SupportTickets";
+import AdminAgentConsole from "./pages/admin/AgentConsole";
 import AdminServiceOrders from "./pages/admin/ServiceOrders";
 import SellerDashboard from "./pages/seller/Dashboard";
 import SellerSetup from "./pages/seller/Setup";
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/applications" element={<AdminApplications />} />
               <Route path="/admin/support-tickets" element={<AdminSupportTickets />} />
+              <Route path="/admin/agent-console" element={<AdminAgentConsole />} />
               <Route path="/admin/service-orders" element={<AdminServiceOrders />} />
               <Route path="/admin/maintenance" element={<AdminMaintenance />} />
               <Route path="/seller" element={<SellerDashboard />} />

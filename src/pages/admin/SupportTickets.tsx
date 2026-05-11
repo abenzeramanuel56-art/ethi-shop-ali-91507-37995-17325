@@ -16,6 +16,8 @@ interface TicketReply {
   message: string;
   is_admin: boolean;
   created_at: string;
+  sender_label?: string | null;
+  attachment_url?: string | null;
 }
 
 interface Ticket {
@@ -249,28 +251,35 @@ export default function AdminSupportTickets() {
 
                       <Separator />
 
-                      {/* Conversation Thread */}
-                      <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {ticketReplies[ticket.id]?.map((reply) => (
-                          <div
-                            key={reply.id}
-                            className={`p-3 rounded-lg ${
-                              reply.is_admin
-                                ? "bg-primary/10 ml-4 border-l-4 border-primary"
-                                : "bg-secondary/10 mr-4 border-l-4 border-secondary"
-                            }`}
-                          >
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="text-xs font-semibold">
-                                {reply.is_admin ? "You (Admin)" : "Customer"}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(reply.created_at).toLocaleString()}
-                              </span>
+                      {/* Conversation Thread — chat bubbles for agent forwards */}
+                      {ticket.category === "agent_forward" && (
+                        <div className="text-xs px-2 py-1 rounded bg-primary/10 text-primary inline-block mb-2">
+                          📩 Forwarded from Abeni Express Agent
+                        </div>
+                      )}
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto bg-muted/20 rounded-lg p-3">
+                        {ticketReplies[ticket.id]?.map((reply) => {
+                          const role = reply.is_admin ? "admin" : (reply.sender_label || "customer");
+                          const align = role === "customer" ? "justify-start" : "justify-end";
+                          const bubble =
+                            role === "admin" ? "bg-primary text-primary-foreground" :
+                            role === "agent" ? "bg-accent/30 border border-accent" :
+                            "bg-background border";
+                          const label = role === "admin" ? "Admin (you)" : role === "agent" ? "Abeni Agent" : "Customer";
+                          return (
+                            <div key={reply.id} className={`flex ${align}`}>
+                              <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${bubble}`}>
+                                <div className="text-[10px] uppercase tracking-wide opacity-70 mb-1">{label} · {new Date(reply.created_at).toLocaleTimeString()}</div>
+                                {reply.attachment_url && (
+                                  <a href={reply.attachment_url} target="_blank" rel="noreferrer">
+                                    <img src={reply.attachment_url} alt="attachment" className="rounded mb-2 max-h-48 object-cover" />
+                                  </a>
+                                )}
+                                <p className="whitespace-pre-wrap break-words">{reply.message}</p>
+                              </div>
                             </div>
-                            <p className="text-sm">{reply.message}</p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Admin Reply Input */}

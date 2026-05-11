@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Trash2, ShoppingBag, MapPin, Loader2, Navigation, CheckCircle2, AlertCircle } from "lucide-react";
+import { Trash2, ShoppingBag, MapPin, Loader2, Navigation, CheckCircle2, AlertCircle, Bike, Car, Truck as TruckIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { deliveryFee, productSubtotal } from "@/lib/pricing";
 
 interface CartItem {
   id: string;
@@ -37,8 +38,14 @@ const Cart = () => {
   const [paymentMethod, setPaymentMethod] = useState<"cbe" | "telebirr" | "">("");
   const [customerLatitude, setCustomerLatitude] = useState<number | null>(null);
   const [customerLongitude, setCustomerLongitude] = useState<number | null>(null);
+  const [detectedAddress, setDetectedAddress] = useState<string>("");
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [vehicle, setVehicle] = useState<"any" | "motorbike" | "car" | "van" | "truck">("any");
   const { loading: locationLoading, requestLocation } = useGeolocation();
+  // distance is unknown at checkout time; use a flat min fee preview
+  const subtotal = productSubtotal(cartItems);
+  const previewDeliveryFee = deliveryFee(0); // min 50 ETB shown until route is known
+  const grandTotal = subtotal + previewDeliveryFee;
 
   useEffect(() => {
     checkAuth();
@@ -84,21 +91,35 @@ const Cart = () => {
 
   const calculateTotal = () => cartItems.reduce((sum, item) => sum + (item.price_etb * item.quantity), 0);
 
+  const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { headers: { "Accept-Language": "en" } });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j?.display_name || null;
+    } catch { return null; }
+  };
+
   const handleGetLocation = async () => {
     setLocationError(null);
     try {
       const coords = await requestLocation();
       setCustomerLatitude(coords.latitude);
       setCustomerLongitude(coords.longitude);
-      toast.success("📍 Location captured successfully!");
+      const addr = await reverseGeocode(coords.latitude, coords.longitude);
+      if (addr) {
+        setDetectedAddress(addr);
+        if (!shippingAddress) setShippingAddress(addr);
+      }
+      toast.success("📍 Location captured!");
     } catch (err: any) {
       setLocationError(err?.message || "Failed to get location. You can still order with manual address.");
     }
   };
 
   const handleCheckout = async () => {
-    if (!shippingAddress || !city || !phone) {
-      toast.error(t('cart.fillShipping'));
+    if (!shippingAddress?.trim() || !city?.trim() || !phone?.trim()) {
+      toast.error("Please fill in your address, city and phone number to deliver your order.");
       return;
     }
     if (!paymentMethod) {
@@ -110,7 +131,7 @@ const Cart = () => {
       return;
     }
 
-    // Try to get location silently if not already captured
+    // GPS is OPTIONAL — never block ordering. We try silently if missing.
     let lat = customerLatitude;
     let lng = customerLongitude;
     if (!lat || !lng) {
@@ -120,8 +141,10 @@ const Cart = () => {
         lng = coords.longitude;
         setCustomerLatitude(lat);
         setCustomerLongitude(lng);
+        // Best-effort reverse geocode in background
+        reverseGeocode(coords.latitude, coords.longitude).then((addr) => { if (addr) setDetectedAddress(addr); });
       } catch (err) {
-        // continue without location
+        // Continue without GPS — driver will use the typed address
       }
     }
 
@@ -143,6 +166,9 @@ const Cart = () => {
       const storeType = hasSellerItems ? "seller" : "admin";
       const sellerId = hasSellerItems ? cartItems.find(i => i.store_type === "seller" || i.store_type === "reseller")?.seller_id || null : null;
 
+      const subtotalNow = productSubtotal(cartItems);
+      const feeNow = deliveryFee(0); // recalculated on driver acceptance using real distance
+
       const { data: order, error: orderError } = await (supabase as any)
         .from("orders")
         .insert({
@@ -150,7 +176,8 @@ const Cart = () => {
           shipping_address: shippingAddress,
           city: city,
           phone: phone,
-          total_etb: calculateTotal(),
+          total_etb: subtotalNow + feeNow,
+          delivery_fee_etb: feeNow,
           payment_proof_url: paymentProofUrl,
           payment_method: paymentMethod,
           status: "pending_payment",
@@ -158,6 +185,7 @@ const Cart = () => {
           seller_id: sellerId,
           customer_latitude: lat,
           customer_longitude: lng,
+          preferred_vehicle_type: vehicle,
         })
         .select()
         .single();
@@ -294,13 +322,33 @@ const Cart = () => {
                     📍 {customerLatitude.toFixed(5)}, {customerLongitude?.toFixed(5)}
                   </p>
                 )}
+                {detectedAddress && (
+                  <p className="text-xs text-success bg-success/10 rounded p-2">📍 Detected: {detectedAddress}</p>
+                )}
                 {locationError && (
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20">
                     <AlertCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-destructive">{locationError}</p>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">📍 GPS location helps calculate accurate delivery fees</p>
+                <p className="text-xs text-muted-foreground">📍 GPS is optional — typed address still works</p>
+              </div>
+
+              {/* Vehicle preference */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Preferred Delivery Vehicle</Label>
+                <select
+                  value={vehicle}
+                  onChange={(e) => setVehicle(e.target.value as any)}
+                  className="flex h-10 w-full rounded-md border border-border/50 bg-muted/50 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="any">Any available driver</option>
+                  <option value="motorbike">🏍️ Motorbike (small parcels)</option>
+                  <option value="car">🚗 Car (medium parcels)</option>
+                  <option value="van">🚐 Van (bulky items)</option>
+                  <option value="truck">🚛 Truck (heavy / large)</option>
+                </select>
+                <p className="text-xs text-muted-foreground">Only drivers with this vehicle will be notified</p>
               </div>
 
               {/* Payment Method */}
@@ -338,12 +386,14 @@ const Cart = () => {
                 />
               </div>
 
-              <div className="border-t border-border/50 pt-4">
-                <div className="mb-4 flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total</span>
-                  <span className="text-2xl font-black text-primary">{calculateTotal().toLocaleString()} ETB</span>
+              <div className="border-t border-border/50 pt-4 space-y-2">
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{subtotal.toLocaleString()} ETB</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Delivery (min, recalculated by driver)</span><span>{previewDeliveryFee.toLocaleString()} ETB</span></div>
+                <div className="flex justify-between items-center pt-2 border-t border-border/30">
+                  <span className="text-sm font-bold">Total</span>
+                  <span className="text-2xl font-black text-primary">{grandTotal.toLocaleString()} ETB</span>
                 </div>
-                <Button className="w-full btn-glow font-bold h-11" onClick={handleCheckout} disabled={submitting}>
+                <Button className="w-full btn-glow font-bold h-11 mt-2" onClick={handleCheckout} disabled={submitting}>
                   {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Placing Order...</> : t('cart.placeOrder')}
                 </Button>
               </div>

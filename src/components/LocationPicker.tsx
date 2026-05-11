@@ -89,9 +89,21 @@ export function LocationPicker({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       };
-      onLocationChange(coords.latitude, coords.longitude);
+      // Reverse-geocode lat/lng → real street address (no key needed)
+      let detected = manualAddress;
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1`, {
+          headers: { "Accept-Language": "en" },
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j?.display_name) detected = j.display_name as string;
+        }
+      } catch (e) { console.warn("Reverse geocode failed", e); }
+      onLocationChange(coords.latitude, coords.longitude, detected || undefined);
       setManualLat(coords.latitude.toString());
       setManualLng(coords.longitude.toString());
+      if (detected) setManualAddress(detected);
       setError(null);
     } catch (err: any) {
       const inIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();

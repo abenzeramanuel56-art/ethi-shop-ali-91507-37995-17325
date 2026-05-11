@@ -321,12 +321,20 @@ export default function ApplyDriver() {
                     </div>
 
                     <div>
-                      <Label>Vehicle Type (optional)</Label>
-                      <Input
+                      <Label>Vehicle Type *</Label>
+                      <select
                         value={vehicleType}
                         onChange={(e) => setVehicleType(e.target.value)}
-                        placeholder="e.g., Motorcycle, Bicycle, Car"
-                      />
+                        required
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Select your vehicle</option>
+                        <option value="motorbike">🏍️ Motorbike</option>
+                        <option value="car">🚗 Car</option>
+                        <option value="van">🚐 Van</option>
+                        <option value="truck">🚛 Truck</option>
+                      </select>
+                      <p className="text-xs text-muted-foreground mt-1">You will only receive orders matching your vehicle type.</p>
                     </div>
 
                     <div>
@@ -342,7 +350,7 @@ export default function ApplyDriver() {
                       type="button" 
                       onClick={() => setStep(2)} 
                       className="w-full"
-                      disabled={!fullName || !email || !age || !phone}
+                      disabled={!fullName || !email || !age || !phone || !vehicleType}
                     >
                       Next
                     </Button>
