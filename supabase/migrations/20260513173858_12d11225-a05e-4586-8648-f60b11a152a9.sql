@@ -1,0 +1,2 @@
+ALTER TABLE public.orders DROP CONSTRAINT orders_store_type_check;
+ALTER TABLE public.orders ADD CONSTRAINT orders_store_type_check CHECK (store_type = ANY (ARRAY['admin'::text, 'reseller'::text, 'customer'::text, 'seller'::text]));
