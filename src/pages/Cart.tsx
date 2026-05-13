@@ -131,22 +131,11 @@ const Cart = () => {
       return;
     }
 
-    // GPS is OPTIONAL — never block ordering. We try silently if missing.
-    let lat = customerLatitude;
-    let lng = customerLongitude;
-    if (!lat || !lng) {
-      try {
-        const coords = await requestLocation();
-        lat = coords.latitude;
-        lng = coords.longitude;
-        setCustomerLatitude(lat);
-        setCustomerLongitude(lng);
-        // Best-effort reverse geocode in background
-        reverseGeocode(coords.latitude, coords.longitude).then((addr) => { if (addr) setDetectedAddress(addr); });
-      } catch (err) {
-        // Continue without GPS — driver will use the typed address
-      }
-    }
+    // GPS is OPTIONAL — never auto-request (avoids the "abeniexpress.lovable.app
+    // wants to know your location" browser popup at checkout). User can opt-in
+    // explicitly via the "Share My Location" button above.
+    const lat = customerLatitude;
+    const lng = customerLongitude;
 
     setSubmitting(true);
 
