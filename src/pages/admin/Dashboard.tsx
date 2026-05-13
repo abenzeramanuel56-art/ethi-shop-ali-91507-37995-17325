@@ -809,81 +809,9 @@ const AdminDashboard = () => {
                               )}
                             </div>
 
-                            {editingOrder === order.id ? (
-                              <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
-                                <div className="space-y-2">
-                                  <Label>Status</Label>
-                                  <select
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                    value={orderUpdates.status}
-                                    onChange={(e) =>
-                                      setOrderUpdates({ ...orderUpdates, status: e.target.value })
-                                    }
-                                  >
-                                    <option value="">Select status</option>
-                                    <option value="pending_payment">Pending Payment</option>
-                                    <option value="payment_verified">Payment Verified</option>
-                                    <option value="ordered_on_aliexpress">Ordered on AliExpress</option>
-                                    <option value="shipped">Shipped</option>
-                                    <option value="delivered">Delivered</option>
-                                  </select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Tracking Number</Label>
-                                  <Input
-                                    placeholder="Enter tracking number"
-                                    value={orderUpdates.tracking_number}
-                                    onChange={(e) =>
-                                      setOrderUpdates({
-                                        ...orderUpdates,
-                                        tracking_number: e.target.value,
-                                      })
-                                    }
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Admin Notes</Label>
-                                  <Textarea
-                                    placeholder="Internal notes..."
-                                    value={orderUpdates.admin_notes}
-                                    onChange={(e) =>
-                                      setOrderUpdates({ ...orderUpdates, admin_notes: e.target.value })
-                                    }
-                                  />
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button onClick={() => handleUpdateOrder(order.id)}>
-                                    Update Order
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                      setEditingOrder(null);
-                                      setOrderUpdates({
-                                        status: "",
-                                        tracking_number: "",
-                                        admin_notes: "",
-                                      });
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <Button
-                                onClick={() => {
-                                  setEditingOrder(order.id);
-                                  setOrderUpdates({
-                                    status: order.status,
-                                    tracking_number: order.tracking_number || "",
-                                    admin_notes: order.admin_notes || "",
-                                  });
-                                }}
-                              >
-                                Manage Order
-                              </Button>
-                            )}
+                            <div className="rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">
+                              Order status updates automatically through the driver workflow (pickup → delivery). Admin only confirms payment.
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
