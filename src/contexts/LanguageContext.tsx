@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Language = 'en' | 'am';
+type Language = 'en' | 'am' | 'om' | 'ti';
 
 interface LanguageContextType {
   language: Language;
@@ -727,6 +727,82 @@ const translations: Record<Language, Record<string, string>> = {
     'common.previous': 'ቀዳሚ',
     'common.etb': 'ብር',
   },
+  // Afaan Oromo — partial translation; missing keys fall back to English.
+  om: {
+    'nav.brand': 'Abeni Express',
+    'nav.browse': 'Oomishaalee Ilaali',
+    'nav.request': 'Meeshaa Gaafadhu',
+    'nav.support': 'Deeggarsa',
+    'nav.admin': 'Paanaalii Bulchaa',
+    'nav.reseller': 'Daashboordii Gurguraa',
+    'nav.signOut': 'Bahi',
+    'nav.signIn': 'Seeni',
+    'nav.account': 'Akkaawuntii',
+    'nav.cart': 'Galmee',
+    'nav.services': 'Tajaajila',
+    'nav.seller': 'Daashboordii Gurguraa',
+    'nav.driver': 'Daashboordii Konkolaachisaa',
+    'lang.select': 'Afaan',
+    'lang.en': 'English',
+    'lang.am': 'አማርኛ',
+    'lang.om': 'Afaan Oromoo',
+    'lang.ti': 'ትግርኛ',
+    'home.hero.title': 'Gabaa Walaba Itoophiyaa',
+    'home.hero.subtitle': 'Oomishaalee fi tajaajila mirkaneeffaman gurgurtoota naannoo irraa Birrii Itoophiyaatiin bitadhu — geejjibsiistota keenyaan mana keessanitti dhihaata.',
+    'home.hero.browse': 'Oomishaalee Ilaali',
+    'home.hero.request': 'Meeshaa Gaafadhu',
+    'common.loading': 'Fe’amaa jira...',
+    'common.error': 'Dogoggora',
+    'common.success': 'Milkaa’ina',
+    'common.cancel': 'Haqi',
+    'common.confirm': 'Mirkaneessi',
+    'common.save': 'Olkaa’i',
+    'common.delete': 'Balleessi',
+    'common.edit': 'Gulaali',
+    'common.view': 'Ilaali',
+    'common.back': 'Duubatti',
+    'common.next': 'Itti aanu',
+    'common.previous': 'Kan duraa',
+    'common.etb': 'ETB',
+  },
+  // Tigrigna — partial translation; missing keys fall back to English.
+  ti: {
+    'nav.brand': 'ኣቤኒ ኤክስፕረስ',
+    'nav.browse': 'ምህርቲ ርአ',
+    'nav.request': 'ኣቕሓ ሓትት',
+    'nav.support': 'ደገፍ',
+    'nav.admin': 'ናይ ኣመሓዳሪ ፓነል',
+    'nav.reseller': 'ናይ ሸያጢ ዳሽቦርድ',
+    'nav.signOut': 'ውጻእ',
+    'nav.signIn': 'እቶ',
+    'nav.account': 'ሕሳብ',
+    'nav.cart': 'ዓረብያ',
+    'nav.services': 'ኣገልግሎታት',
+    'nav.seller': 'ናይ ሸያጢ ዳሽቦርድ',
+    'nav.driver': 'ናይ ዘዋሪ ዳሽቦርድ',
+    'lang.select': 'ቋንቋ',
+    'lang.en': 'English',
+    'lang.am': 'አማርኛ',
+    'lang.om': 'Afaan Oromoo',
+    'lang.ti': 'ትግርኛ',
+    'home.hero.title': 'ናጻ ዕዳጋ ኢትዮጵያ',
+    'home.hero.subtitle': 'ካብ ናይ ከባቢ ሸየጥቲ ዝተረጋገጹ ምህርትን ኣገልግሎትን ብኢትዮጵያ ብር ግዙ — ብዘወርቲ ናባኹም ይመጽእ።',
+    'home.hero.browse': 'ምህርቲ ርአ',
+    'home.hero.request': 'ኣቕሓ ሓትት',
+    'common.loading': 'ይጽዓን ኣሎ...',
+    'common.error': 'ጌጋ',
+    'common.success': 'ዕዉት',
+    'common.cancel': 'ሰርዝ',
+    'common.confirm': 'ኣረጋግጽ',
+    'common.save': 'ኣቐምጥ',
+    'common.delete': 'ሰርዝ',
+    'common.edit': 'ኣርም',
+    'common.view': 'ርአ',
+    'common.back': 'ድሕሪት',
+    'common.next': 'ቀጻሊ',
+    'common.previous': 'ዝሓለፈ',
+    'common.etb': 'ETB',
+  },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -742,8 +818,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('language', lang);
   };
 
+  // Falls back to English when the active language is missing a key, so the
+  // partially-translated languages (om, ti) still render correctly.
   const t = (key: string): string => {
-    return translations[language][key] || key;
+    return translations[language]?.[key] || translations.en[key] || key;
   };
 
   useEffect(() => {
