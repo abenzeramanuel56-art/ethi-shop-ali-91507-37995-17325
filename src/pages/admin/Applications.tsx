@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Store, User, Phone, Mail, Calendar, IdCard, Camera, Car } from "lucide-react";
+import { SignedImage, openSignedUrl } from "@/components/SignedImage";
 
 interface SellerApplication {
   id: string;
