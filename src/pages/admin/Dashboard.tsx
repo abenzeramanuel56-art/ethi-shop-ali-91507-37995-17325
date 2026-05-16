@@ -522,6 +522,7 @@ const AdminDashboard = () => {
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="reseller_orders">Reseller Orders</TabsTrigger>
           <TabsTrigger value="service_orders">Service Orders</TabsTrigger>
+          <TabsTrigger value="digital_orders">Digital Orders</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
@@ -531,6 +532,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="punishments">Punishments</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="digital_orders">
+          <AdminDigitalOrders />
+        </TabsContent>
 
           <TabsContent value="service_orders">
             <Card>
