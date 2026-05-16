@@ -760,14 +760,12 @@ const AdminDashboard = () => {
                                 </p>
                               )}
                               {order.payment_proof_url && (
-                                <a
-                                  href={order.payment_proof_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  onClick={() => openSignedUrl(order.payment_proof_url)}
                                   className="text-sm text-primary hover:underline"
                                 >
                                   View Payment Proof →
-                                </a>
+                                </button>
                               )}
                               {order.tracking_number && (
                                 <p className="text-sm">
