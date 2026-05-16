@@ -565,16 +565,16 @@ const AdminDashboard = () => {
                               <div className="font-medium">Order #{order.id.slice(0, 8)}</div>
                               <div className="text-sm text-muted-foreground">Status: {order.status}</div>
                               {order.payment_proof_url && (
-                                <a href={order.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                <button onClick={() => openSignedUrl(order.payment_proof_url)} className="text-sm text-primary hover:underline">
                                   View Payment Proof
-                                </a>
+                                </button>
                               )}
                             </div>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => window.open(order.payment_proof_url || '#', '_blank')}
+                                onClick={() => openSignedUrl(order.payment_proof_url)}
                                 disabled={!order.payment_proof_url}
                               >
                                 Payment Proof
