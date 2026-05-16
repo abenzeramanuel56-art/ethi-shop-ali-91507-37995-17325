@@ -17,6 +17,8 @@ import AdminMessaging from "./Messaging";
 import AdminReports from "./Reports";
 import AdminPunishments from "./Punishments";
 import { ImageUpdater } from "./ImageUpdater";
+import AdminDigitalOrders from "./DigitalOrders";
+import { openSignedUrl } from "@/components/SignedImage";
 
 interface Stats {
   pendingQuotes: number;
