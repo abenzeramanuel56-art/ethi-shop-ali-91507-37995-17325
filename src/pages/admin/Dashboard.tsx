@@ -17,6 +17,8 @@ import AdminMessaging from "./Messaging";
 import AdminReports from "./Reports";
 import AdminPunishments from "./Punishments";
 import { ImageUpdater } from "./ImageUpdater";
+import AdminDigitalOrders from "./DigitalOrders";
+import { openSignedUrl } from "@/components/SignedImage";
 
 interface Stats {
   pendingQuotes: number;
@@ -520,6 +522,7 @@ const AdminDashboard = () => {
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="reseller_orders">Reseller Orders</TabsTrigger>
           <TabsTrigger value="service_orders">Service Orders</TabsTrigger>
+          <TabsTrigger value="digital_orders">Digital Orders</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
@@ -529,6 +532,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="punishments">Punishments</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="digital_orders">
+          <AdminDigitalOrders />
+        </TabsContent>
 
           <TabsContent value="service_orders">
             <Card>
@@ -563,16 +570,16 @@ const AdminDashboard = () => {
                               <div className="font-medium">Order #{order.id.slice(0, 8)}</div>
                               <div className="text-sm text-muted-foreground">Status: {order.status}</div>
                               {order.payment_proof_url && (
-                                <a href={order.payment_proof_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                <button onClick={() => openSignedUrl(order.payment_proof_url)} className="text-sm text-primary hover:underline">
                                   View Payment Proof
-                                </a>
+                                </button>
                               )}
                             </div>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => window.open(order.payment_proof_url || '#', '_blank')}
+                                onClick={() => openSignedUrl(order.payment_proof_url)}
                                 disabled={!order.payment_proof_url}
                               >
                                 Payment Proof
@@ -758,14 +765,12 @@ const AdminDashboard = () => {
                                 </p>
                               )}
                               {order.payment_proof_url && (
-                                <a
-                                  href={order.payment_proof_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  onClick={() => openSignedUrl(order.payment_proof_url)}
                                   className="text-sm text-primary hover:underline"
                                 >
                                   View Payment Proof →
-                                </a>
+                                </button>
                               )}
                               {order.tracking_number && (
                                 <p className="text-sm">

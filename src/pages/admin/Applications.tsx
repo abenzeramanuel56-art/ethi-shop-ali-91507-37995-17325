@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Store, User, Phone, Mail, Calendar, IdCard, Camera, Car } from "lucide-react";
+import { SignedImage, openSignedUrl } from "@/components/SignedImage";
 
 interface SellerApplication {
   id: string;
@@ -319,18 +320,18 @@ export default function AdminApplications() {
                               <IdCard className="h-3 w-3" /> ID Front
                             </Label>
                             {app.id_front_photo_url ? (
-                              <img 
-                                src={app.id_front_photo_url} 
-                                alt="ID Front" 
+                              <SignedImage
+                                url={app.id_front_photo_url}
+                                alt="ID Front"
                                 className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
-                                onClick={() => window.open(app.id_front_photo_url!, '_blank')}
+                                onClick={() => openSignedUrl(app.id_front_photo_url)}
                               />
                             ) : app.id_photo_url ? (
-                              <img 
-                                src={app.id_photo_url} 
-                                alt="ID" 
+                              <SignedImage
+                                url={app.id_photo_url}
+                                alt="ID"
                                 className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
-                                onClick={() => window.open(app.id_photo_url, '_blank')}
+                                onClick={() => openSignedUrl(app.id_photo_url)}
                               />
                             ) : (
                               <div className="w-full h-40 bg-muted rounded flex items-center justify-center text-muted-foreground">
@@ -343,11 +344,11 @@ export default function AdminApplications() {
                               <IdCard className="h-3 w-3" /> ID Back
                             </Label>
                             {app.id_back_photo_url ? (
-                              <img 
-                                src={app.id_back_photo_url} 
-                                alt="ID Back" 
+                              <SignedImage
+                                url={app.id_back_photo_url}
+                                alt="ID Back"
                                 className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
-                                onClick={() => window.open(app.id_back_photo_url!, '_blank')}
+                                onClick={() => openSignedUrl(app.id_back_photo_url)}
                               />
                             ) : (
                               <div className="w-full h-40 bg-muted rounded flex items-center justify-center text-muted-foreground">
@@ -360,11 +361,11 @@ export default function AdminApplications() {
                               <Camera className="h-3 w-3" /> Face Verification
                             </Label>
                             {app.face_photo_url ? (
-                              <img 
-                                src={app.face_photo_url} 
-                                alt="Face" 
+                              <SignedImage
+                                url={app.face_photo_url}
+                                alt="Face"
                                 className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
-                                onClick={() => window.open(app.face_photo_url!, '_blank')}
+                                onClick={() => openSignedUrl(app.face_photo_url)}
                               />
                             ) : (
                               <div className="w-full h-40 bg-muted rounded flex items-center justify-center text-muted-foreground">
@@ -519,22 +520,22 @@ export default function AdminApplications() {
                             <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
                               <IdCard className="h-3 w-3" /> ID Front
                             </Label>
-                            <img 
-                              src={app.id_front_photo_url} 
-                              alt="ID Front" 
+                            <SignedImage
+                              url={app.id_front_photo_url}
+                              alt="ID Front"
                               className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
-                              onClick={() => window.open(app.id_front_photo_url, '_blank')}
+                              onClick={() => openSignedUrl(app.id_front_photo_url)}
                             />
                           </div>
                           <div>
                             <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
                               <IdCard className="h-3 w-3" /> ID Back
                             </Label>
-                            <img 
-                              src={app.id_back_photo_url} 
-                              alt="ID Back" 
+                            <SignedImage
+                              url={app.id_back_photo_url}
+                              alt="ID Back"
                               className="w-full h-40 object-cover rounded border cursor-pointer hover:opacity-80"
-                              onClick={() => window.open(app.id_back_photo_url, '_blank')}
+                              onClick={() => openSignedUrl(app.id_back_photo_url)}
                             />
                           </div>
                         </div>
