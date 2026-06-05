@@ -40,16 +40,20 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo") || "/";
 
   useEffect(() => {
+    const targetAfterAuth = sessionStorage.getItem("auth:returnTo") || returnTo;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate(returnTo);
+        sessionStorage.removeItem("auth:returnTo");
+        navigate(targetAfterAuth);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session) {
-          navigate(returnTo);
+          sessionStorage.removeItem("auth:returnTo");
+          navigate(targetAfterAuth);
         }
       }
     );
