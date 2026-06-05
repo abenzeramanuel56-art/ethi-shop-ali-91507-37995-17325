@@ -7,9 +7,11 @@ import { BannedUserCheck } from "@/components/BannedUserCheck";
 import { AdvertisementPlayer } from "@/components/AdvertisementPlayer";
 import { MaintenanceWrapper } from "@/components/MaintenanceWrapper";
 import { FloatingAbeniAgent } from "@/components/FloatingAbeniAgent";
+import { FloatingLanguageSelector } from "@/components/FloatingLanguageSelector";
 import AdminMaintenance from "./pages/admin/Maintenance";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Products from "./pages/Products";
 import RequestItem from "./pages/RequestItem";
 import Account from "./pages/Account";
@@ -48,12 +50,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <FloatingAbeniAgent />
+        <FloatingLanguageSelector />
         <BannedUserCheck>
           <MaintenanceWrapper>
             <AdvertisementPlayer />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/products" element={<Products />} />
               <Route path="/request-item" element={<RequestItem />} />
               <Route path="/account" element={<Account />} />
