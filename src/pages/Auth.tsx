@@ -40,16 +40,20 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo") || "/";
 
   useEffect(() => {
+    const targetAfterAuth = sessionStorage.getItem("auth:returnTo") || returnTo;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate(returnTo);
+        sessionStorage.removeItem("auth:returnTo");
+        navigate(targetAfterAuth);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session) {
-          navigate(returnTo);
+          sessionStorage.removeItem("auth:returnTo");
+          navigate(targetAfterAuth);
         }
       }
     );
@@ -225,7 +229,10 @@ const Auth = () => {
                 disabled={loading}
                 onClick={async () => {
                   setLoading(true);
-                  const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + returnTo });
+                  sessionStorage.setItem("auth:returnTo", returnTo);
+                  const r = await lovable.auth.signInWithOAuth("google", {
+                    redirect_uri: window.location.origin,
+                  });
                   if (r.error) { toast.error(r.error.message || "Google sign-in failed"); setLoading(false); }
                 }}
               >
@@ -239,7 +246,10 @@ const Auth = () => {
                 disabled={loading}
                 onClick={async () => {
                   setLoading(true);
-                  const r = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin + returnTo });
+                  sessionStorage.setItem("auth:returnTo", returnTo);
+                  const r = await lovable.auth.signInWithOAuth("apple", {
+                    redirect_uri: window.location.origin,
+                  });
                   if (r.error) { toast.error(r.error.message || "Apple sign-in failed"); setLoading(false); }
                 }}
               >
