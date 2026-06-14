@@ -18,18 +18,32 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
-    // Supabase puts the recovery token in the URL hash (#access_token=...&type=recovery)
-    // The client picks it up automatically and emits a PASSWORD_RECOVERY event.
+    // Handle both flows:
+    // 1) PKCE: ?code=... in query string -> exchange for session
+    // 2) Implicit: #access_token=...&type=recovery -> client handles automatically
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get("code");
+
+    const init = async () => {
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
+          setReady(true);
+          window.history.replaceState({}, "", "/reset-password");
+          return;
+        }
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setReady(true);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setReady(true);
       }
     });
 
-    // Also check if a session is already present (user landed with valid recovery link).
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true);
-    });
+    init();
 
     return () => subscription.unsubscribe();
   }, []);
