@@ -814,8 +814,30 @@ const AdminDashboard = () => {
                               )}
                             </div>
 
-                            <div className="rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">
-                              Order status updates automatically through the driver workflow (pickup → delivery). Admin only confirms payment.
+                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-3">
+                              <p className="text-xs text-muted-foreground">
+                                Order status updates automatically through the driver workflow (pickup → delivery). Admin only confirms payment.
+                              </p>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openSignedUrl(order.payment_proof_url)}
+                                  disabled={!order.payment_proof_url}
+                                >
+                                  View Payment Proof
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    setOrderUpdates({ status: 'payment_verified', tracking_number: '', admin_notes: '' });
+                                    handleUpdateOrder(order.id);
+                                  }}
+                                  disabled={order.status === 'payment_verified' || order.status === 'delivered' || order.status === 'shipped' || order.status === 'out_for_delivery'}
+                                >
+                                  Approve Payment
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </CardContent>
