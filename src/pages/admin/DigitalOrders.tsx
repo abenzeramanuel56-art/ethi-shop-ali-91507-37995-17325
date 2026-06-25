@@ -77,6 +77,17 @@ export default function AdminDigitalOrders() {
       toast.error("Failed to verify: " + error.message);
       return;
     }
+    const order = orders.find((o: any) => o.id === orderId);
+    if (order?.buyer_id) {
+      supabase.functions.invoke("send-user-email", {
+        body: {
+          userId: order.buyer_id,
+          subject: "Your Digital Purchase is Ready",
+          heading: "Download Ready 🎉",
+          message: "Your payment has been verified. Your download code is now available in your account notifications — use it on the digital marketplace page to access your purchase.",
+        },
+      }).catch((e: any) => console.error("email error", e));
+    }
     toast.success("Payment verified! Buyer notified with download code.");
     fetchOrders();
   };

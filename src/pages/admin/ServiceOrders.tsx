@@ -128,6 +128,18 @@ export default function AdminServiceOrders() {
       return;
     }
 
+    const order = orders.find(o => o.id === orderId);
+    if (order?.customer_id) {
+      supabase.functions.invoke("send-user-email", {
+        body: {
+          userId: order.customer_id,
+          subject: "Payment Verified — Service in Progress",
+          heading: "Payment Confirmed ✓",
+          message: "Your payment has been verified by our team and the service provider has been notified. Check your dashboard for your verification code — share it ONLY after the service is fully completed.",
+        },
+      }).catch(e => console.error("email error", e));
+    }
+
     toast({
       title: "Payment Verified",
       description: "Service order is now in progress. Verification code has been generated.",
