@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending order confirmation email to:", user.email);
 
     const emailResponse = await resend.emails.send({
-      from: "Get It <onboarding@resend.dev>",
+      from: "Abeni Express <onboarding@resend.dev>",
       to: [user.email],
       subject: `Great News! Your Order #${orderNumber} for ${productName} is Officially Confirmed!`,
       html: `
@@ -139,8 +139,8 @@ const handler = async (req: Request): Promise<Response> => {
               <p>Thank you so much for choosing us. We can't wait for you to get started with your new material!</p>
               
               <div class="footer">
-                <p>Happy creating,</p>
-                <p><strong>The Team at Get It .com</strong></p>
+                <p>Thank you,</p>
+                <p><strong>The Abeni Express Team</strong></p>
               </div>
             </div>
           </body>
