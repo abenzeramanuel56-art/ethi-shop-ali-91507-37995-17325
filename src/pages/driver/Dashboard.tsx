@@ -400,6 +400,7 @@ export default function DriverDashboard() {
               Completed ({completedOrders.length})
             </TabsTrigger>
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
+            <TabsTrigger value="vehicle">Vehicle</TabsTrigger>
           </TabsList>
 
           {/* Available Orders Tab */}
