@@ -13,6 +13,7 @@ import {
   Truck, Package, DollarSign, MapPin, Phone, 
   CheckCircle, Clock, Navigation, Bell
 } from "lucide-react";
+import { VehicleSettings } from "@/components/VehicleSettings";
 
 interface PendingOrder {
   id: string;
@@ -755,6 +756,10 @@ export default function DriverDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="vehicle">
+            <VehicleSettings userId={userId} />
           </TabsContent>
         </Tabs>
       </div>
