@@ -36,6 +36,10 @@ const Auth = () => {
   const [pendingSignUp, setPendingSignUp] = useState<{email: string; password: string; fullName: string} | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpPassword, setOtpPassword] = useState("");
 
   const returnTo = searchParams.get("returnTo") || "/";
 
@@ -96,7 +100,15 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast.success(t('auth.accountCreated'));
+      // Trigger verification code email via Resend
+      await supabase.functions.invoke("send-signup-code", {
+        body: { email: pendingSignUp.email },
+      });
+
+      toast.success("Account created! Check your email for a 6-digit verification code.");
+      setOtpEmail(pendingSignUp.email);
+      setOtpPassword(pendingSignUp.password);
+      setShowOtp(true);
       setEmail("");
       setPassword("");
       setFullName("");
@@ -105,6 +117,38 @@ const Auth = () => {
       toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpCode.length !== 6) {
+      toast.error("Enter the 6-digit code");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("verify-signup-code", {
+        body: { email: otpEmail, code: otpCode },
+      });
+      if (error) throw error;
+      toast.success("Email verified! Signing you in...");
+      await supabase.auth.signInWithPassword({ email: otpEmail, password: otpPassword });
+      setShowOtp(false);
+      setOtpCode("");
+    } catch (error: any) {
+      toast.error(error.message || "Invalid or expired code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      await supabase.functions.invoke("send-signup-code", { body: { email: otpEmail } });
+      toast.success("New code sent to your email");
+    } catch {
+      toast.error("Failed to resend code");
     }
   };
 
