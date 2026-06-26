@@ -72,6 +72,7 @@ export default function DriverDashboard() {
   const [wallet, setWallet] = useState<DriverWallet | null>(null);
   const [isDriver, setIsDriver] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [vehicleType, setVehicleType] = useState<string | null>(null);
 
   useEffect(() => {
     checkDriverStatus();
@@ -80,25 +81,51 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (!isDriver) return;
 
+    // Request browser notification permission once
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+
     // Subscribe to realtime pending orders
     const channel = supabase
       .channel('pending-driver-orders')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pending_driver_orders'
-        },
-        () => {
+        { event: 'INSERT', schema: 'public', table: 'pending_driver_orders' },
+        (payload: any) => {
           fetchPendingOrders();
+          // External browser notification
+          try {
+            if ("Notification" in window && Notification.permission === "granted") {
+              const n = new Notification("🚚 New delivery available!", {
+                body: `Pickup → ${payload.new?.city || "city"} · ${payload.new?.distance_km || "?"} km · ${payload.new?.estimated_earning_etb || "?"} ETB`,
+                icon: "/favicon.ico",
+                tag: "new-order",
+              });
+              n.onclick = () => window.focus();
+            }
+          } catch {}
+          // Audio ping
+          try {
+            const audio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+            audio.play().catch(() => {});
+          } catch {}
+          toast.info("🚚 New delivery order available!");
         }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'pending_driver_orders' },
+        () => fetchPendingOrders()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'pending_driver_orders' },
+        () => fetchPendingOrders()
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [isDriver]);
 
   // Live GPS tracking — broadcast driver location every 15s while there are active deliveries
@@ -154,6 +181,16 @@ export default function DriverDashboard() {
     }
 
     setIsDriver(true);
+    // Load vehicle so we can gate order acceptance
+    const { data: appData } = await (supabase as any)
+      .from("driver_applications")
+      .select("vehicle_type")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setVehicleType(appData?.vehicle_type || null);
+
     fetchPendingOrders();
     fetchDriverData(user.id);
   };
