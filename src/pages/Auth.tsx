@@ -211,6 +211,49 @@ const Auth = () => {
     }
   };
 
+  if (showOtp) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto flex items-center justify-center px-4 py-16">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-2xl">Verify your email</CardTitle>
+              <CardDescription>We sent a 6-digit code to <strong>{otpEmail}</strong></CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="otp">Verification code</Label>
+                  <Input
+                    id="otp"
+                    inputMode="numeric"
+                    pattern="\d{6}"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="text-center text-2xl tracking-widest"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify & Sign in"}
+                </Button>
+                <Button type="button" variant="ghost" className="w-full" onClick={handleResendOtp}>
+                  Resend code
+                </Button>
+                <Button type="button" variant="link" className="w-full" onClick={() => setShowOtp(false)}>
+                  Back
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (showForgotPassword) {
     return (
       <div className="min-h-screen bg-background">
