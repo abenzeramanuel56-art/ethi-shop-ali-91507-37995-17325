@@ -252,6 +252,10 @@ export default function DriverDashboard() {
 
   const acceptOrder = async (pendingOrder: PendingOrder) => {
     if (!userId) return;
+    if (!vehicleType) {
+      toast.error("Set your vehicle type in the Vehicle tab before accepting orders.");
+      return;
+    }
 
     try {
       const { error } = await (supabase as any).rpc("driver_accept_pending_order", {
