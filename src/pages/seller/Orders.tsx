@@ -22,6 +22,16 @@ interface Order {
     full_name: string;
     phone: string;
   } | null;
+  driver_orders?: Array<{
+    status: string;
+    driver_earning_etb: number | null;
+    distance_km: number | null;
+    seller_confirmed_pickup: boolean;
+    customer_confirmed_delivery: boolean;
+    current_driver_latitude: number | null;
+    current_driver_longitude: number | null;
+    last_location_update_at: string | null;
+  }>;
 }
 
 export default function SellerOrders() {
@@ -53,24 +63,24 @@ export default function SellerOrders() {
 
     const { data } = await supabase
       .from("orders")
-      .select("*")
+      .select("*, driver_orders(status, driver_earning_etb, distance_km, seller_confirmed_pickup, customer_confirmed_delivery, current_driver_latitude, current_driver_longitude, last_location_update_at)")
       .eq("seller_id", store.id)
       .order("created_at", { ascending: false });
 
     // Fetch profiles separately
     const ordersWithProfiles = await Promise.all(
-      (data || []).map(async (order) => {
+      (data || []).map(async (order: any) => {
         const { data: profileData } = await supabase
           .from("profiles")
           .select("full_name, phone")
           .eq("id", order.customer_id)
           .single();
-        
+
         return { ...order, profiles: profileData };
       })
     );
 
-    setOrders(ordersWithProfiles);
+    setOrders(ordersWithProfiles as any);
     setLoading(false);
   };
 
@@ -160,6 +170,27 @@ export default function SellerOrders() {
                       <p className="font-medium">{new Date(order.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
+
+                  {order.driver_orders && order.driver_orders.length > 0 && (
+                    <div className="mt-4 rounded-lg border bg-muted/30 p-4 space-y-2">
+                      <p className="font-semibold flex items-center gap-2">🚚 Live Delivery Tracking</p>
+                      {order.driver_orders.map((d, i) => (
+                        <div key={i} className="text-sm space-y-1">
+                          <p>Status: <Badge className={getStatusColor(d.status)}>{d.status.replace(/_/g, " ").toUpperCase()}</Badge></p>
+                          {d.distance_km != null && <p>Distance: <strong>{d.distance_km} km</strong></p>}
+                          <p>Seller pickup confirmed: <strong>{d.seller_confirmed_pickup ? "✅ Yes" : "⏳ Waiting"}</strong></p>
+                          <p>Customer received: <strong>{d.customer_confirmed_delivery ? "✅ Yes" : "⏳ In transit"}</strong></p>
+                          {d.current_driver_latitude != null && d.current_driver_longitude != null && (
+                            <p className="text-muted-foreground">
+                              Driver at: {d.current_driver_latitude.toFixed(5)}, {d.current_driver_longitude.toFixed(5)}
+                              {d.last_location_update_at && ` · updated ${new Date(d.last_location_update_at).toLocaleTimeString()}`}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                      <p className="text-xs text-muted-foreground italic">View only — only the driver and admin can change delivery status.</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
