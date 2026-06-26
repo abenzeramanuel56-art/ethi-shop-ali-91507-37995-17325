@@ -396,6 +396,33 @@ export type Database = {
         }
         Relationships: []
       }
+      email_verification_codes: {
+        Row: {
+          code: string
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          code: string
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+        }
+        Update: {
+          code?: string
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
