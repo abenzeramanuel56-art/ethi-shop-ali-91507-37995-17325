@@ -111,6 +111,24 @@ export default function AdminWithdrawals() {
         }
       }
 
+      // Email the seller about the status change
+      if (withdrawal && (newStatus === 'paid' || newStatus === 'approved' || newStatus === 'rejected')) {
+        const subject = newStatus === 'paid'
+          ? `Payout sent: ${withdrawal.amount_etb} ETB`
+          : newStatus === 'approved'
+          ? `Payout approved: ${withdrawal.amount_etb} ETB`
+          : `Payout request rejected`;
+        const message = newStatus === 'paid'
+          ? `<p>Your withdrawal of <strong>${withdrawal.amount_etb} ETB</strong> has been <strong>paid</strong> via ${withdrawal.payment_method}.</p>${adminNotes ? `<p><strong>Note:</strong> ${adminNotes}</p>` : ""}<p>Funds should arrive shortly.</p>`
+          : newStatus === 'approved'
+          ? `<p>Your withdrawal request of <strong>${withdrawal.amount_etb} ETB</strong> has been approved and is queued for payout.</p>`
+          : `<p>Your withdrawal request was rejected.</p>${adminNotes ? `<p><strong>Reason:</strong> ${adminNotes}</p>` : ""}`;
+
+        await supabase.functions.invoke("send-user-email", {
+          body: { userId: withdrawal.user_id, subject, heading: subject, message },
+        });
+      }
+
       toast.success("Withdrawal updated successfully");
       setEditingId(null);
       setNewStatus("");
