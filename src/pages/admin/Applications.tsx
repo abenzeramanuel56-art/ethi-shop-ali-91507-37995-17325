@@ -98,6 +98,7 @@ export default function AdminApplications() {
   const handleApproveSellerApplication = async (appId: string) => {
     setProcessingId(appId);
     try {
+      const app = sellerApplications.find((a: any) => a.id === appId);
       const { error } = await supabase.rpc("admin_approve_seller_application", {
         p_application_id: appId,
         p_admin_notes: adminNotes || null
@@ -105,10 +106,18 @@ export default function AdminApplications() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Seller application approved and role assigned"
-      });
+      if (app?.user_id) {
+        await supabase.functions.invoke("send-user-email", {
+          body: {
+            userId: app.user_id,
+            subject: "Your Abeni Express seller application is approved 🎉",
+            heading: "Welcome, Seller!",
+            message: `<p>Your seller application has been <strong>approved</strong>. You can now access your seller dashboard, set up your store, list products, and start receiving orders.</p>${adminNotes ? `<p><strong>Admin note:</strong> ${adminNotes}</p>` : ""}<p>Sign in and open <strong>Seller Dashboard</strong> to begin.</p>`,
+          },
+        });
+      }
+
+      toast({ title: "Success", description: "Seller approved and notified by email" });
 
       setSelectedApp(null);
       setAdminNotes("");

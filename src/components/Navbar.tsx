@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import NotificationBell from "./NotificationBell";
-import RotatingBadge from "@/components/RotatingBadge";
+
 import { LanguageSelector } from "./LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -186,7 +186,7 @@ export const Navbar = () => {
           </div>
         )}
       </div>
-      <RotatingBadge />
+      
     </nav>
   );
 };

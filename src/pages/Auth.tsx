@@ -36,6 +36,10 @@ const Auth = () => {
   const [pendingSignUp, setPendingSignUp] = useState<{email: string; password: string; fullName: string} | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpPassword, setOtpPassword] = useState("");
 
   const returnTo = searchParams.get("returnTo") || "/";
 
@@ -96,7 +100,15 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast.success(t('auth.accountCreated'));
+      // Trigger verification code email via Resend
+      await supabase.functions.invoke("send-signup-code", {
+        body: { email: pendingSignUp.email },
+      });
+
+      toast.success("Account created! Check your email for a 6-digit verification code.");
+      setOtpEmail(pendingSignUp.email);
+      setOtpPassword(pendingSignUp.password);
+      setShowOtp(true);
       setEmail("");
       setPassword("");
       setFullName("");
@@ -105,6 +117,38 @@ const Auth = () => {
       toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpCode.length !== 6) {
+      toast.error("Enter the 6-digit code");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("verify-signup-code", {
+        body: { email: otpEmail, code: otpCode },
+      });
+      if (error) throw error;
+      toast.success("Email verified! Signing you in...");
+      await supabase.auth.signInWithPassword({ email: otpEmail, password: otpPassword });
+      setShowOtp(false);
+      setOtpCode("");
+    } catch (error: any) {
+      toast.error(error.message || "Invalid or expired code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      await supabase.functions.invoke("send-signup-code", { body: { email: otpEmail } });
+      toast.success("New code sent to your email");
+    } catch {
+      toast.error("Failed to resend code");
     }
   };
 
@@ -166,6 +210,49 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  if (showOtp) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto flex items-center justify-center px-4 py-16">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-2xl">Verify your email</CardTitle>
+              <CardDescription>We sent a 6-digit code to <strong>{otpEmail}</strong></CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="otp">Verification code</Label>
+                  <Input
+                    id="otp"
+                    inputMode="numeric"
+                    pattern="\d{6}"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="text-center text-2xl tracking-widest"
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify & Sign in"}
+                </Button>
+                <Button type="button" variant="ghost" className="w-full" onClick={handleResendOtp}>
+                  Resend code
+                </Button>
+                <Button type="button" variant="link" className="w-full" onClick={() => setShowOtp(false)}>
+                  Back
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (showForgotPassword) {
     return (

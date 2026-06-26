@@ -72,6 +72,7 @@ export default function DriverDashboard() {
   const [wallet, setWallet] = useState<DriverWallet | null>(null);
   const [isDriver, setIsDriver] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [vehicleType, setVehicleType] = useState<string | null>(null);
 
   useEffect(() => {
     checkDriverStatus();
@@ -80,25 +81,51 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (!isDriver) return;
 
+    // Request browser notification permission once
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+
     // Subscribe to realtime pending orders
     const channel = supabase
       .channel('pending-driver-orders')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'pending_driver_orders'
-        },
-        () => {
+        { event: 'INSERT', schema: 'public', table: 'pending_driver_orders' },
+        (payload: any) => {
           fetchPendingOrders();
+          // External browser notification
+          try {
+            if ("Notification" in window && Notification.permission === "granted") {
+              const n = new Notification("🚚 New delivery available!", {
+                body: `Pickup → ${payload.new?.city || "city"} · ${payload.new?.distance_km || "?"} km · ${payload.new?.estimated_earning_etb || "?"} ETB`,
+                icon: "/favicon.ico",
+                tag: "new-order",
+              });
+              n.onclick = () => window.focus();
+            }
+          } catch {}
+          // Audio ping
+          try {
+            const audio = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+            audio.play().catch(() => {});
+          } catch {}
+          toast.info("🚚 New delivery order available!");
         }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'pending_driver_orders' },
+        () => fetchPendingOrders()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'pending_driver_orders' },
+        () => fetchPendingOrders()
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [isDriver]);
 
   // Live GPS tracking — broadcast driver location every 15s while there are active deliveries
@@ -154,6 +181,16 @@ export default function DriverDashboard() {
     }
 
     setIsDriver(true);
+    // Load vehicle so we can gate order acceptance
+    const { data: appData } = await (supabase as any)
+      .from("driver_applications")
+      .select("vehicle_type")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setVehicleType(appData?.vehicle_type || null);
+
     fetchPendingOrders();
     fetchDriverData(user.id);
   };
@@ -215,6 +252,10 @@ export default function DriverDashboard() {
 
   const acceptOrder = async (pendingOrder: PendingOrder) => {
     if (!userId) return;
+    if (!vehicleType) {
+      toast.error("Set your vehicle type in the Vehicle tab before accepting orders.");
+      return;
+    }
 
     try {
       const { error } = await (supabase as any).rpc("driver_accept_pending_order", {
@@ -330,6 +371,23 @@ export default function DriverDashboard() {
           <Truck className="h-8 w-8" />
           <h1 className="text-3xl font-bold">Driver Dashboard</h1>
         </div>
+
+        {!vehicleType && (
+          <Card className="mb-6 border-destructive bg-destructive/10">
+            <CardContent className="pt-6 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="font-semibold text-destructive">⚠️ Vehicle required</p>
+                <p className="text-sm text-muted-foreground">You must set your vehicle type before you can accept any orders.</p>
+              </div>
+              <Button variant="destructive" size="sm" onClick={() => {
+                const tab = document.querySelector('[value="vehicle"]') as HTMLElement | null;
+                tab?.click();
+              }}>
+                Set Vehicle
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4 mb-8">
