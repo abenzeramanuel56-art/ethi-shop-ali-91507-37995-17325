@@ -372,6 +372,23 @@ export default function DriverDashboard() {
           <h1 className="text-3xl font-bold">Driver Dashboard</h1>
         </div>
 
+        {!vehicleType && (
+          <Card className="mb-6 border-destructive bg-destructive/10">
+            <CardContent className="pt-6 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="font-semibold text-destructive">⚠️ Vehicle required</p>
+                <p className="text-sm text-muted-foreground">You must set your vehicle type before you can accept any orders.</p>
+              </div>
+              <Button variant="destructive" size="sm" onClick={() => {
+                const tab = document.querySelector('[value="vehicle"]') as HTMLElement | null;
+                tab?.click();
+              }}>
+                Set Vehicle
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4 mb-8">
           <Card>
