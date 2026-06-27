@@ -36,6 +36,9 @@ const Auth = () => {
   const [pendingSignUp, setPendingSignUp] = useState<{email: string; password: string; fullName: string} | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [resetStep, setResetStep] = useState<"email" | "code">("email");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpEmail, setOtpEmail] = useState("");
@@ -187,25 +190,41 @@ const Auth = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!resetEmail) {
       toast.error("Please enter your email address");
       return;
     }
-
     setLoading(true);
     try {
       const { error } = await supabase.functions.invoke("send-password-reset", {
-        body: { email: resetEmail, redirectTo: `${window.location.origin}/reset-password` },
+        body: { email: resetEmail },
       });
-
       if (error) throw error;
-
-      toast.success(t('auth.resetEmailSent'));
-      setShowForgotPassword(false);
-      setResetEmail("");
+      toast.success("We sent a 6-digit code to your email");
+      setResetStep("code");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send reset email");
+      toast.error(error.message || "Failed to send code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetWithCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetCode.length !== 6) { toast.error("Enter the 6-digit code"); return; }
+    if (resetNewPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-password-with-code", {
+        body: { email: resetEmail, code: resetCode, newPassword: resetNewPassword },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      toast.success("Password updated! Please sign in.");
+      setShowForgotPassword(false);
+      setResetStep("email");
+      setResetEmail(""); setResetCode(""); setResetNewPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to reset password");
     } finally {
       setLoading(false);
     }
@@ -265,30 +284,57 @@ const Auth = () => {
               <CardDescription>{t('auth.forgotPasswordDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">{t('auth.email')}</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? t('auth.sending') : t('auth.sendResetLink')}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => setShowForgotPassword(false)}
-                >
-                  {t('auth.backToLogin')}
-                </Button>
-              </form>
+              {resetStep === "email" ? (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">{t('auth.email')}</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Sending..." : "Send 6-digit code"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full"
+                    onClick={() => setShowForgotPassword(false)}>
+                    {t('auth.backToLogin')}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetWithCode} className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    We sent a 6-digit code to <strong>{resetEmail}</strong>
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-code">Verification code</Label>
+                    <Input id="reset-code" inputMode="numeric" maxLength={6}
+                      value={resetCode}
+                      onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="123456"
+                      className="text-center text-2xl tracking-widest"
+                      required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-new">New password</Label>
+                    <Input id="reset-new" type="password" minLength={6}
+                      value={resetNewPassword}
+                      onChange={(e) => setResetNewPassword(e.target.value)}
+                      placeholder="At least 6 characters" required />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Updating..." : "Reset password"}
+                  </Button>
+                  <Button type="button" variant="ghost" className="w-full"
+                    onClick={() => setResetStep("email")}>
+                    Back
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>
