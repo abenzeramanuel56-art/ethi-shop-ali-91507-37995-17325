@@ -62,34 +62,32 @@ export default function SellerSetup() {
       toast({ title: "Location Required", description: "Please set your store location for delivery pickup.", variant: "destructive" });
       return;
     }
+    if (formData.hasTin && !formData.tinNumber.trim()) {
+      toast({ title: "TIN Required", description: "Please enter your TIN number or select 'No TIN'.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const slug = generateSlug(formData.storeSlug || formData.storeName);
+    const payload = {
+      store_name: formData.storeName,
+      store_slug: slug,
+      contact_email: formData.contactEmail,
+      contact_phone: formData.contactPhone,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      location_address: formData.locationAddress,
+      has_tin: formData.hasTin,
+      tin_number: formData.hasTin ? formData.tinNumber.trim() : null,
+    };
     try {
       if (existingStore) {
-        const { error } = await (supabase as any).from("seller_stores").update({
-          store_name: formData.storeName,
-          store_slug: slug,
-          contact_email: formData.contactEmail,
-          contact_phone: formData.contactPhone,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          location_address: formData.locationAddress
-        }).eq("id", existingStore.id);
+        const { error } = await (supabase as any).from("seller_stores").update(payload).eq("id", existingStore.id);
         if (error) throw error;
         toast({ title: "Store updated successfully" });
       } else {
-        const { error } = await (supabase as any).from("seller_stores").insert({
-          user_id: user.id,
-          store_name: formData.storeName,
-          store_slug: slug,
-          contact_email: formData.contactEmail,
-          contact_phone: formData.contactPhone,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          location_address: formData.locationAddress
-        });
+        const { error } = await (supabase as any).from("seller_stores").insert({ user_id: user.id, ...payload });
         if (error) throw error;
         await (supabase as any).from("seller_wallets").insert({ user_id: user.id, current_balance_etb: 0, total_earned_etb: 0 });
         toast({ title: "Store created successfully! 🎉" });
