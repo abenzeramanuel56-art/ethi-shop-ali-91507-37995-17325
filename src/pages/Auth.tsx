@@ -284,30 +284,57 @@ const Auth = () => {
               <CardDescription>{t('auth.forgotPasswordDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">{t('auth.email')}</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? t('auth.sending') : t('auth.sendResetLink')}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => setShowForgotPassword(false)}
-                >
-                  {t('auth.backToLogin')}
-                </Button>
-              </form>
+              {resetStep === "email" ? (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">{t('auth.email')}</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Sending..." : "Send 6-digit code"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full"
+                    onClick={() => setShowForgotPassword(false)}>
+                    {t('auth.backToLogin')}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetWithCode} className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    We sent a 6-digit code to <strong>{resetEmail}</strong>
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-code">Verification code</Label>
+                    <Input id="reset-code" inputMode="numeric" maxLength={6}
+                      value={resetCode}
+                      onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="123456"
+                      className="text-center text-2xl tracking-widest"
+                      required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-new">New password</Label>
+                    <Input id="reset-new" type="password" minLength={6}
+                      value={resetNewPassword}
+                      onChange={(e) => setResetNewPassword(e.target.value)}
+                      placeholder="At least 6 characters" required />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Updating..." : "Reset password"}
+                  </Button>
+                  <Button type="button" variant="ghost" className="w-full"
+                    onClick={() => setResetStep("email")}>
+                    Back
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>
