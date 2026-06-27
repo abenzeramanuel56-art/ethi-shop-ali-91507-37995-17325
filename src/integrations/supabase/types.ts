@@ -973,12 +973,14 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string | null
+          has_tin: boolean
           id: string
           latitude: number | null
           location_address: string | null
           longitude: number | null
           store_name: string
           store_slug: string
+          tin_number: string | null
           updated_at: string | null
           user_id: string
         }
@@ -986,12 +988,14 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          has_tin?: boolean
           id?: string
           latitude?: number | null
           location_address?: string | null
           longitude?: number | null
           store_name: string
           store_slug: string
+          tin_number?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -999,12 +1003,14 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          has_tin?: boolean
           id?: string
           latitude?: number | null
           location_address?: string | null
           longitude?: number | null
           store_name?: string
           store_slug?: string
+          tin_number?: string | null
           updated_at?: string | null
           user_id?: string
         }
