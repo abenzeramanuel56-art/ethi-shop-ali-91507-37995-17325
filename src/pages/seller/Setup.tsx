@@ -23,7 +23,9 @@ export default function SellerSetup() {
     contactPhone: "",
     latitude: null as number | null,
     longitude: null as number | null,
-    locationAddress: ""
+    locationAddress: "",
+    hasTin: false,
+    tinNumber: "",
   });
 
   useEffect(() => { checkExistingStore(); }, []);
@@ -41,7 +43,9 @@ export default function SellerSetup() {
         contactPhone: data.contact_phone || "",
         latitude: data.latitude ? parseFloat(data.latitude) : null,
         longitude: data.longitude ? parseFloat(data.longitude) : null,
-        locationAddress: data.location_address || ""
+        locationAddress: data.location_address || "",
+        hasTin: !!data.has_tin,
+        tinNumber: data.tin_number || "",
       });
     }
   };
