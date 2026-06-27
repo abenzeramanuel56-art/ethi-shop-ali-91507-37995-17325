@@ -255,15 +255,16 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleUpdateOrder = async (orderId: string) => {
-    if (!orderUpdates.status) {
+  const handleUpdateOrder = async (orderId: string, overrideStatus?: string) => {
+    const statusToUse = overrideStatus || orderUpdates.status;
+    if (!statusToUse) {
       toast.error("Please select a status");
       return;
     }
 
     try {
       const currentOrder = orders.find(o => o.id === orderId);
-      const isPaymentJustVerified = orderUpdates.status === "payment_verified" && 
+      const isPaymentJustVerified = statusToUse === "payment_verified" && 
                                    currentOrder?.status !== "payment_verified";
       const isTrackingAdded = orderUpdates.tracking_number && 
                              currentOrder?.tracking_number !== orderUpdates.tracking_number;
@@ -271,7 +272,7 @@ const AdminDashboard = () => {
       const { error } = await (supabase as any)
         .from("orders")
         .update({
-          status: orderUpdates.status,
+          status: statusToUse,
           tracking_number: orderUpdates.tracking_number || null,
           admin_notes: orderUpdates.admin_notes || null,
         })
@@ -586,10 +587,7 @@ const AdminDashboard = () => {
                               </Button>
                               <Button
                                 size="sm"
-                                onClick={() => {
-                                  setOrderUpdates({ status: 'payment_verified', tracking_number: '', admin_notes: '' });
-                                  handleUpdateOrder(order.id);
-                                }}
+                                onClick={() => handleUpdateOrder(order.id, 'payment_verified')}
                                 disabled={order.status === 'payment_verified'}
                               >
                                 Verify Payment & Credit
@@ -829,10 +827,7 @@ const AdminDashboard = () => {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  onClick={() => {
-                                    setOrderUpdates({ status: 'payment_verified', tracking_number: '', admin_notes: '' });
-                                    handleUpdateOrder(order.id);
-                                  }}
+                                  onClick={() => handleUpdateOrder(order.id, 'payment_verified')}
                                   disabled={order.status === 'payment_verified' || order.status === 'delivered' || order.status === 'shipped' || order.status === 'out_for_delivery'}
                                 >
                                   Approve Payment
