@@ -36,6 +36,9 @@ const Auth = () => {
   const [pendingSignUp, setPendingSignUp] = useState<{email: string; password: string; fullName: string} | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [resetStep, setResetStep] = useState<"email" | "code">("email");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpEmail, setOtpEmail] = useState("");
@@ -187,25 +190,41 @@ const Auth = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!resetEmail) {
       toast.error("Please enter your email address");
       return;
     }
-
     setLoading(true);
     try {
       const { error } = await supabase.functions.invoke("send-password-reset", {
-        body: { email: resetEmail, redirectTo: `${window.location.origin}/reset-password` },
+        body: { email: resetEmail },
       });
-
       if (error) throw error;
-
-      toast.success(t('auth.resetEmailSent'));
-      setShowForgotPassword(false);
-      setResetEmail("");
+      toast.success("We sent a 6-digit code to your email");
+      setResetStep("code");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send reset email");
+      toast.error(error.message || "Failed to send code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetWithCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetCode.length !== 6) { toast.error("Enter the 6-digit code"); return; }
+    if (resetNewPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-password-with-code", {
+        body: { email: resetEmail, code: resetCode, newPassword: resetNewPassword },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      toast.success("Password updated! Please sign in.");
+      setShowForgotPassword(false);
+      setResetStep("email");
+      setResetEmail(""); setResetCode(""); setResetNewPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to reset password");
     } finally {
       setLoading(false);
     }
