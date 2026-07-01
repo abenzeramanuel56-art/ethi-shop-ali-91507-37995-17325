@@ -207,31 +207,8 @@ export default function SellerSetup() {
               )}
             </div>
 
-            {/* TIN Number */}
-            <div className="border-t border-border/50 pt-5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-2 block">Tax (TIN) Number</Label>
-              <div className="flex gap-2 mb-3">
-                <Button type="button" size="sm"
-                  variant={!formData.hasTin ? "default" : "outline"}
-                  onClick={() => setFormData({ ...formData, hasTin: false, tinNumber: "" })}>
-                  I don't have a TIN
-                </Button>
-                <Button type="button" size="sm"
-                  variant={formData.hasTin ? "default" : "outline"}
-                  onClick={() => setFormData({ ...formData, hasTin: true })}>
-                  I have a TIN
-                </Button>
-              </div>
-              {formData.hasTin && (
-                <Input
-                  value={formData.tinNumber}
-                  onChange={(e) => setFormData({ ...formData, tinNumber: e.target.value })}
-                  placeholder="Enter your TIN number"
-                  className="bg-muted/50 border-border/50"
-                  required
-                />
-              )}
-            </div>
+
+
 
 
             <Button type="submit" disabled={loading} className="w-full btn-glow font-bold h-11">
