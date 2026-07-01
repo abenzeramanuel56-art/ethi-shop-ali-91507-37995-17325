@@ -146,82 +146,58 @@ const Auth = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) {
-      toast.error("Please enter your email address");
-      return;
-    }
+    if (!resetEmail) { toast.error("Please enter your email address"); return; }
     setLoading(true);
     try {
+      const redirectTo = `${window.location.origin}/reset-password`;
       const { error } = await supabase.functions.invoke("send-password-reset", {
-        body: { email: resetEmail },
+        body: { email: resetEmail, redirectTo },
       });
       if (error) throw error;
-      toast.success("We sent a 6-digit code to your email");
-      setResetStep("code");
+      toast.success("We sent a reset link to your email");
+      setLinkSent("reset");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send code");
+      toast.error(error.message || "Failed to send reset link");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetWithCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (resetCode.length !== 6) { toast.error("Enter the 6-digit code"); return; }
-    if (resetNewPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("reset-password-with-code", {
-        body: { email: resetEmail, code: resetCode, newPassword: resetNewPassword },
-      });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
-      toast.success("Password updated! Please sign in.");
-      setShowForgotPassword(false);
-      setResetStep("email");
-      setResetEmail(""); setResetCode(""); setResetNewPassword("");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to reset password");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (showOtp) {
+  if (linkSent) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto flex items-center justify-center px-4 py-16">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-2xl">Verify your email</CardTitle>
-              <CardDescription>We sent a 6-digit code to <strong>{otpEmail}</strong></CardDescription>
+              <CardTitle className="text-2xl">Check your email</CardTitle>
+              <CardDescription>
+                We sent a {linkSent === "signup" ? "verification" : "password reset"} link to <strong>{resetEmail}</strong>.
+                Open it on this device to continue.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="otp">Verification code</Label>
-                  <Input
-                    id="otp"
-                    inputMode="numeric"
-                    pattern="\d{6}"
-                    maxLength={6}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="123456"
-                    className="text-center text-2xl tracking-widest"
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Verifying..." : "Verify & Sign in"}
-                </Button>
-                <Button type="button" variant="ghost" className="w-full" onClick={handleResendOtp}>
-                  Resend code
-                </Button>
-                <Button type="button" variant="link" className="w-full" onClick={() => setShowOtp(false)}>
-                  Back
-                </Button>
-              </form>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                The link expires in 1 hour. If you don't see the email, check spam or resend below.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={loading}
+                onClick={async () => {
+                  setLoading(true);
+                  const fn = linkSent === "signup" ? "send-signup-link" : "send-password-reset";
+                  const redirectTo = `${window.location.origin}${linkSent === "signup" ? "/" : "/reset-password"}`;
+                  await supabase.functions.invoke(fn, { body: { email: resetEmail, redirectTo } });
+                  setLoading(false);
+                  toast.success("Link resent");
+                }}
+              >
+                Resend link
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => { setLinkSent(null); setShowForgotPassword(false); }}>
+                Back to sign in
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -240,63 +216,33 @@ const Auth = () => {
               <CardDescription>{t('auth.forgotPasswordDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
-              {resetStep === "email" ? (
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">{t('auth.email')}</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Sending..." : "Send 6-digit code"}
-                  </Button>
-                  <Button type="button" variant="outline" className="w-full"
-                    onClick={() => setShowForgotPassword(false)}>
-                    {t('auth.backToLogin')}
-                  </Button>
-                </form>
-              ) : (
-                <form onSubmit={handleResetWithCode} className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    We sent a 6-digit code to <strong>{resetEmail}</strong>
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-code">Verification code</Label>
-                    <Input id="reset-code" inputMode="numeric" maxLength={6}
-                      value={resetCode}
-                      onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ""))}
-                      placeholder="123456"
-                      className="text-center text-2xl tracking-widest"
-                      required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-new">New password</Label>
-                    <Input id="reset-new" type="password" minLength={6}
-                      value={resetNewPassword}
-                      onChange={(e) => setResetNewPassword(e.target.value)}
-                      placeholder="At least 6 characters" required />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Updating..." : "Reset password"}
-                  </Button>
-                  <Button type="button" variant="ghost" className="w-full"
-                    onClick={() => setResetStep("email")}>
-                    Back
-                  </Button>
-                </form>
-              )}
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">{t('auth.email')}</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Sending..." : "Send reset link"}
+                </Button>
+                <Button type="button" variant="outline" className="w-full"
+                  onClick={() => setShowForgotPassword(false)}>
+                  {t('auth.backToLogin')}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-background">
