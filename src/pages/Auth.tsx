@@ -36,13 +36,7 @@ const Auth = () => {
   const [pendingSignUp, setPendingSignUp] = useState<{email: string; password: string; fullName: string} | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
-  const [resetStep, setResetStep] = useState<"email" | "code">("email");
-  const [resetCode, setResetCode] = useState("");
-  const [resetNewPassword, setResetNewPassword] = useState("");
-  const [showOtp, setShowOtp] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpEmail, setOtpEmail] = useState("");
-  const [otpPassword, setOtpPassword] = useState("");
+  const [linkSent, setLinkSent] = useState<null | "signup" | "reset">(null);
 
   const returnTo = searchParams.get("returnTo") || "/";
 
@@ -84,7 +78,7 @@ const Auth = () => {
 
   const handleTermsAccepted = async () => {
     if (!pendingSignUp) return;
-    
+
     setLoading(true);
     setShowTerms(false);
 
@@ -94,64 +88,26 @@ const Auth = () => {
         email: pendingSignUp.email,
         password: pendingSignUp.password,
         options: {
-          data: {
-            full_name: pendingSignUp.fullName,
-          },
+          data: { full_name: pendingSignUp.fullName },
           emailRedirectTo: redirectUrl,
         },
       });
-
       if (error) throw error;
 
-      // Trigger verification code email via Resend
-      await supabase.functions.invoke("send-signup-code", {
-        body: { email: pendingSignUp.email },
+      // Send a verification link via Resend
+      await supabase.functions.invoke("send-signup-link", {
+        body: { email: pendingSignUp.email, redirectTo: redirectUrl },
       });
 
-      toast.success("Account created! Check your email for a 6-digit verification code.");
-      setOtpEmail(pendingSignUp.email);
-      setOtpPassword(pendingSignUp.password);
-      setShowOtp(true);
-      setEmail("");
-      setPassword("");
-      setFullName("");
+      toast.success("Account created! Check your email for the verification link.");
+      setLinkSent("signup");
+      setResetEmail(pendingSignUp.email);
+      setEmail(""); setPassword(""); setFullName("");
       setPendingSignUp(null);
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otpCode.length !== 6) {
-      toast.error("Enter the 6-digit code");
-      return;
-    }
-    setLoading(true);
-    try {
-      const { error } = await supabase.functions.invoke("verify-signup-code", {
-        body: { email: otpEmail, code: otpCode },
-      });
-      if (error) throw error;
-      toast.success("Email verified! Signing you in...");
-      await supabase.auth.signInWithPassword({ email: otpEmail, password: otpPassword });
-      setShowOtp(false);
-      setOtpCode("");
-    } catch (error: any) {
-      toast.error(error.message || "Invalid or expired code");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    try {
-      await supabase.functions.invoke("send-signup-code", { body: { email: otpEmail } });
-      toast.success("New code sent to your email");
-    } catch {
-      toast.error("Failed to resend code");
     }
   };
 
