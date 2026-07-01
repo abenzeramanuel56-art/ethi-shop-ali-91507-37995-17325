@@ -279,3 +279,8 @@ function DigitalMarketInner() {
     </div>
   );
 }
+
+import { TabLockGate as _TabLockGateDig } from "@/components/TabLockGate";
+export default function DigitalMarketPage() {
+  return <_TabLockGateDig tab="digital" label="Digital marketplace"><DigitalMarketInner /></_TabLockGateDig>;
+}

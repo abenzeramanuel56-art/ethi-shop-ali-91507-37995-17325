@@ -239,3 +239,7 @@ function ServicesInner() {
     </div>
   );
 }
+import { TabLockGate as _TabLockGateSvc } from "@/components/TabLockGate";
+export default function ServicesPage() {
+  return <_TabLockGateSvc tab="services" label="Services marketplace"><ServicesInner /></_TabLockGateSvc>;
+}
