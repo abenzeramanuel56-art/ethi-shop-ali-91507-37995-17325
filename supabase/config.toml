@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.send-password-reset]
 verify_jwt = false
 
+[functions.send-signup-link]
+verify_jwt = false
+
 [functions.reset-password-with-code]
 verify_jwt = false
 
@@ -23,4 +26,3 @@ verify_jwt = false
 
 [functions.verify-signup-code]
 verify_jwt = false
-

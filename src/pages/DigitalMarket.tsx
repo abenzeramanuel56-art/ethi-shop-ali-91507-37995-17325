@@ -22,7 +22,7 @@ const CATEGORIES = [
   { id: "other", label: "Other", icon: FileArchive, color: "from-slate-500 to-slate-700" },
 ];
 
-export default function DigitalMarket() {
+function DigitalMarketInner() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -278,4 +278,9 @@ export default function DigitalMarket() {
       </div>
     </div>
   );
+}
+
+import { TabLockGate as _TabLockGateDig } from "@/components/TabLockGate";
+export default function DigitalMarketPage() {
+  return <_TabLockGateDig tab="digital" label="Digital marketplace"><DigitalMarketInner /></_TabLockGateDig>;
 }

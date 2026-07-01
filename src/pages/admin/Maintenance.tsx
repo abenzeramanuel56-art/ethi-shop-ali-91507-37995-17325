@@ -29,6 +29,8 @@ export default function AdminMaintenance() {
   const [resetting, setResetting] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
+  const [tabLocks, setTabLocks] = useState({ products: false, services: false, digital: false });
+  const [savingLocks, setSavingLocks] = useState<string | null>(null);
 
   useEffect(() => { init(); }, []);
 
@@ -40,7 +42,22 @@ export default function AdminMaintenance() {
     const { data } = await (supabase as any).from("app_settings").select("value").eq("key", "maintenance_mode").maybeSingle();
     setEnabled(data?.value?.enabled === true);
     setMessage(data?.value?.message || "We're upgrading AbeniExpress. Coming back soon!");
+    const { data: lockData } = await (supabase as any).from("app_settings").select("value").eq("key", "tab_locks").maybeSingle();
+    if (lockData?.value) setTabLocks({ products: false, services: false, digital: false, ...lockData.value });
     setLoading(false);
+  };
+
+  const toggleTabLock = async (tab: "products" | "services" | "digital") => {
+    setSavingLocks(tab);
+    const next = { ...tabLocks, [tab]: !tabLocks[tab] };
+    const { error } = await (supabase as any).from("app_settings").update({
+      value: next,
+      updated_at: new Date().toISOString(),
+    }).eq("key", "tab_locks");
+    setSavingLocks(null);
+    if (error) { toast.error(error.message); return; }
+    setTabLocks(next);
+    toast.success(`${tab} is now ${next[tab] ? "locked (Coming Soon)" : "live"}`);
   };
 
   const toggle = async (newState: boolean) => {
@@ -134,6 +151,35 @@ export default function AdminMaintenance() {
             </Button>
           </CardContent>
         </Card>
+        <Card className="tech-card mb-6">
+          <CardHeader>
+            <CardTitle>Individual Section Locks</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Lock specific sections as "Coming Soon" for regular users. Admins always keep access.
+            </p>
+            {(["products", "services", "digital"] as const).map((k) => (
+              <div key={k} className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
+                <div>
+                  <p className="font-bold capitalize">{k === "digital" ? "Digital Products" : k}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Status: {tabLocks[k] ? "🔴 Coming Soon (locked)" : "🟢 Live"}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => toggleTabLock(k)}
+                  disabled={savingLocks === k}
+                  variant={tabLocks[k] ? "default" : "outline"}
+                  size="sm"
+                >
+                  {savingLocks === k ? <Loader2 className="h-4 w-4 animate-spin" /> : tabLocks[k] ? "Unlock" : "Lock"}
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
       </div>
 
       <AlertDialog open={resetDialogOpen} onOpenChange={(o) => { setResetDialogOpen(o); if (!o) setResetConfirmText(""); }}>
