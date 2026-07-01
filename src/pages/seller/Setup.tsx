@@ -24,8 +24,6 @@ export default function SellerSetup() {
     latitude: null as number | null,
     longitude: null as number | null,
     locationAddress: "",
-    hasTin: false,
-    tinNumber: "",
   });
 
   useEffect(() => { checkExistingStore(); }, []);
@@ -44,8 +42,6 @@ export default function SellerSetup() {
         latitude: data.latitude ? parseFloat(data.latitude) : null,
         longitude: data.longitude ? parseFloat(data.longitude) : null,
         locationAddress: data.location_address || "",
-        hasTin: !!data.has_tin,
-        tinNumber: data.tin_number || "",
       });
     }
   };
@@ -62,10 +58,6 @@ export default function SellerSetup() {
       toast({ title: "Location Required", description: "Please set your store location for delivery pickup.", variant: "destructive" });
       return;
     }
-    if (formData.hasTin && !formData.tinNumber.trim()) {
-      toast({ title: "TIN Required", description: "Please enter your TIN number or select 'No TIN'.", variant: "destructive" });
-      return;
-    }
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -78,8 +70,6 @@ export default function SellerSetup() {
       latitude: formData.latitude,
       longitude: formData.longitude,
       location_address: formData.locationAddress,
-      has_tin: formData.hasTin,
-      tin_number: formData.hasTin ? formData.tinNumber.trim() : null,
     };
     try {
       if (existingStore) {
