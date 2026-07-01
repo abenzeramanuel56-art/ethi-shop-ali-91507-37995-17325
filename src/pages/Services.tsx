@@ -45,7 +45,7 @@ const SERVICE_CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
-export default function Services() {
+function ServicesInner() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);

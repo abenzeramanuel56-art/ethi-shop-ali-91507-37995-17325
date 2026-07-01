@@ -323,4 +323,8 @@ const Products = () => {
   );
 };
 
-export default Products;
+import { TabLockGate } from "@/components/TabLockGate";
+const ProductsPage = () => (
+  <TabLockGate tab="products" label="Products marketplace"><Products /></TabLockGate>
+);
+export default ProductsPage;

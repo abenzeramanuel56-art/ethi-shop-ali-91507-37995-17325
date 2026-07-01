@@ -22,7 +22,7 @@ const CATEGORIES = [
   { id: "other", label: "Other", icon: FileArchive, color: "from-slate-500 to-slate-700" },
 ];
 
-export default function DigitalMarket() {
+function DigitalMarketInner() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
