@@ -179,9 +179,13 @@ const Auth = () => {
                 disabled={loading}
                 onClick={async () => {
                   setLoading(true);
-                  const fn = linkSent === "signup" ? "send-signup-link" : "send-password-reset";
-                  const redirectTo = `${window.location.origin}${linkSent === "signup" ? "/" : "/reset-password"}`;
-                  await supabase.functions.invoke(fn, { body: { email: resetEmail, redirectTo } });
+                  if (linkSent === "reset") {
+                    await supabase.auth.resetPasswordForEmail(resetEmail, {
+                      redirectTo: `${window.location.origin}/reset-password`,
+                    });
+                  } else {
+                    await supabase.auth.resend({ type: "signup", email: resetEmail });
+                  }
                   setLoading(false);
                   toast.success("Link resent");
                 }}
