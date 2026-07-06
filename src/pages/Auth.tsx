@@ -94,11 +94,6 @@ const Auth = () => {
       });
       if (error) throw error;
 
-      // Send a verification link via Resend
-      await supabase.functions.invoke("send-signup-link", {
-        body: { email: pendingSignUp.email, redirectTo: redirectUrl },
-      });
-
       toast.success("Account created! Check your email for the verification link.");
       setLinkSent("signup");
       setResetEmail(pendingSignUp.email);
