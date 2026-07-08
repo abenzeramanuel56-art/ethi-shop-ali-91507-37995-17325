@@ -39,6 +39,10 @@ import Store from "./pages/Store";
 import Services from "./pages/Services";
 import OrderService from "./pages/OrderService";
 import DigitalMarket from "./pages/DigitalMarket";
+import AffiliateSetup from "./pages/affiliate/Setup";
+import AffiliateDashboard from "./pages/affiliate/Dashboard";
+import AffiliatePublicStore from "./pages/affiliate/PublicStore";
+import AffiliateCheckout from "./pages/affiliate/Checkout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
