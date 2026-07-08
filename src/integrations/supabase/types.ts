@@ -65,6 +65,217 @@ export type Database = {
         }
         Relationships: []
       }
+      affiliate_orders: {
+        Row: {
+          admin_notes: string | null
+          affiliate_product_id: string
+          affiliate_profit_etb: number
+          affiliate_store_id: string
+          base_price_etb: number
+          buyer_id: string | null
+          city: string | null
+          created_at: string
+          customer_latitude: number | null
+          customer_longitude: number | null
+          id: string
+          original_product_id: string
+          payment_proof_url: string | null
+          phone: string | null
+          platform_earning_etb: number
+          quantity: number
+          shipping_address: string | null
+          sold_price_etb: number
+          status: string
+          total_etb: number
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          affiliate_product_id: string
+          affiliate_profit_etb: number
+          affiliate_store_id: string
+          base_price_etb: number
+          buyer_id?: string | null
+          city?: string | null
+          created_at?: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          id?: string
+          original_product_id: string
+          payment_proof_url?: string | null
+          phone?: string | null
+          platform_earning_etb: number
+          quantity?: number
+          shipping_address?: string | null
+          sold_price_etb: number
+          status?: string
+          total_etb: number
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          affiliate_product_id?: string
+          affiliate_profit_etb?: number
+          affiliate_store_id?: string
+          base_price_etb?: number
+          buyer_id?: string | null
+          city?: string | null
+          created_at?: string
+          customer_latitude?: number | null
+          customer_longitude?: number | null
+          id?: string
+          original_product_id?: string
+          payment_proof_url?: string | null
+          phone?: string | null
+          platform_earning_etb?: number
+          quantity?: number
+          shipping_address?: string | null
+          sold_price_etb?: number
+          status?: string
+          total_etb?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_orders_affiliate_product_id_fkey"
+            columns: ["affiliate_product_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_orders_affiliate_store_id_fkey"
+            columns: ["affiliate_store_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_orders_original_product_id_fkey"
+            columns: ["original_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_products: {
+        Row: {
+          affiliate_store_id: string
+          click_count: number
+          created_at: string
+          custom_price_etb: number
+          custom_title: string | null
+          id: string
+          is_active: boolean
+          original_product_id: string
+          sale_count: number
+          updated_at: string
+        }
+        Insert: {
+          affiliate_store_id: string
+          click_count?: number
+          created_at?: string
+          custom_price_etb: number
+          custom_title?: string | null
+          id?: string
+          is_active?: boolean
+          original_product_id: string
+          sale_count?: number
+          updated_at?: string
+        }
+        Update: {
+          affiliate_store_id?: string
+          click_count?: number
+          created_at?: string
+          custom_price_etb?: number
+          custom_title?: string | null
+          id?: string
+          is_active?: boolean
+          original_product_id?: string
+          sale_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_products_affiliate_store_id_fkey"
+            columns: ["affiliate_store_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_products_original_product_id_fkey"
+            columns: ["original_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_stores: {
+        Row: {
+          bio: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          store_name: string
+          store_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          store_name: string
+          store_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          store_name?: string
+          store_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      affiliate_wallets: {
+        Row: {
+          created_at: string
+          current_balance_etb: number
+          id: string
+          total_earned_etb: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_balance_etb?: number
+          id?: string
+          total_earned_etb?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_balance_etb?: number
+          id?: string
+          total_earned_etb?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_instructions: {
         Row: {
           admin_id: string
@@ -1525,9 +1736,26 @@ export type Database = {
         Args: { p_days: number; p_reason: string; p_user_id: string }
         Returns: string
       }
+      admin_verify_affiliate_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      affiliate_product_click: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
       complete_service_order: {
         Args: { p_order_id: string; p_verification_code: string }
         Returns: undefined
+      }
+      create_affiliate_store: {
+        Args: {
+          p_bio: string
+          p_contact_phone: string
+          p_store_name: string
+          p_store_slug: string
+        }
+        Returns: string
       }
       customer_confirm_delivery: {
         Args: { p_order_id: string }
@@ -1588,7 +1816,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "customer" | "reseller" | "driver"
+      app_role: "admin" | "customer" | "reseller" | "driver" | "affiliate"
       order_status:
         | "pending_payment"
         | "payment_verified"
@@ -1735,7 +1963,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "customer", "reseller", "driver"],
+      app_role: ["admin", "customer", "reseller", "driver", "affiliate"],
       order_status: [
         "pending_payment",
         "payment_verified",
