@@ -136,6 +136,13 @@ export const Navbar = () => {
                     </Button>
                   </Link>
                 )}
+                {user && (
+                  <Link to="/affiliate" className="hidden md:block">
+                    <Button size="sm" variant="outline" className="border-accent/30 text-accent hover:bg-accent/10 text-xs">
+                      Affiliate
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/cart">
                   <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
                     <ShoppingCart className="h-4 w-4" />
@@ -182,6 +189,7 @@ export const Navbar = () => {
             {isAdmin && <Link to="/admin" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-primary">Admin Panel</Button></Link>}
             {isSeller && <Link to="/seller" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-accent">Seller Dashboard</Button></Link>}
             {isDriver && <Link to="/driver" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start" style={{color:'hsl(var(--success))'}}>Driver Dashboard</Button></Link>}
+            {user && <Link to="/affiliate" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-accent">Affiliate Market</Button></Link>}
             {user && <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={handleSignOut}>{t('nav.signOut')}</Button>}
           </div>
         )}

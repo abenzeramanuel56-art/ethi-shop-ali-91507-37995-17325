@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ReportItemDialog from "@/components/ReportItemDialog";
+import { AffiliateButton } from "@/components/AffiliateButton";
 
 interface Product {
   id: string;
@@ -195,6 +196,11 @@ const Products = () => {
           </Button>
           <ReportItemDialog itemId={product.id} itemName={product.name} reportType="product" storeId={product.seller_id || undefined} triggerLabel="" variant="ghost" size="icon" />
         </div>
+        {!product.seller_id && (
+          <div className="mt-2">
+            <AffiliateButton productId={product.id} productName={product.name} basePrice={product.price_etb} />
+          </div>
+        )}
       </div>
     </div>
   );

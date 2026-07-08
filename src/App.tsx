@@ -39,6 +39,10 @@ import Store from "./pages/Store";
 import Services from "./pages/Services";
 import OrderService from "./pages/OrderService";
 import DigitalMarket from "./pages/DigitalMarket";
+import AffiliateSetup from "./pages/affiliate/Setup";
+import AffiliateDashboard from "./pages/affiliate/Dashboard";
+import AffiliatePublicStore from "./pages/affiliate/PublicStore";
+import AffiliateCheckout from "./pages/affiliate/Checkout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -85,6 +89,10 @@ const App = () => (
               <Route path="/driver" element={<DriverDashboard />} />
               <Route path="/driver/wallet" element={<DriverWallet />} />
               <Route path="/digital-market" element={<DigitalMarket />} />
+              <Route path="/affiliate" element={<AffiliateDashboard />} />
+              <Route path="/affiliate/setup" element={<AffiliateSetup />} />
+              <Route path="/a/:storeSlug" element={<AffiliatePublicStore />} />
+              <Route path="/a/:storeSlug/:productId" element={<AffiliateCheckout />} />
               <Route path="/store/:storeSlug" element={<Store />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
