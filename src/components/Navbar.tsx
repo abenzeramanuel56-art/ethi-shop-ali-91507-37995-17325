@@ -136,6 +136,13 @@ export const Navbar = () => {
                     </Button>
                   </Link>
                 )}
+                {user && (
+                  <Link to="/affiliate" className="hidden md:block">
+                    <Button size="sm" variant="outline" className="border-accent/30 text-accent hover:bg-accent/10 text-xs">
+                      Affiliate
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/cart">
                   <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
                     <ShoppingCart className="h-4 w-4" />
