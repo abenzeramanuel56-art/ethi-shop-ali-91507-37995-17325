@@ -196,6 +196,11 @@ const Products = () => {
           </Button>
           <ReportItemDialog itemId={product.id} itemName={product.name} reportType="product" storeId={product.seller_id || undefined} triggerLabel="" variant="ghost" size="icon" />
         </div>
+        {!product.seller_id && (
+          <div className="mt-2">
+            <AffiliateButton productId={product.id} productName={product.name} basePrice={product.price_etb} />
+          </div>
+        )}
       </div>
     </div>
   );
