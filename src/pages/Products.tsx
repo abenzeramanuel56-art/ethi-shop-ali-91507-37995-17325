@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ReportItemDialog from "@/components/ReportItemDialog";
+import { AffiliateButton } from "@/components/AffiliateButton";
 
 interface Product {
   id: string;
