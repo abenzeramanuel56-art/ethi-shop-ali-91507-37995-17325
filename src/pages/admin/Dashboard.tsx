@@ -18,6 +18,7 @@ import AdminReports from "./Reports";
 import AdminPunishments from "./Punishments";
 import { ImageUpdater } from "./ImageUpdater";
 import AdminDigitalOrders from "./DigitalOrders";
+import AdminAffiliateOrders from "./AffiliateOrders";
 import { openSignedUrl } from "@/components/SignedImage";
 
 interface Stats {
@@ -524,6 +525,7 @@ const AdminDashboard = () => {
           <TabsTrigger value="reseller_orders">Reseller Orders</TabsTrigger>
           <TabsTrigger value="service_orders">Service Orders</TabsTrigger>
           <TabsTrigger value="digital_orders">Digital Orders</TabsTrigger>
+          <TabsTrigger value="affiliate_orders">Affiliate Orders</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
@@ -537,6 +539,11 @@ const AdminDashboard = () => {
         <TabsContent value="digital_orders">
           <AdminDigitalOrders />
         </TabsContent>
+
+        <TabsContent value="affiliate_orders">
+          <AdminAffiliateOrders />
+        </TabsContent>
+
 
           <TabsContent value="service_orders">
             <Card>
