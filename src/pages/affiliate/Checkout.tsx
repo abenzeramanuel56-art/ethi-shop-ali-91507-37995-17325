@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, MapPin, Navigation, Loader2, Pencil } from "lucide-react";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 export default function AffiliateCheckout() {
   const { storeSlug, productId } = useParams();
@@ -19,10 +20,18 @@ export default function AffiliateCheckout() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"cbe" | "telebirr" | "">("");
   const [proofFile, setProofFile] = useState<File | null>(null);
+
+  const [locationMode, setLocationMode] = useState<"none" | "share" | "type">("none");
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const { loading: locLoading, requestLocation } = useGeolocation();
 
   useEffect(() => {
     (async () => {
@@ -34,16 +43,52 @@ export default function AffiliateCheckout() {
         .select("*, products(name, price_etb, image_url)")
         .eq("id", productId).eq("affiliate_store_id", s.id).eq("is_active", true).maybeSingle();
       setItem(p);
-      // Track click
       if (p) await (supabase as any).rpc("affiliate_product_click", { p_product_id: p.id });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prof } = await (supabase as any).from("profiles").select("*").eq("id", user.id).maybeSingle();
+        if (prof) {
+          setFullName(prof.full_name || "");
+          setPhone(prof.phone || "");
+          setAddress(prof.shipping_address || "");
+          setCity(prof.city || "");
+        }
+      }
       setLoading(false);
     })();
   }, [storeSlug, productId]);
 
+  const reverseGeocode = async (la: number, ln: number) => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${la}&lon=${ln}&zoom=18&addressdetails=1`, { headers: { "Accept-Language": "en" } });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j?.display_name || null;
+    } catch { return null; }
+  };
+
+  const handleShareLocation = async () => {
+    setLocationError(null);
+    try {
+      const coords = await requestLocation();
+      setLat(coords.latitude);
+      setLng(coords.longitude);
+      setLocationMode("share");
+      const addr = await reverseGeocode(coords.latitude, coords.longitude);
+      if (addr) setAddress(addr);
+      toast.success("📍 Location captured!");
+    } catch (err: any) {
+      setLocationError(err?.message || "Failed to get location.");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!proofFile) { toast.error("Upload payment proof"); return; }
-    if (!phone || !address) { toast.error("Fill all fields"); return; }
+    if (!fullName || !phone || !address || !city) { toast.error("Please fill in all delivery fields"); return; }
+    if (!paymentMethod) { toast.error("Please choose a payment method"); return; }
+    if (!proofFile) { toast.error("Please upload your payment screenshot"); return; }
+
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -51,10 +96,9 @@ export default function AffiliateCheckout() {
       const { error: upErr } = await supabase.storage.from("payment-proofs").upload(filename, proofFile);
       if (upErr) throw upErr;
 
-      const base = item.products.price_etb;
-      const sold = item.custom_price_etb;
+      const base = Number(item.products.price_etb);
+      const sold = Number(item.custom_price_etb);
       const profit = sold - base;
-      // platform earning = 10% of base + delivery handled later
       const platform = base * 0.10;
 
       const { error } = await (supabase as any).from("affiliate_orders").insert({
@@ -69,26 +113,29 @@ export default function AffiliateCheckout() {
         platform_earning_etb: platform,
         total_etb: sold,
         phone, shipping_address: address, city,
+        customer_latitude: lat,
+        customer_longitude: lng,
         payment_proof_url: filename,
         status: "pending",
       });
       if (error) throw error;
+
       setSuccess(true);
-      toast.success("Order submitted! Redirecting to Abeni Express...");
-      setTimeout(() => navigate("/"), 3000);
+      toast.success("Order submitted! Abeni Express will verify and deliver.");
+      setTimeout(() => navigate("/"), 3500);
     } catch (err: any) {
       toast.error(err.message || "Failed to submit order");
     } finally { setSubmitting(false); }
   };
 
-  if (loading) return <div className="min-h-screen bg-background"><Navbar /></div>;
+  if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="p-10 text-center text-muted-foreground">Loading...</div></div>;
   if (!item) return <div className="min-h-screen bg-background"><Navbar /><div className="p-10 text-center">Product unavailable</div></div>;
 
   if (success) return (
     <div className="min-h-screen bg-background"><Navbar />
       <div className="container mx-auto p-10 text-center max-w-md">
         <CheckCircle2 className="h-16 w-16 text-primary mx-auto mb-4" />
-        <h1 className="text-2xl font-black mb-2">Order Received!</h1>
+        <h1 className="text-2xl font-black mb-2">Order Received! 🎉</h1>
         <p className="text-muted-foreground">Abeni Express will verify your payment and process delivery. Redirecting...</p>
       </div>
     </div>
@@ -98,6 +145,9 @@ export default function AffiliateCheckout() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 className="text-2xl font-black mb-4">Checkout</h1>
+
+        {/* Item */}
         <Card className="p-4 mb-4 tech-card flex gap-4">
           <img src={item.products.image_url || "/placeholder.svg"} alt="" className="w-20 h-20 rounded object-cover" />
           <div className="flex-1">
@@ -107,25 +157,96 @@ export default function AffiliateCheckout() {
           </div>
         </Card>
 
-        <Card className="p-6 tech-card">
-          <h1 className="text-xl font-bold mb-4">Complete Your Order</h1>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div><Label>Phone *</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} required /></div>
-            <div><Label>City *</Label><Input value={city} onChange={(e) => setCity(e.target.value)} required /></div>
-            <div><Label>Delivery Address *</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} required /></div>
-            <div className="p-3 rounded bg-muted/50 text-sm">
-              <p className="font-semibold mb-1">Payment Instructions</p>
-              <p>Send <b className="text-primary">{item.custom_price_etb} ETB</b> to Abeni Express official account, then upload the screenshot below.</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Delivery Details */}
+          <Card className="p-5 tech-card space-y-3">
+            <h2 className="font-bold flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> Delivery Details</h2>
+
+            <div>
+              <Label>Full Name *</Label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             </div>
             <div>
-              <Label>Payment Proof *</Label>
+              <Label>Phone *</Label>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2519..." required />
+            </div>
+
+            {/* Location choice */}
+            <div className="rounded-lg border p-3 bg-muted/30">
+              <Label className="mb-2 block">How do you want to give your address?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={locationMode === "share" ? "default" : "outline"}
+                  className="w-full"
+                  onClick={handleShareLocation}
+                  disabled={locLoading}
+                >
+                  {locLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Navigation className="h-4 w-4 mr-1" />}
+                  Share Current Location
+                </Button>
+                <Button
+                  type="button"
+                  variant={locationMode === "type" ? "default" : "outline"}
+                  className="w-full"
+                  onClick={() => { setLocationMode("type"); setLat(null); setLng(null); }}
+                >
+                  <Pencil className="h-4 w-4 mr-1" /> Type Address
+                </Button>
+              </div>
+              {locationError && <p className="text-xs text-destructive mt-2">{locationError}</p>}
+              {lat && lng && (
+                <p className="text-xs text-primary mt-2">📍 GPS captured ({lat.toFixed(4)}, {lng.toFixed(4)})</p>
+              )}
+            </div>
+
+            <div>
+              <Label>City *</Label>
+              <Input value={city} onChange={(e) => setCity(e.target.value)} required />
+            </div>
+            <div>
+              <Label>Delivery Address *</Label>
+              <Textarea value={address} onChange={(e) => setAddress(e.target.value)} required rows={2} placeholder="Neighborhood, street, landmarks..." />
+            </div>
+          </Card>
+
+          {/* Payment */}
+          <Card className="p-5 tech-card space-y-3">
+            <h2 className="font-bold">Payment</h2>
+            <p className="text-sm text-muted-foreground">
+              Send <b className="text-primary">{item.custom_price_etb} ETB</b> to Abeni Express, then upload your screenshot below.
+            </p>
+
+            <div>
+              <Label>Payment Method *</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Button type="button" variant={paymentMethod === "cbe" ? "default" : "outline"} onClick={() => setPaymentMethod("cbe")}>CBE</Button>
+                <Button type="button" variant={paymentMethod === "telebirr" ? "default" : "outline"} onClick={() => setPaymentMethod("telebirr")}>TeleBirr</Button>
+              </div>
+              {paymentMethod === "cbe" && (
+                <p className="text-xs mt-2 p-2 rounded bg-muted/50">CBE Account: <b>1000123456789</b> — Abeni Express</p>
+              )}
+              {paymentMethod === "telebirr" && (
+                <p className="text-xs mt-2 p-2 rounded bg-muted/50">TeleBirr: <b>+251900000000</b> — Abeni Express</p>
+              )}
+            </div>
+
+            <div>
+              <Label>Payment Proof (screenshot) *</Label>
               <Input type="file" accept="image/*" onChange={(e) => setProofFile(e.target.files?.[0] || null)} required />
             </div>
-            <Button type="submit" disabled={submitting} className="w-full btn-glow">
-              {submitting ? "Submitting..." : `Pay ${item.custom_price_etb} ETB`}
-            </Button>
-          </form>
-        </Card>
+          </Card>
+
+          {/* Total */}
+          <Card className="p-4 tech-card flex justify-between items-center">
+            <span className="font-bold">Total</span>
+            <span className="text-2xl font-black text-primary">{item.custom_price_etb} ETB</span>
+          </Card>
+
+          <Button type="submit" disabled={submitting} className="w-full btn-glow h-12 text-base">
+            {submitting ? "Submitting..." : `Place Order — ${item.custom_price_etb} ETB`}
+          </Button>
+        </form>
       </div>
     </div>
   );
