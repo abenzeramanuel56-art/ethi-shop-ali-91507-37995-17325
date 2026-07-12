@@ -141,7 +141,7 @@ export default function AdminAffiliateOrders() {
                 {o.payment_proof_url && (
                   <div className="mt-3">
                     <p className="text-xs font-semibold mb-1">Payment proof</p>
-                    <SignedImage bucket="payment-proofs" path={o.payment_proof_url} alt="proof" className="max-h-40 rounded border cursor-pointer" onClick={() => openSignedUrl("payment-proofs", o.payment_proof_url!)} />
+                    <SignedImage bucket="payment-proofs" path={o.payment_proof_url} alt="proof" className="max-h-40 rounded border cursor-pointer" onClick={() => openSignedUrl(o.payment_proof_url!)} />
                   </div>
                 )}
 
