@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import TelegramLinkCard from "@/components/TelegramLinkCard";
+
 
 interface QuoteRequest {
   id: string;
@@ -286,7 +288,12 @@ const Account = () => {
               </div>
             </CardContent>
           </Card>
+          <div className="mt-4 max-w-md">
+            <TelegramLinkCard />
+          </div>
         </div>
+
+
 
         <Tabs defaultValue="orders" className="w-full">
           <TabsList>

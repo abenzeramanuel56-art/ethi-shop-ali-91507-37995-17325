@@ -77,29 +77,25 @@ export default function AdminMessaging() {
 
     try {
       if (sendToAll) {
-        // Call function to send to all users
-        const { error } = await supabase.rpc("send_notification_to_all", {
-          notification_title: title,
-          notification_message: message,
-          notification_type: messageType
-        });
-
-        if (error) throw error;
-        toast.success("Message sent to all users!");
+        // Fan out via dispatcher so Telegram mirroring runs per user
+        const { data: allProfiles } = await supabase.from("profiles").select("id");
+        const ids = (allProfiles || []).map((p: any) => p.id);
+        await Promise.all(
+          ids.map((id) =>
+            supabase.functions.invoke("dispatch-notification", {
+              body: { user_id: id, title, body: message, type: messageType },
+            })
+          )
+        );
+        toast.success(`Message sent to ${ids.length} users!`);
       } else {
-        // Send to specific user
-        const { error } = await supabase
-          .from("notifications")
-          .insert({
-            user_id: selectedUserId,
-            title,
-            message,
-            type: messageType
-          });
-
+        const { error } = await supabase.functions.invoke("dispatch-notification", {
+          body: { user_id: selectedUserId, title, body: message, type: messageType },
+        });
         if (error) throw error;
         toast.success("Message sent!");
       }
+
 
       // Reset form
       setTitle("");
