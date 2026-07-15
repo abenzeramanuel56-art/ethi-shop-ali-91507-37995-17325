@@ -957,6 +957,7 @@ export type Database = {
           longitude: number | null
           phone: string | null
           shipping_address: string | null
+          telegram_id: number | null
           terms_accepted_at: string | null
           updated_at: string | null
         }
@@ -970,6 +971,7 @@ export type Database = {
           longitude?: number | null
           phone?: string | null
           shipping_address?: string | null
+          telegram_id?: number | null
           terms_accepted_at?: string | null
           updated_at?: string | null
         }
@@ -983,6 +985,7 @@ export type Database = {
           longitude?: number | null
           phone?: string | null
           shipping_address?: string | null
+          telegram_id?: number | null
           terms_accepted_at?: string | null
           updated_at?: string | null
         }
@@ -1489,6 +1492,33 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_verifications: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          telegram_id: number
+          telegram_username: string | null
+          verification_code: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          telegram_id: number
+          telegram_username?: string | null
+          verification_code: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          telegram_id?: number
+          telegram_username?: string | null
+          verification_code?: string
+        }
+        Relationships: []
+      }
       ticket_replies: {
         Row: {
           attachment_url: string | null
@@ -1814,6 +1844,7 @@ export type Database = {
         }
         Returns: number
       }
+      verify_telegram_code: { Args: { p_code: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "customer" | "reseller" | "driver" | "affiliate"
