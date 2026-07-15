@@ -286,7 +286,12 @@ const Account = () => {
               </div>
             </CardContent>
           </Card>
+          <div className="mt-4 max-w-md">
+            <TelegramLinkCard />
+          </div>
         </div>
+
+
 
         <Tabs defaultValue="orders" className="w-full">
           <TabsList>
