@@ -27,9 +27,27 @@ export default function TelegramLinkCard() {
 
   useEffect(() => { refresh(); }, []);
 
-  const openBot = () => {
-    window.open(`https://t.me/${BOT_USERNAME}?start=auth`, "_blank", "noopener");
+  // Poll briefly after opening the bot so the "Linked" badge appears automatically.
+  useEffect(() => {
+    if (telegramId) return;
+    const i = setInterval(refresh, 5000);
+    return () => clearInterval(i);
+  }, [telegramId]);
+
+  const openBot = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("create_telegram_link_token");
+      if (error || !data) throw error ?? new Error("Could not start linking");
+      window.open(`https://t.me/${BOT_USERNAME}?start=${data}`, "_blank", "noopener");
+      toast.info("Tap “Start” in Telegram — your account links automatically.");
+    } catch (e: any) {
+      toast.error(e.message || "Could not start Telegram linking");
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const verify = async () => {
     if (code.length !== 6) {
@@ -96,12 +114,15 @@ export default function TelegramLinkCard() {
             <p className="text-sm text-muted-foreground">
               Get every order & wallet update instantly on Telegram. One-way notifications only.
             </p>
-            <Button className="w-full" onClick={openBot}>
+            <Button className="w-full" onClick={openBot} disabled={loading}>
               <Send className="h-4 w-4 mr-2" />
               Continue with Telegram
             </Button>
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Paste the 6-digit code the bot sends you:</label>
+              <label className="text-xs text-muted-foreground">
+                Didn't link automatically? Paste the 6-digit code the bot sends you:
+              </label>
+
               <div className="flex gap-2">
                 <Input
                   inputMode="numeric"

@@ -1492,6 +1492,27 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_link_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       telegram_verifications: {
         Row: {
           created_at: string
@@ -1787,6 +1808,7 @@ export type Database = {
         }
         Returns: string
       }
+      create_telegram_link_token: { Args: never; Returns: string }
       customer_confirm_delivery: {
         Args: { p_order_id: string }
         Returns: undefined
@@ -1832,6 +1854,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      remind_telegram_link: { Args: never; Returns: boolean }
       seller_confirm_service_order: {
         Args: { p_order_id: string }
         Returns: undefined
