@@ -12,6 +12,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { TermsAgreementDialog } from "@/components/TermsAgreementDialog";
 import { lovable } from "@/integrations/lovable";
 import { z } from "zod";
+import { Send } from "lucide-react";
+
+const TELEGRAM_BOT = "Abeniexpress_bot";
+
 
 const signUpSchema = z.object({
   email: z.string().email("Invalid email address"),
