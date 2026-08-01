@@ -33,3 +33,10 @@ verify_jwt = false
 [functions.dispatch-notification]
 verify_jwt = false
 
+[functions.telegram-notify]
+verify_jwt = false
+
+[functions.telegram-login]
+verify_jwt = false
+
+
