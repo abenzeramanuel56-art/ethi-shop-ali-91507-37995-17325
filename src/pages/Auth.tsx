@@ -41,6 +41,47 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [linkSent, setLinkSent] = useState<null | "signup" | "reset">(null);
+  const [showTgCode, setShowTgCode] = useState(false);
+  const [tgCode, setTgCode] = useState("");
+  const [tgLoading, setTgLoading] = useState(false);
+
+  const handleTelegramLogin = async () => {
+    setTgLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-login", {
+        body: { code: tgCode },
+      });
+      if (error) {
+        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
+        console.error("telegram-login failed:", details);
+        toast.error("Code invalid, expired, or this Telegram isn't linked to an account yet.");
+        return;
+      }
+      if (!data?.token_hash) {
+        toast.error(data?.error === "telegram_not_linked"
+          ? "This Telegram isn't linked yet. Sign in once, then link it from your Account page."
+          : "Could not sign you in with Telegram.");
+        return;
+      }
+      sessionStorage.setItem("auth:returnTo", returnTo);
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        type: "magiclink",
+        token_hash: data.token_hash,
+      });
+      if (otpError) {
+        toast.error(otpError.message);
+        return;
+      }
+      toast.success("Signed in with Telegram");
+      setTgCode("");
+      setShowTgCode(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Telegram sign-in failed");
+    } finally {
+      setTgLoading(false);
+    }
+  };
+
 
   const returnTo = searchParams.get("returnTo") || "/";
 
