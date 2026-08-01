@@ -50,6 +50,10 @@ export default function NotificationBell() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Remind users who haven't linked Telegram (throttled server-side to once every 3 days).
+    await (supabase as any).rpc("remind_telegram_link").catch(() => {});
+
+
     const { data } = await supabase
       .from("notifications")
       .select("*")
