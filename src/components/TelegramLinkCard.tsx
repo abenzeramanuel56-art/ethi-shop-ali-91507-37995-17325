@@ -114,12 +114,15 @@ export default function TelegramLinkCard() {
             <p className="text-sm text-muted-foreground">
               Get every order & wallet update instantly on Telegram. One-way notifications only.
             </p>
-            <Button className="w-full" onClick={openBot}>
+            <Button className="w-full" onClick={openBot} disabled={loading}>
               <Send className="h-4 w-4 mr-2" />
               Continue with Telegram
             </Button>
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Paste the 6-digit code the bot sends you:</label>
+              <label className="text-xs text-muted-foreground">
+                Didn't link automatically? Paste the 6-digit code the bot sends you:
+              </label>
+
               <div className="flex gap-2">
                 <Input
                   inputMode="numeric"
