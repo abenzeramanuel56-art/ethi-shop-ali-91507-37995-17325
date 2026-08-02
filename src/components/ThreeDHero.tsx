@@ -25,14 +25,15 @@ function DeliveryGlobe() {
       <mesh ref={inner}>
         <icosahedronGeometry args={[1.05, 1]} />
         <meshStandardMaterial
-          color="#0d1420"
-          emissive="#0aa2e0"
-          emissiveIntensity={0.55}
-          roughness={0.25}
-          metalness={0.9}
+          color="#12202e"
+          emissive="#0a6f9e"
+          emissiveIntensity={0.18}
+          roughness={0.3}
+          metalness={0.85}
           flatShading
         />
       </mesh>
+
       {/* Orbiting delivery nodes */}
       <OrbitNodes />
     </group>
