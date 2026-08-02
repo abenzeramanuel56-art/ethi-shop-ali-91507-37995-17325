@@ -121,7 +121,11 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Global 3D stage so .card-3d / .float-3d get real depth everywhere */
+    perspective: 1600px;
+    perspective-origin: 50% 40%;
   }
+
 
   /* Scrollbar styling */
   ::-webkit-scrollbar {
