@@ -374,7 +374,13 @@ export default function DriverDashboard() {
           <h1 className="text-3xl font-bold">Driver Dashboard</h1>
         </div>
 
+        <PushNotificationCard
+          title="New order alerts"
+          description="Turn this on so you hear about new deliveries even when the app is closed."
+        />
+
         {!vehicleType && (
+
           <Card className="mb-6 border-destructive bg-destructive/10">
             <CardContent className="pt-6 flex items-center justify-between gap-3 flex-wrap">
               <div>
