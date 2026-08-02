@@ -218,6 +218,24 @@ const Auth = () => {
               <p className="text-sm text-muted-foreground">
                 The link expires in 1 hour. If you don't see the email, check spam or resend below.
               </p>
+              {linkSent === "signup" && (
+                <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-2">
+                  <p className="text-sm font-medium">Get instant updates on Telegram</p>
+                  <p className="text-xs text-muted-foreground">
+                    New here? Link our bot now and receive every order, delivery and wallet update straight to Telegram.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(`https://t.me/${TELEGRAM_BOT}?start=login`, "_blank", "noopener")}
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    Continue with Telegram
+                  </Button>
+                </div>
+              )}
+
               <Button
                 variant="outline"
                 className="w-full"
