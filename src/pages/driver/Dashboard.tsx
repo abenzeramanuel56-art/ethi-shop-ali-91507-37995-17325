@@ -14,6 +14,8 @@ import {
   CheckCircle, Clock, Navigation, Bell
 } from "lucide-react";
 import { VehicleSettings } from "@/components/VehicleSettings";
+import { PushNotificationCard } from "@/components/PushNotificationCard";
+
 
 interface PendingOrder {
   id: string;
