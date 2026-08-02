@@ -200,7 +200,99 @@
     background: hsl(var(--card) / 0.7);
     border: 1px solid hsl(var(--border) / 0.5);
   }
+
+  /* ---------- 3D depth system ---------- */
+
+  /* Perspective wrapper — put on grids/sections holding .card-3d children */
+  .scene-3d {
+    perspective: 1200px;
+    perspective-origin: 50% 30%;
+  }
+
+  /* Cards that lift, tilt and cast depth on hover */
+  .card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.06) inset,
+      0 10px 24px -12px hsl(220 40% 2% / 0.8);
+    will-change: transform;
+  }
+  .card-3d:hover {
+    transform: translateZ(28px) translateY(-6px) rotateX(4deg) rotateY(-4deg);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.1) inset,
+      0 28px 60px -20px hsl(220 60% 2% / 0.95),
+      0 0 40px -12px hsl(var(--primary) / 0.45);
+  }
+
+  /* Extruded / embossed panel */
+  .panel-3d {
+    background: var(--gradient-card);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.07) inset,
+      0 -1px 0 hsl(220 40% 2% / 0.6) inset,
+      0 18px 40px -22px hsl(220 60% 2% / 0.9);
+  }
+
+  /* Buttons with a physical press */
+  .btn-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 6px 0 -1px hsl(var(--primary) / 0.35), 0 12px 24px -10px hsl(220 60% 2% / 0.9);
+  }
+  .btn-3d:hover { transform: translateY(-2px); }
+  .btn-3d:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 -1px hsl(var(--primary) / 0.35), 0 6px 12px -8px hsl(220 60% 2% / 0.9);
+  }
+
+  /* Text with layered depth */
+  .text-3d {
+    text-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.12),
+      0 2px 0 hsl(220 40% 4% / 0.6),
+      0 8px 24px hsl(var(--primary) / 0.35);
+  }
+
+  /* Slow ambient float for hero art / badges */
+  .float-3d { animation: float-3d 7s ease-in-out infinite; transform-style: preserve-3d; }
+
+  /* Subtle animated depth grid background */
+  .grid-3d-bg {
+    position: relative;
+    overflow: hidden;
+  }
+  .grid-3d-bg::before {
+    content: '';
+    position: absolute;
+    inset: -50% -25% auto -25%;
+    height: 160%;
+    background-image:
+      linear-gradient(hsl(var(--primary) / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--accent) / 0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
+    transform: perspective(600px) rotateX(62deg);
+    transform-origin: top center;
+    pointer-events: none;
+    mask-image: linear-gradient(to bottom, hsl(0 0% 0% / 0.9), transparent 75%);
+  }
 }
+
+@keyframes float-3d {
+  0%, 100% { transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg); }
+  33%      { transform: translate3d(0, -10px, 20px) rotateX(3deg) rotateY(-4deg); }
+  66%      { transform: translate3d(0, 6px, 10px) rotateX(-2deg) rotateY(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-3d, .btn-3d, .float-3d { transition: none; animation: none; }
+  .card-3d:hover { transform: none; }
+}
+
 
 @keyframes pulse-glow {
   0%, 100% { opacity: 1; box-shadow: 0 0 6px hsl(var(--success)); }
