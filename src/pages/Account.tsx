@@ -14,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import TelegramLinkCard from "@/components/TelegramLinkCard";
+import EmailPasswordLinkCard from "@/components/EmailPasswordLinkCard";
+import { PushNotificationCard } from "@/components/PushNotificationCard";
+
 
 
 interface QuoteRequest {
