@@ -37,6 +37,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fan out to browser push (works even when the app is closed).
+    fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
+      body: JSON.stringify({
+        user_id: notif.user_id,
+        title: notif.title,
+        body: notif.message,
+        url: "/",
+        tag: notification_id,
+      }),
+    }).catch((e) => console.error("push fanout failed", e));
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("telegram_id")
@@ -49,6 +62,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const escape = (s: string) =>
       String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
