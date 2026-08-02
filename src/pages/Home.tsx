@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { ArrowRight, Package, Shield, TrendingUp, Truck, Wrench, Zap, Star, Globe, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ThreeDHero } from "@/components/ThreeDHero";
+
 
 const Home = () => {
   const { t } = useLanguage();
