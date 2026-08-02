@@ -288,9 +288,17 @@ const Account = () => {
               </div>
             </CardContent>
           </Card>
-          <div className="mt-4 max-w-md">
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
             <TelegramLinkCard />
+            <EmailPasswordLinkCard />
+            <div className="md:col-span-2">
+              <PushNotificationCard
+                title="Phone & browser alerts"
+                description="Get order updates on this device even when Abeni Express is closed."
+              />
+            </div>
           </div>
+
         </div>
 
 
