@@ -12,29 +12,28 @@ const Home = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Animated grid background */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }} />
+      <section className="relative overflow-hidden grid-3d-bg scene-3d">
         {/* Gradient orbs */}
         <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full opacity-10 blur-3xl" style={{ background: 'hsl(var(--primary))' }} />
         <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full opacity-8 blur-3xl" style={{ background: 'hsl(var(--accent))' }} />
 
+        {/* WebGL delivery-network globe */}
+        <ThreeDHero className="absolute right-[-10%] top-1/2 hidden h-[560px] w-[560px] -translate-y-1/2 opacity-80 lg:block" />
+
         <div className="container relative mx-auto px-4 py-24 md:py-32">
           <div className="max-w-4xl">
             {/* Eyebrow */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary float-3d">
               <Zap className="h-3.5 w-3.5" />
               <span>Ethiopia's Premier Marketplace</span>
             </div>
 
-            <h1 className="mb-6 text-5xl font-black leading-tight text-foreground md:text-6xl lg:text-7xl tracking-tight">
+            <h1 className="mb-6 text-5xl font-black leading-tight text-foreground md:text-6xl lg:text-7xl tracking-tight text-3d">
               <span className="sr-only">Abeni Express — </span>
               {t('home.hero.title').split(' ').slice(0, 2).join(' ')}
               <span className="block gradient-text">{t('home.hero.title').split(' ').slice(2).join(' ')}</span>
             </h1>
+
             <p className="mb-10 text-lg text-muted-foreground max-w-2xl leading-relaxed">
               {t('home.hero.subtitle')}
             </p>
