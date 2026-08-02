@@ -51,7 +51,7 @@ export default function NotificationBell() {
     if (!user) return;
 
     // Remind users who haven't linked Telegram (throttled server-side to once every 3 days).
-    await (supabase as any).rpc("remind_telegram_link").catch(() => {});
+    try { await (supabase as any).rpc("remind_telegram_link"); } catch { /* ignore */ }
 
 
     const { data } = await supabase
