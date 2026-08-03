@@ -346,7 +346,7 @@ const AdminDashboard = () => {
           Math.sin(dLon/2) * Math.sin(dLon/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         distanceKm = R * c;
-        estimatedEarning = distanceKm * 25; // 25 ETB per km
+        estimatedEarning = driverPayout(distanceKm); // 25 ETB per km, min 50 ETB
       }
 
       // Create pending driver order
@@ -365,7 +365,8 @@ const AdminDashboard = () => {
           shipping_address: order.shipping_address,
           city: order.city,
           distance_km: distanceKm,
-          estimated_earning_etb: estimatedEarning
+          estimated_earning_etb: estimatedEarning,
+          preferred_vehicle_type: order.preferred_vehicle_type || null
         })
         .select();
 
