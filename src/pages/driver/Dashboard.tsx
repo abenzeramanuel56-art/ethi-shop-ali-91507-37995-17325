@@ -192,13 +192,15 @@ export default function DriverDashboard() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    setVehicleType(appData?.vehicle_type || null);
+    const v = appData?.vehicle_type || null;
+    setVehicleType(v);
 
-    fetchPendingOrders();
+    fetchPendingOrders(v);
     fetchDriverData(user.id);
   };
 
-  const fetchPendingOrders = async () => {
+  const fetchPendingOrders = async (vehicleOverride?: string | null) => {
+    const v = vehicleOverride !== undefined ? vehicleOverride : vehicleType;
     try {
       const { data, error } = await (supabase as any)
         .from("pending_driver_orders")
@@ -210,7 +212,7 @@ export default function DriverDashboard() {
       // Only show deliveries that match the vehicle the customer ordered
       const mine = (data || []).filter((o: PendingOrder) =>
         !o.preferred_vehicle_type ||
-        (vehicleType || "").toLowerCase() === o.preferred_vehicle_type.toLowerCase()
+        (v || "").toLowerCase() === o.preferred_vehicle_type.toLowerCase()
       );
       setPendingOrders(mine);
     } catch (error) {
