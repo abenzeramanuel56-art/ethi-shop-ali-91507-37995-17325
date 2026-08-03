@@ -281,14 +281,13 @@ export default function AdminServiceOrders() {
 
                   {order.payment_proof_url && (
                     <div className="mb-4">
-                      <a
-                        href={order.payment_proof_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary underline text-sm"
-                      >
-                        View Payment Proof
-                      </a>
+                      <p className="text-xs text-muted-foreground mb-1">Payment Proof</p>
+                      <SignedImage
+                        url={order.payment_proof_url}
+                        alt="Payment proof"
+                        className="max-h-48 rounded border cursor-pointer object-contain"
+                        onClick={() => openSignedUrl(order.payment_proof_url)}
+                      />
                     </div>
                   )}
 
