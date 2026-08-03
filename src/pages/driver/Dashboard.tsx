@@ -207,7 +207,12 @@ export default function DriverDashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPendingOrders(data || []);
+      // Only show deliveries that match the vehicle the customer ordered
+      const mine = (data || []).filter((o: PendingOrder) =>
+        !o.preferred_vehicle_type ||
+        (vehicleType || "").toLowerCase() === o.preferred_vehicle_type.toLowerCase()
+      );
+      setPendingOrders(mine);
     } catch (error) {
       console.error("Failed to fetch pending orders:", error);
     }
