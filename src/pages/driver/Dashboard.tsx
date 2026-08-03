@@ -97,6 +97,9 @@ export default function DriverDashboard() {
         { event: 'INSERT', schema: 'public', table: 'pending_driver_orders' },
         (payload: any) => {
           fetchPendingOrders();
+          const wanted = payload.new?.preferred_vehicle_type as string | null;
+          const matches = !wanted || (vehicleType || "").toLowerCase() === wanted.toLowerCase();
+          if (!matches) return; // only alert drivers whose truck matches the order
           // External browser notification
           try {
             if ("Notification" in window && Notification.permission === "granted") {
@@ -129,7 +132,7 @@ export default function DriverDashboard() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [isDriver]);
+  }, [isDriver, vehicleType]);
 
   // Live GPS tracking — broadcast driver location every 15s while there are active deliveries
   useEffect(() => {
