@@ -270,13 +270,15 @@ const AdminDashboard = () => {
       const isTrackingAdded = orderUpdates.tracking_number && 
                              currentOrder?.tracking_number !== orderUpdates.tracking_number;
 
+      const payload: Record<string, any> = { status: statusToUse };
+      if (!overrideStatus) {
+        payload.tracking_number = orderUpdates.tracking_number || null;
+        payload.admin_notes = orderUpdates.admin_notes || null;
+      }
+
       const { error } = await (supabase as any)
         .from("orders")
-        .update({
-          status: statusToUse,
-          tracking_number: orderUpdates.tracking_number || null,
-          admin_notes: orderUpdates.admin_notes || null,
-        })
+        .update(payload)
         .eq("id", orderId);
 
       if (error) throw error;
