@@ -143,12 +143,11 @@ const Cart = () => {
       let paymentProofUrl = null;
       if (paymentProof) {
         const fileExt = paymentProof.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(fileName, paymentProof);
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-          paymentProofUrl = publicUrl;
-        }
+        if (uploadError) throw new Error(`Could not upload payment proof: ${uploadError.message}`);
+        const { data: { publicUrl } } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
+        paymentProofUrl = publicUrl;
       }
 
       const hasSellerItems = cartItems.some(i => i.store_type === "seller" || i.store_type === "reseller");
