@@ -30,6 +30,7 @@ interface PendingOrder {
   city: string | null;
   distance_km: number | null;
   estimated_earning_etb: number | null;
+  preferred_vehicle_type: string | null;
   created_at: string;
 }
 
