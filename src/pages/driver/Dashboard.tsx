@@ -500,6 +500,11 @@ export default function DriverDashboard() {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <Badge className="bg-orange-500 mb-2">New Order</Badge>
+                        {order.preferred_vehicle_type && (
+                          <Badge variant="outline" className="mb-2 ml-2 capitalize">
+                            {order.preferred_vehicle_type}
+                          </Badge>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           Order #{order.order_id.slice(0, 8)}
                         </p>
