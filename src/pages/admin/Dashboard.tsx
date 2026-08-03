@@ -769,13 +769,18 @@ const AdminDashboard = () => {
                                   {order.payment_method.toUpperCase()}
                                 </p>
                               )}
-                              {order.payment_proof_url && (
-                                <button
-                                  onClick={() => openSignedUrl(order.payment_proof_url)}
-                                  className="text-sm text-primary hover:underline"
-                                >
-                                  View Payment Proof →
-                                </button>
+                              {order.payment_proof_url ? (
+                                <div>
+                                  <p className="text-sm font-medium mb-1">Payment Proof</p>
+                                  <SignedImage
+                                    url={order.payment_proof_url}
+                                    alt="Payment proof"
+                                    className="max-h-48 rounded border cursor-pointer object-contain"
+                                    onClick={() => openSignedUrl(order.payment_proof_url)}
+                                  />
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">No payment proof uploaded by the customer.</p>
                               )}
                               {order.tracking_number && (
                                 <p className="text-sm">
