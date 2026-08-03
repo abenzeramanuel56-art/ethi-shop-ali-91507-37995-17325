@@ -19,7 +19,7 @@ import AdminPunishments from "./Punishments";
 import { ImageUpdater } from "./ImageUpdater";
 import AdminDigitalOrders from "./DigitalOrders";
 import AdminAffiliateOrders from "./AffiliateOrders";
-import { openSignedUrl } from "@/components/SignedImage";
+import { SignedImage, openSignedUrl } from "@/components/SignedImage";
 
 interface Stats {
   pendingQuotes: number;
