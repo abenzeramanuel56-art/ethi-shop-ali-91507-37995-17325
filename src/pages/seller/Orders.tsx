@@ -155,14 +155,12 @@ export default function SellerOrders() {
                     {order.payment_proof_url && (
                       <div>
                         <p className="text-sm text-muted-foreground">Payment Proof</p>
-                        <a
-                          href={order.payment_proof_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary underline"
-                        >
-                          View Proof
-                        </a>
+                        <SignedImage
+                          url={order.payment_proof_url}
+                          alt="Payment proof"
+                          className="mt-1 max-h-40 rounded border cursor-pointer object-contain"
+                          onClick={() => openSignedUrl(order.payment_proof_url)}
+                        />
                       </div>
                     )}
                     <div>
