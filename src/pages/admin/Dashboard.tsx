@@ -317,7 +317,8 @@ const AdminDashboard = () => {
       setOrderUpdates({ status: "", tracking_number: "", admin_notes: "" });
       fetchData();
     } catch (error: any) {
-      toast.error("Failed to update order");
+      console.error("update order failed", error);
+      toast.error(error?.message || error?.details || "Failed to update order");
     }
   };
 
