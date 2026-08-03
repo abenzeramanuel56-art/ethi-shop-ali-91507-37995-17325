@@ -30,6 +30,7 @@ interface PendingOrder {
   city: string | null;
   distance_km: number | null;
   estimated_earning_etb: number | null;
+  preferred_vehicle_type: string | null;
   created_at: string;
 }
 
@@ -96,6 +97,9 @@ export default function DriverDashboard() {
         { event: 'INSERT', schema: 'public', table: 'pending_driver_orders' },
         (payload: any) => {
           fetchPendingOrders();
+          const wanted = payload.new?.preferred_vehicle_type as string | null;
+          const matches = !wanted || (vehicleType || "").toLowerCase() === wanted.toLowerCase();
+          if (!matches) return; // only alert drivers whose truck matches the order
           // External browser notification
           try {
             if ("Notification" in window && Notification.permission === "granted") {
@@ -128,7 +132,7 @@ export default function DriverDashboard() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [isDriver]);
+  }, [isDriver, vehicleType]);
 
   // Live GPS tracking — broadcast driver location every 15s while there are active deliveries
   useEffect(() => {
@@ -191,13 +195,15 @@ export default function DriverDashboard() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    setVehicleType(appData?.vehicle_type || null);
+    const v = appData?.vehicle_type || null;
+    setVehicleType(v);
 
-    fetchPendingOrders();
+    fetchPendingOrders(v);
     fetchDriverData(user.id);
   };
 
-  const fetchPendingOrders = async () => {
+  const fetchPendingOrders = async (vehicleOverride?: string | null) => {
+    const v = vehicleOverride !== undefined ? vehicleOverride : vehicleType;
     try {
       const { data, error } = await (supabase as any)
         .from("pending_driver_orders")
@@ -206,7 +212,12 @@ export default function DriverDashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPendingOrders(data || []);
+      // Only show deliveries that match the vehicle the customer ordered
+      const mine = (data || []).filter((o: PendingOrder) =>
+        !o.preferred_vehicle_type ||
+        (v || "").toLowerCase() === o.preferred_vehicle_type.toLowerCase()
+      );
+      setPendingOrders(mine);
     } catch (error) {
       console.error("Failed to fetch pending orders:", error);
     }
@@ -272,14 +283,16 @@ export default function DriverDashboard() {
     } catch (error: any) {
       const raw = typeof error?.message === "string" ? error.message : "";
 
-      if (raw.includes("pending_order_not_available")) {
+      if (raw.includes("vehicle_mismatch")) {
+        toast.error(raw.replace("vehicle_mismatch: ", "Vehicle mismatch — "));
+      } else if (raw.includes("pending_order_not_available")) {
         toast.error("This order was already taken by another driver.");
       } else if (raw.includes("not_a_driver")) {
         toast.error("Your account is not registered as a driver.");
       } else if (raw.includes("not_authenticated")) {
         toast.error("Please sign in again and try.");
       } else {
-        toast.error("Failed to accept order. Please try again.");
+        toast.error(raw || "Failed to accept order. Please try again.");
       }
 
       fetchPendingOrders();
@@ -487,6 +500,11 @@ export default function DriverDashboard() {
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <Badge className="bg-orange-500 mb-2">New Order</Badge>
+                        {order.preferred_vehicle_type && (
+                          <Badge variant="outline" className="mb-2 ml-2 capitalize">
+                            {order.preferred_vehicle_type}
+                          </Badge>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           Order #{order.order_id.slice(0, 8)}
                         </p>

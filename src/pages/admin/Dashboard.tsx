@@ -19,7 +19,8 @@ import AdminPunishments from "./Punishments";
 import { ImageUpdater } from "./ImageUpdater";
 import AdminDigitalOrders from "./DigitalOrders";
 import AdminAffiliateOrders from "./AffiliateOrders";
-import { openSignedUrl } from "@/components/SignedImage";
+import { SignedImage, openSignedUrl } from "@/components/SignedImage";
+import { driverPayout } from "@/lib/pricing";
 
 interface Stats {
   pendingQuotes: number;
@@ -270,13 +271,15 @@ const AdminDashboard = () => {
       const isTrackingAdded = orderUpdates.tracking_number && 
                              currentOrder?.tracking_number !== orderUpdates.tracking_number;
 
+      const payload: Record<string, any> = { status: statusToUse };
+      if (!overrideStatus) {
+        payload.tracking_number = orderUpdates.tracking_number || null;
+        payload.admin_notes = orderUpdates.admin_notes || null;
+      }
+
       const { error } = await (supabase as any)
         .from("orders")
-        .update({
-          status: statusToUse,
-          tracking_number: orderUpdates.tracking_number || null,
-          admin_notes: orderUpdates.admin_notes || null,
-        })
+        .update(payload)
         .eq("id", orderId);
 
       if (error) throw error;
@@ -315,7 +318,8 @@ const AdminDashboard = () => {
       setOrderUpdates({ status: "", tracking_number: "", admin_notes: "" });
       fetchData();
     } catch (error: any) {
-      toast.error("Failed to update order");
+      console.error("update order failed", error);
+      toast.error(error?.message || error?.details || "Failed to update order");
     }
   };
 
@@ -343,7 +347,7 @@ const AdminDashboard = () => {
           Math.sin(dLon/2) * Math.sin(dLon/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         distanceKm = R * c;
-        estimatedEarning = distanceKm * 25; // 25 ETB per km
+        estimatedEarning = driverPayout(distanceKm); // 25 ETB per km, min 50 ETB
       }
 
       // Create pending driver order
@@ -362,7 +366,8 @@ const AdminDashboard = () => {
           shipping_address: order.shipping_address,
           city: order.city,
           distance_km: distanceKm,
-          estimated_earning_etb: estimatedEarning
+          estimated_earning_etb: estimatedEarning,
+          preferred_vehicle_type: order.preferred_vehicle_type || null
         })
         .select();
 
@@ -769,13 +774,18 @@ const AdminDashboard = () => {
                                   {order.payment_method.toUpperCase()}
                                 </p>
                               )}
-                              {order.payment_proof_url && (
-                                <button
-                                  onClick={() => openSignedUrl(order.payment_proof_url)}
-                                  className="text-sm text-primary hover:underline"
-                                >
-                                  View Payment Proof →
-                                </button>
+                              {order.payment_proof_url ? (
+                                <div>
+                                  <p className="text-sm font-medium mb-1">Payment Proof</p>
+                                  <SignedImage
+                                    url={order.payment_proof_url}
+                                    alt="Payment proof"
+                                    className="max-h-48 rounded border cursor-pointer object-contain"
+                                    onClick={() => openSignedUrl(order.payment_proof_url)}
+                                  />
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">No payment proof uploaded by the customer.</p>
                               )}
                               {order.tracking_number && (
                                 <p className="text-sm">

@@ -36,12 +36,20 @@ export default function TelegramLinkCard() {
 
   const openBot = async () => {
     setLoading(true);
+    // Open the tab synchronously so mobile browsers don't block the popup.
+    const win = window.open("", "_blank", "noopener");
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Please sign in first");
       const { data, error } = await (supabase as any).rpc("create_telegram_link_token");
-      if (error || !data) throw error ?? new Error("Could not start linking");
-      window.open(`https://t.me/${BOT_USERNAME}?start=${data}`, "_blank", "noopener");
+      if (error) throw error;
+      if (!data) throw new Error("Could not start linking. Please try again.");
+      const url = `https://t.me/${BOT_USERNAME}?start=${data}`;
+      if (win) win.location.href = url;
+      else window.location.href = url;
       toast.info("Tap “Start” in Telegram — your account links automatically.");
     } catch (e: any) {
+      win?.close();
       toast.error(e.message || "Could not start Telegram linking");
     } finally {
       setLoading(false);
