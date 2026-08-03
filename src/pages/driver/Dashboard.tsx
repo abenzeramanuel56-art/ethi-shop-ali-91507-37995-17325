@@ -272,14 +272,16 @@ export default function DriverDashboard() {
     } catch (error: any) {
       const raw = typeof error?.message === "string" ? error.message : "";
 
-      if (raw.includes("pending_order_not_available")) {
+      if (raw.includes("vehicle_mismatch")) {
+        toast.error(raw.replace("vehicle_mismatch: ", "Vehicle mismatch — "));
+      } else if (raw.includes("pending_order_not_available")) {
         toast.error("This order was already taken by another driver.");
       } else if (raw.includes("not_a_driver")) {
         toast.error("Your account is not registered as a driver.");
       } else if (raw.includes("not_authenticated")) {
         toast.error("Please sign in again and try.");
       } else {
-        toast.error("Failed to accept order. Please try again.");
+        toast.error(raw || "Failed to accept order. Please try again.");
       }
 
       fetchPendingOrders();
