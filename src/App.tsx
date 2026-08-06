@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Products from "./pages/Products";
 import RequestItem from "./pages/RequestItem";
+import Download from "./pages/Download";
 import Account from "./pages/Account";
 import Cart from "./pages/Cart";
 import Support from "./pages/Support";
