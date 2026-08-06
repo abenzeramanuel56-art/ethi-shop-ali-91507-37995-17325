@@ -97,9 +97,9 @@ export const Navbar = () => {
                 Digital
               </Button>
             </Link>
-            <Link to="/request-item">
-              <Button size="sm" className="ml-1">
-                {t('nav.request')}
+            <Link to="/download">
+              <Button size="sm" className="ml-1 btn-glow">
+                Get the App
               </Button>
             </Link>
           </div>
