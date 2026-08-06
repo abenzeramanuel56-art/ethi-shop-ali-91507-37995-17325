@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { MapPin, Navigation } from "lucide-react";
 
 interface Location {
@@ -10,17 +13,75 @@ interface Location {
 interface SimpleMapProps {
   locations: Location[];
   className?: string;
+  height?: number;
 }
 
-export function SimpleMap({ locations, className = "" }: SimpleMapProps) {
-  const openInMaps = (lat: number, lng: number) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-    window.open(url, "_blank");
-  };
+const COLORS: Record<string, string> = {
+  seller: "#3b82f6",
+  customer: "#22c55e",
+  driver: "#f97316",
+  default: "#8b5cf6",
+};
 
-  const openDirections = (fromLat: number, fromLng: number, toLat: number, toLng: number) => {
-    const url = `https://www.google.com/maps/dir/${fromLat},${fromLng}/${toLat},${toLng}`;
-    window.open(url, "_blank");
+function pinIcon(type?: string) {
+  const color = COLORS[type ?? "default"] ?? COLORS.default;
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};box-shadow:0 6px 14px rgba(0,0,0,.45);border:2px solid #fff"></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 22],
+  });
+}
+
+export function SimpleMap({ locations, className = "", height = 260 }: SimpleMapProps) {
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerRef = useRef<L.LayerGroup | null>(null);
+
+  useEffect(() => {
+    if (!nodeRef.current || locations.length === 0) return;
+
+    if (!mapRef.current) {
+      mapRef.current = L.map(nodeRef.current, { scrollWheelZoom: false, attributionControl: false });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapRef.current);
+      layerRef.current = L.layerGroup().addTo(mapRef.current);
+    }
+
+    const map = mapRef.current;
+    const layer = layerRef.current!;
+    layer.clearLayers();
+
+    const points: [number, number][] = locations.map((l) => [l.latitude, l.longitude]);
+    locations.forEach((l) => {
+      L.marker([l.latitude, l.longitude], { icon: pinIcon(l.type) })
+        .bindTooltip(l.label ?? "Location", { direction: "top", offset: [0, -18] })
+        .addTo(layer);
+    });
+
+    if (points.length >= 2) {
+      L.polyline(points, { color: "#8b5cf6", weight: 3, dashArray: "6 8", opacity: 0.9 }).addTo(layer);
+      map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 15 });
+    } else {
+      map.setView(points[0], 14);
+    }
+
+    setTimeout(() => map.invalidateSize(), 120);
+  }, [locations]);
+
+  useEffect(() => {
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  const openDirections = () => {
+    const seller = locations.find((l) => l.type === "seller") || locations[0];
+    const customer = locations.find((l) => l.type === "customer") || locations[1] || locations[0];
+    window.open(
+      `https://www.google.com/maps/dir/${seller.latitude},${seller.longitude}/${customer.latitude},${customer.longitude}`,
+      "_blank",
+    );
   };
 
   if (locations.length === 0) {
@@ -32,56 +93,50 @@ export function SimpleMap({ locations, className = "" }: SimpleMapProps) {
     );
   }
 
-  const getMarkerColor = (type?: string) => {
-    switch (type) {
-      case "seller": return "bg-blue-500";
-      case "customer": return "bg-green-500";
-      case "driver": return "bg-orange-500";
-      default: return "bg-primary";
-    }
-  };
-
   return (
-    <div className={`bg-muted rounded-lg p-4 ${className}`}>
-      <div className="space-y-3">
-        {locations.map((loc, index) => (
-          <div 
-            key={index}
-            className="flex items-center justify-between p-3 bg-background rounded-lg"
-          >
+    <div className={`card-3d overflow-hidden rounded-lg border border-border/60 bg-card ${className}`}>
+      <div ref={nodeRef} style={{ height }} className="w-full z-0" />
+
+      <div className="space-y-1.5 p-3">
+        {locations.map((loc, i) => (
+          <div key={i} className="flex items-center justify-between rounded-md bg-background/60 px-3 py-2">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${getMarkerColor(loc.type)}`} />
+              <span
+                className="h-3 w-3 rounded-full"
+                style={{ background: COLORS[loc.type ?? "default"] ?? COLORS.default }}
+              />
               <div>
-                <p className="font-medium">{loc.label || `Location ${index + 1}`}</p>
+                <p className="text-sm font-medium">{loc.label || `Location ${i + 1}`}</p>
                 <p className="text-xs text-muted-foreground">
-                  {loc.latitude.toFixed(6)}, {loc.longitude.toFixed(6)}
+                  {loc.latitude.toFixed(5)}, {loc.longitude.toFixed(5)}
                 </p>
               </div>
             </div>
             <button
-              onClick={() => openInMaps(loc.latitude, loc.longitude)}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              onClick={() =>
+                window.open(
+                  `https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`,
+                  "_blank",
+                )
+              }
+              className="rounded-md p-2 transition-colors hover:bg-muted"
               title="Open in Google Maps"
             >
               <Navigation className="h-4 w-4" />
             </button>
           </div>
         ))}
-      </div>
 
-      {locations.length >= 2 && (
-        <button
-          onClick={() => {
-            const seller = locations.find(l => l.type === "seller") || locations[0];
-            const customer = locations.find(l => l.type === "customer") || locations[1];
-            openDirections(seller.latitude, seller.longitude, customer.latitude, customer.longitude);
-          }}
-          className="w-full mt-3 p-3 bg-primary text-primary-foreground rounded-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
-        >
-          <Navigation className="h-4 w-4" />
-          Get Directions in Google Maps
-        </button>
-      )}
+        {locations.length >= 2 && (
+          <button
+            onClick={openDirections}
+            className="btn-3d mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-primary p-3 text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Navigation className="h-4 w-4" />
+            Navigate with Google Maps
+          </button>
+        )}
+      </div>
     </div>
   );
 }
