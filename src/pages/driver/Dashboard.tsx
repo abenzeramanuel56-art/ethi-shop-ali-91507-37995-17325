@@ -213,9 +213,10 @@ export default function DriverDashboard() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      // Only show deliveries that match the vehicle the customer ordered
+      // Only show deliveries that match the vehicle the customer ordered ("any" = open to all)
       const mine = (data || []).filter((o: PendingOrder) =>
         !o.preferred_vehicle_type ||
+        ["any", ""].includes(o.preferred_vehicle_type.toLowerCase()) ||
         (v || "").toLowerCase() === o.preferred_vehicle_type.toLowerCase()
       );
       setPendingOrders(mine);
