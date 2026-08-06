@@ -16,7 +16,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.request': 'Request Item',
     'nav.support': 'Support',
     'nav.admin': 'Admin Panel',
-    'nav.reseller': 'Reseller Dashboard',
+    'nav.reseller': 'Seller Dashboard',
     'nav.signOut': 'Sign Out',
     'nav.signIn': 'Sign In',
     'nav.account': 'Account',
@@ -44,13 +44,13 @@ const translations: Record<Language, Record<string, string>> = {
     'home.features.supportDesc': 'Customer support in Amharic & English',
     'home.features.secure': 'Secure Shopping',
     'home.features.secureDesc': 'Safe and secure transactions',
-    'home.reseller.title': 'Become a Reseller',
+    'home.reseller.title': 'Become a Seller',
     'home.reseller.subtitle': 'Start your own store and earn profits',
-    'home.reseller.apply': 'Become a Reseller',
+    'home.reseller.apply': 'Become a Seller',
     'home.seller.title': 'Join Our Platform',
     'home.seller.subtitle': 'Become a seller or driver and start earning',
-    'home.seller.become': 'Become a Reseller',
-    'home.seller.apply': 'Become a Reseller',
+    'home.seller.become': 'Become a Seller',
+    'home.seller.apply': 'Become a Seller',
     'home.driver.become': 'Become a Driver',
     'home.driver.apply': 'Become a Driver',
     'home.services.browse': 'Browse Services',
@@ -204,8 +204,8 @@ const translations: Record<Language, Record<string, string>> = {
     'support.errorDesc': 'Failed to submit ticket. Please try again.',
     'support.replyError': 'Failed to send reply',
     
-    // Reseller Dashboard
-    'reseller.title': 'Reseller Dashboard',
+    // Seller Dashboard
+    'reseller.title': 'Seller Dashboard',
     'reseller.createStore': 'Create Your Store',
     'reseller.createStoreDesc': 'You need to create a store before you can start selling.',
     'reseller.createStoreBtn': 'Create Store',
@@ -230,9 +230,9 @@ const translations: Record<Language, Record<string, string>> = {
     'reseller.storeSettings': 'Store Settings',
     'reseller.editStoreSettings': 'Edit Store Settings',
     'reseller.accessDenied': 'Access Denied',
-    'reseller.accessDeniedDesc': 'You need reseller access to view this page',
+    'reseller.accessDeniedDesc': 'You need seller access to view this page',
     
-    // Reseller Wallet
+    // Seller Wallet
     'wallet.title': 'Wallet & Withdrawals',
     'wallet.currentBalance': 'Current Balance',
     'wallet.totalEarned': 'Total Earned',
@@ -251,7 +251,7 @@ const translations: Record<Language, Record<string, string>> = {
     'wallet.insufficientBalance': 'Insufficient balance',
     'wallet.requestSubmitted': 'Withdrawal request submitted',
     
-    // Reseller Setup
+    // Seller Setup
     'setup.title': 'Store Setup',
     'setup.createTitle': 'Create Your Store',
     'setup.editTitle': 'Edit Store Settings',
@@ -277,8 +277,8 @@ const translations: Record<Language, Record<string, string>> = {
     'refund.status.rejected': 'Rejected',
     'refund.status.processed': 'Processed',
     
-    // Apply Reseller
-    'apply.title': 'Apply to Become a Reseller',
+    // Apply Seller
+    'apply.title': 'Apply to Become a Seller',
     'apply.subtitle': 'Fill in your details to apply as a reseller on our platform',
     'apply.signInRequired': 'Please sign in',
     'apply.signInDesc': 'You need to be signed in to apply as a reseller',
@@ -314,7 +314,7 @@ const translations: Record<Language, Record<string, string>> = {
     'apply.submitError': 'Failed to submit application',
     'apply.submitting': 'Submitting...',
     'apply.submit': 'Submit Application',
-    'apply.yourApplication': 'Your Reseller Application',
+    'apply.yourApplication': 'Your Seller Application',
     'apply.status': 'Status',
     'apply.submittedOn': 'Submitted',
     'apply.adminNotes': 'Admin Notes',
@@ -347,9 +347,9 @@ const translations: Record<Language, Record<string, string>> = {
     'banned.contactButton': 'Contact Customer Support',
     
     // Notifications
-    'notification.resellerApproved': 'Reseller Application Approved',
+    'notification.resellerApproved': 'Seller Application Approved',
     'notification.resellerApprovedDesc': 'Your reseller application has been approved! You can now set up your store.',
-    'notification.resellerRejected': 'Reseller Application Rejected',
+    'notification.resellerRejected': 'Seller Application Rejected',
     'notification.resellerRejectedDesc': 'Your reseller application has been rejected.',
     'notification.newNotification': 'New Notification',
     
@@ -563,7 +563,7 @@ const translations: Record<Language, Record<string, string>> = {
     'support.errorDesc': 'ቲኬት መላክ አልተሳካም። እባክዎ እንደገና ይሞክሩ።',
     'support.replyError': 'ምላሽ መላክ አልተሳካም',
     
-    // Reseller Dashboard
+    // Seller Dashboard
     'reseller.title': 'የሻጭ ዳሽቦርድ',
     'reseller.createStore': 'መደብርዎን ይፍጠሩ',
     'reseller.createStoreDesc': 'መሸጥ ከመጀመርዎ በፊት መደብር መፍጠር አለብዎት።',
@@ -591,7 +591,7 @@ const translations: Record<Language, Record<string, string>> = {
     'reseller.accessDenied': 'መዳረሻ ተከልክሏል',
     'reseller.accessDeniedDesc': 'ይህን ገጽ ለመመልከት የሻጭ መዳረሻ ያስፈልግዎታል',
     
-    // Reseller Wallet
+    // Seller Wallet
     'wallet.title': 'ኪስ እና ማውጣት',
     'wallet.currentBalance': 'የአሁኑ ቀሪ ሂሳብ',
     'wallet.totalEarned': 'ጠቅላላ ገቢ',
@@ -610,7 +610,7 @@ const translations: Record<Language, Record<string, string>> = {
     'wallet.insufficientBalance': 'በቂ ቀሪ ሂሳብ የለም',
     'wallet.requestSubmitted': 'የማውጣት ጥያቄ ተልኳል',
     
-    // Reseller Setup
+    // Seller Setup
     'setup.title': 'የመደብር ማዋቀር',
     'setup.createTitle': 'መደብርዎን ይፍጠሩ',
     'setup.editTitle': 'የመደብር ቅንብሮችን አርትዕ',
@@ -636,7 +636,7 @@ const translations: Record<Language, Record<string, string>> = {
     'refund.status.rejected': 'ተቀባይነት አላገኘም',
     'refund.status.processed': 'ተሠርቷል',
     
-    // Apply Reseller
+    // Apply Seller
     'apply.title': 'ሻጭ ለመሆን ያመልክቱ',
     'apply.subtitle': 'በእኛ መድረክ ላይ ሻጭ ለመሆን ዝርዝሮችዎን ይሙሉ',
     'apply.signInRequired': 'እባክዎ ይግቡ',
