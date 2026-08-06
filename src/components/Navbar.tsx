@@ -97,9 +97,9 @@ export const Navbar = () => {
                 Digital
               </Button>
             </Link>
-            <Link to="/request-item">
-              <Button size="sm" className="ml-1">
-                {t('nav.request')}
+            <Link to="/download">
+              <Button size="sm" className="ml-1 btn-glow">
+                Get the App
               </Button>
             </Link>
           </div>
@@ -183,8 +183,8 @@ export const Navbar = () => {
             <Link to="/digital-market" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" size="sm" className="w-full justify-start">Digital Market</Button>
             </Link>
-            <Link to="/request-item" onClick={() => setMobileOpen(false)}>
-              <Button variant="ghost" size="sm" className="w-full justify-start">{t('nav.request')}</Button>
+            <Link to="/download" onClick={() => setMobileOpen(false)}>
+              <Button variant="ghost" size="sm" className="w-full justify-start">Get us on Android &amp; iOS</Button>
             </Link>
             {isAdmin && <Link to="/admin" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-primary">Admin Panel</Button></Link>}
             {isSeller && <Link to="/seller" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-accent">Seller Dashboard</Button></Link>}

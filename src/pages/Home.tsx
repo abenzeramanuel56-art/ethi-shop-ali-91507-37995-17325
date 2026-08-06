@@ -52,9 +52,9 @@ const Home = () => {
                   {t('home.services.browse')}
                 </Button>
               </Link>
-              <Link to="/request-item">
+              <Link to="/download">
                 <Button size="lg" variant="ghost" className="gap-2 font-semibold text-base px-8 h-12 text-muted-foreground hover:text-foreground">
-                  {t('home.hero.request')}
+                  Get us on Android &amp; iOS
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -63,8 +63,8 @@ const Home = () => {
             {/* Stats row */}
             <div className="mt-16 flex flex-wrap gap-8">
               {[
-                { value: "10K+", label: "Products Available" },
-                { value: "500+", label: "Active Sellers" },
+                { value: "100%", label: "Ethiopian Owned" },
+                { value: "25 ETB/km", label: "Driver Earnings" },
                 { value: "24/7", label: "Driver Network" },
               ].map((stat) => (
                 <div key={stat.label}>
