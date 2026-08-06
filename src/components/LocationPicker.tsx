@@ -73,17 +73,23 @@ export function LocationPicker({
     }
 
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve(pos),
-          (err) => reject(err),
-          {
-            enableHighAccuracy: false, // Use false for faster response
-            timeout: 30000, // 30 second timeout
-            maximumAge: 60000, // Accept cached position up to 1 minute old
-          }
-        );
-      });
+      // Ask for the most precise GPS fix available; fall back to a fast/coarse fix.
+      const getFix = (highAccuracy: boolean, timeout: number) =>
+        new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: highAccuracy,
+            timeout,
+            maximumAge: 0, // always a fresh, exact fix — never a cached one
+          });
+        });
+
+      let position: GeolocationPosition;
+      try {
+        position = await getFix(true, 20000);
+      } catch (highAccErr: any) {
+        if (highAccErr?.code === 1) throw highAccErr; // permission denied — don't retry
+        position = await getFix(false, 20000);
+      }
 
       const coords = {
         latitude: position.coords.latitude,
