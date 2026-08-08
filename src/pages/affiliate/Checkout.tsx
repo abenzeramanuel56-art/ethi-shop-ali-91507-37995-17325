@@ -109,7 +109,7 @@ export default function AffiliateCheckout() {
       const platform = base * 0.10;
 
       const { error } = await (supabase as any).from("affiliate_orders").insert({
-        buyer_id: user?.id || null,
+        buyer_id: user.id,
         affiliate_store_id: store.id,
         affiliate_product_id: item.id,
         original_product_id: item.original_product_id,
