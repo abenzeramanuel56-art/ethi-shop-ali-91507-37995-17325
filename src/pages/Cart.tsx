@@ -335,7 +335,30 @@ const Cart = () => {
                     <p className="text-xs text-destructive">{locationError}</p>
                   </div>
                 )}
+                {locationError && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Latitude e.g. 9.0192"
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (!isNaN(v) && v >= -90 && v <= 90) setCustomerLatitude(v);
+                      }}
+                      className="bg-muted/50 border-border/50"
+                    />
+                    <Input
+                      placeholder="Longitude e.g. 38.7525"
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (!isNaN(v) && v >= -180 && v <= 180) setCustomerLongitude(v);
+                      }}
+                      className="bg-muted/50 border-border/50"
+                    />
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">📍 GPS is optional — typed address still works</p>
+
               </div>
 
               {/* Vehicle preference */}
