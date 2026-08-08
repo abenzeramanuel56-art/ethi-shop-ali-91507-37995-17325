@@ -13,6 +13,7 @@ export default function TelegramLinkCard() {
   const [telegramId, setTelegramId] = useState<number | null>(null);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [botUrl, setBotUrl] = useState<string | null>(null);
 
   const refresh = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -139,6 +140,16 @@ export default function TelegramLinkCard() {
               <Send className="h-4 w-4 mr-2" />
               Continue with Telegram
             </Button>
+            {botUrl && (
+              <a
+                href={botUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center text-xs text-primary underline"
+              >
+                Telegram didn't open? Tap here to open @{BOT_USERNAME}
+              </a>
+            )}
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">
                 Didn't link automatically? Paste the 6-digit code the bot sends you:
