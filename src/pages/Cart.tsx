@@ -100,22 +100,38 @@ const Cart = () => {
     } catch { return null; }
   };
 
+  const persistLocation = async (lat: number, lng: number) => {
+    if (!user?.id) return;
+    // best-effort: keep the profile in sync so drivers always have a fallback pin
+    await (supabase as any)
+      .from("profiles")
+      .update({ latitude: lat, longitude: lng, location_updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+  };
+
+  const applyCoords = async (lat: number, lng: number) => {
+    setCustomerLatitude(lat);
+    setCustomerLongitude(lng);
+    const addr = await reverseGeocode(lat, lng);
+    if (addr) {
+      setDetectedAddress(addr);
+      if (!shippingAddress) setShippingAddress(addr);
+    }
+    persistLocation(lat, lng).catch((e) => console.warn("Could not save location to profile", e));
+  };
+
   const handleGetLocation = async () => {
     setLocationError(null);
     try {
       const coords = await requestLocation();
-      setCustomerLatitude(coords.latitude);
-      setCustomerLongitude(coords.longitude);
-      const addr = await reverseGeocode(coords.latitude, coords.longitude);
-      if (addr) {
-        setDetectedAddress(addr);
-        if (!shippingAddress) setShippingAddress(addr);
-      }
+      await applyCoords(coords.latitude, coords.longitude);
       toast.success("📍 Location captured!");
     } catch (err: any) {
-      setLocationError(err?.message || "Failed to get location. You can still order with manual address.");
+      console.error("Share location failed:", err);
+      setLocationError(err?.message || "Failed to get location. You can still order with a manual address.");
     }
   };
+
 
   const handleCheckout = async () => {
     if (!shippingAddress?.trim() || !city?.trim() || !phone?.trim()) {
