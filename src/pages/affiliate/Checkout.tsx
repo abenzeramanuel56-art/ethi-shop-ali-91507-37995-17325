@@ -92,9 +92,16 @@ export default function AffiliateCheckout() {
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const filename = `affiliate/${Date.now()}-${proofFile.name}`;
+      if (!user) {
+        setSubmitting(false);
+        toast.error("Please sign in to complete your purchase.");
+        navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
+      const safeName = proofFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const filename = `${user.id}/affiliate-${Date.now()}-${safeName}`;
       const { error: upErr } = await supabase.storage.from("payment-proofs").upload(filename, proofFile);
-      if (upErr) throw upErr;
+      if (upErr) throw new Error(`Could not upload your payment screenshot: ${upErr.message}`);
 
       const base = Number(item.products.price_etb);
       const sold = Number(item.custom_price_etb);
