@@ -21,6 +21,8 @@ import Support from "./pages/Support";
 import ApplySeller from "./pages/ApplySeller";
 import ApplyDriver from "./pages/ApplyDriver";
 import ApplicationSubmitted from "./pages/ApplicationSubmitted";
+import ApplicationStatus from "./pages/ApplicationStatus";
+import Terms from "./pages/Terms";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminApplications from "./pages/admin/Applications";
 import AdminSupportTickets from "./pages/admin/SupportTickets";
@@ -74,6 +76,8 @@ const App = () => (
               <Route path="/apply-seller" element={<ApplySeller />} />
               <Route path="/apply-driver" element={<ApplyDriver />} />
               <Route path="/application-submitted" element={<ApplicationSubmitted />} />
+              <Route path="/application-status" element={<ApplicationStatus />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/applications" element={<AdminApplications />} />
               <Route path="/admin/support-tickets" element={<AdminSupportTickets />} />
