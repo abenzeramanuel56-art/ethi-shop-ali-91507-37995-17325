@@ -100,22 +100,38 @@ const Cart = () => {
     } catch { return null; }
   };
 
+  const persistLocation = async (lat: number, lng: number) => {
+    if (!user?.id) return;
+    // best-effort: keep the profile in sync so drivers always have a fallback pin
+    await (supabase as any)
+      .from("profiles")
+      .update({ latitude: lat, longitude: lng, location_updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+  };
+
+  const applyCoords = async (lat: number, lng: number) => {
+    setCustomerLatitude(lat);
+    setCustomerLongitude(lng);
+    const addr = await reverseGeocode(lat, lng);
+    if (addr) {
+      setDetectedAddress(addr);
+      if (!shippingAddress) setShippingAddress(addr);
+    }
+    persistLocation(lat, lng).catch((e) => console.warn("Could not save location to profile", e));
+  };
+
   const handleGetLocation = async () => {
     setLocationError(null);
     try {
       const coords = await requestLocation();
-      setCustomerLatitude(coords.latitude);
-      setCustomerLongitude(coords.longitude);
-      const addr = await reverseGeocode(coords.latitude, coords.longitude);
-      if (addr) {
-        setDetectedAddress(addr);
-        if (!shippingAddress) setShippingAddress(addr);
-      }
+      await applyCoords(coords.latitude, coords.longitude);
       toast.success("📍 Location captured!");
     } catch (err: any) {
-      setLocationError(err?.message || "Failed to get location. You can still order with manual address.");
+      console.error("Share location failed:", err);
+      setLocationError(err?.message || "Failed to get location. You can still order with a manual address.");
     }
   };
+
 
   const handleCheckout = async () => {
     if (!shippingAddress?.trim() || !city?.trim() || !phone?.trim()) {
@@ -319,7 +335,30 @@ const Cart = () => {
                     <p className="text-xs text-destructive">{locationError}</p>
                   </div>
                 )}
+                {locationError && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Latitude e.g. 9.0192"
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (!isNaN(v) && v >= -90 && v <= 90) setCustomerLatitude(v);
+                      }}
+                      className="bg-muted/50 border-border/50"
+                    />
+                    <Input
+                      placeholder="Longitude e.g. 38.7525"
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (!isNaN(v) && v >= -180 && v <= 180) setCustomerLongitude(v);
+                      }}
+                      className="bg-muted/50 border-border/50"
+                    />
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">📍 GPS is optional — typed address still works</p>
+
               </div>
 
               {/* Vehicle preference */}

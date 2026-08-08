@@ -78,7 +78,7 @@ function DigitalMarketInner() {
     setBuying(p.id);
     try {
       const ext = proof.name.split('.').pop();
-      const path = `${user.id}-digital-${Date.now()}.${ext}`;
+      const path = `${user.id}/digital-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, proof);
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("payment-proofs").getPublicUrl(path);

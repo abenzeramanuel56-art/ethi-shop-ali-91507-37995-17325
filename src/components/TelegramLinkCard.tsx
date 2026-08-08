@@ -13,6 +13,7 @@ export default function TelegramLinkCard() {
   const [telegramId, setTelegramId] = useState<number | null>(null);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [botUrl, setBotUrl] = useState<string | null>(null);
 
   const refresh = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,22 +38,37 @@ export default function TelegramLinkCard() {
   const openBot = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please sign in first");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Please sign in first");
+
       const { data, error } = await (supabase as any).rpc("create_telegram_link_token");
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Could not start linking");
       if (!data) throw new Error("Could not start linking. Please try again.");
+
       const url = `https://t.me/${BOT_USERNAME}?start=${data}`;
+      setBotUrl(url);
       toast.info("Tap “Start” in Telegram — your account links automatically.");
-      // Try a new tab; fall back to same-tab navigation when the popup is blocked.
+
+      // 1) new tab, 2) break out of the preview iframe, 3) same-tab navigation.
       const win = window.open(url, "_blank", "noopener");
-      if (!win) window.location.href = url;
+      if (!win) {
+        try {
+          if (window.top && window.top !== window.self) {
+            (window.top as Window).location.href = url;
+            return;
+          }
+        } catch {
+          /* cross-origin parent — fall through */
+        }
+        window.location.assign(url);
+      }
     } catch (e: any) {
       toast.error(e.message || "Could not start Telegram linking");
     } finally {
       setLoading(false);
     }
   };
+
 
 
   const verify = async () => {
@@ -124,6 +140,16 @@ export default function TelegramLinkCard() {
               <Send className="h-4 w-4 mr-2" />
               Continue with Telegram
             </Button>
+            {botUrl && (
+              <a
+                href={botUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center text-xs text-primary underline"
+              >
+                Telegram didn't open? Tap here to open @{BOT_USERNAME}
+              </a>
+            )}
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">
                 Didn't link automatically? Paste the 6-digit code the bot sends you:

@@ -45,7 +45,7 @@ export default function ApplicationSubmitted() {
                   {t('common.backToHome')}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
-                <Button variant="outline" onClick={() => navigate("/apply-reseller")} className="w-full">
+                <Button variant="outline" onClick={() => navigate("/application-status")} className="w-full">
                   {t('apply.checkStatus')}
                 </Button>
               </div>
