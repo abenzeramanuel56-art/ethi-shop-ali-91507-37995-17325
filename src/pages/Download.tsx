@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Smartphone, Apple, Download as DownloadIcon, Phone, ShieldCheck, Bell, Zap } from "lucide-react";
 
-const ANDROID_APK = "https://median.co/share/pwplezk#apk";
+const ANDROID_APK = "https://median.co/share/zpkoqbm#apk";
 const QR = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(ANDROID_APK)}`;
 const PHONES = ["+251998265025", "+251941183490", "+251973189807"];
 
