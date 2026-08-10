@@ -2,6 +2,10 @@
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
+/* Pass-through fetch handler: required for PWA installability, caches nothing. */
+self.addEventListener("fetch", () => {});
+
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
