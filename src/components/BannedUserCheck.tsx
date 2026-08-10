@@ -11,7 +11,7 @@ export function BannedUserCheck({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const [isBanned, setIsBanned] = useState(false);
   const [banReason, setBanReason] = useState("");
-  const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => {
     let cancelled = false;
