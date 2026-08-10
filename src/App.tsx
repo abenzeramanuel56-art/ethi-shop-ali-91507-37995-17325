@@ -108,6 +108,8 @@ const App = () => (
             </Routes>
             <SiteFooter />
             <InstallAppPrompt />
+          </MaintenanceWrapper>
+
 
         </BannedUserCheck>
       </BrowserRouter>
