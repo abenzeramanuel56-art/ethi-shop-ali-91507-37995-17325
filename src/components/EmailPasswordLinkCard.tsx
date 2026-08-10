@@ -23,7 +23,10 @@ export default function EmailPasswordLinkCard() {
     supabase.auth.getUser().then(({ data }) => {
       const user = data.user;
       if (user) {
-        const isPlaceholder = !user.email || user.email.endsWith("@telegram.abeni");
+        const isPlaceholder =
+          !user.email ||
+          /@telegram\.(abeni|abeniexpress\.online|internal)$/.test(user.email) ||
+          /^tg\d+@/.test(user.email);
         setCurrentEmail(isPlaceholder ? null : user.email ?? null);
         const identities = user.identities ?? [];
         setHasPassword(identities.some((i) => i.provider === "email") && !isPlaceholder);
@@ -31,6 +34,7 @@ export default function EmailPasswordLinkCard() {
       setChecking(false);
     });
   }, []);
+
 
   if (checking) return null;
 
@@ -57,12 +61,12 @@ export default function EmailPasswordLinkCard() {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser(
-        { email, password },
-        { emailRedirectTo: `${window.location.origin}/account` }
-      );
+      const { data, error } = await supabase.functions.invoke("link-email", {
+        body: { email, password, redirectTo: `${window.location.origin}/account` },
+      });
       if (error) throw error;
-      toast.success("Check your inbox to confirm the email. Your password is set.");
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Confirmation link sent. Your email is linked once you click it.");
       setPassword("");
     } catch (err: any) {
       toast.error(err?.message ?? "Could not link your email");
@@ -70,6 +74,7 @@ export default function EmailPasswordLinkCard() {
       setLoading(false);
     }
   };
+
 
   return (
     <Card className="card-3d border-primary/30">

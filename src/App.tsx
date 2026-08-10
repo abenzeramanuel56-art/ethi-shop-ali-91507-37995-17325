@@ -8,6 +8,9 @@ import { AdvertisementPlayer } from "@/components/AdvertisementPlayer";
 import { MaintenanceWrapper } from "@/components/MaintenanceWrapper";
 import { FloatingAbeniAgent } from "@/components/FloatingAbeniAgent";
 import { FloatingLanguageSelector } from "@/components/FloatingLanguageSelector";
+import { SiteFooter } from "@/components/SiteFooter";
+import { InstallAppPrompt } from "@/components/InstallAppPrompt";
+
 import AdminMaintenance from "./pages/admin/Maintenance";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
@@ -103,7 +106,11 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <SiteFooter />
+            <InstallAppPrompt />
           </MaintenanceWrapper>
+
+
         </BannedUserCheck>
       </BrowserRouter>
     </TooltipProvider>

@@ -16,14 +16,24 @@ export function useMaintenance(): MaintenanceContextValue {
 
   useEffect(() => {
     let mounted = true;
+    // Never leave the app on a spinner if the request is slow or fails.
+    const failSafe = setTimeout(() => {
+      if (mounted) setState((s) => (s.loading ? { ...s, loading: false } : s));
+    }, 2500);
+
     const fetchSetting = async () => {
-      const { data } = await (supabase as any).from("app_settings").select("value").eq("key", "maintenance_mode").maybeSingle();
-      if (mounted) {
-        setState({
-          enabled: data?.value?.enabled === true,
-          message: data?.value?.message || "We'll be back shortly.",
-          loading: false,
-        });
+      try {
+        const { data } = await (supabase as any).from("app_settings").select("value").eq("key", "maintenance_mode").maybeSingle();
+        if (mounted) {
+          setState({
+            enabled: data?.value?.enabled === true,
+            message: data?.value?.message || "We'll be back shortly.",
+            loading: false,
+          });
+        }
+      } catch (e) {
+        console.error("maintenance check failed", e);
+        if (mounted) setState((s) => ({ ...s, loading: false }));
       }
     };
     fetchSetting();
@@ -35,9 +45,11 @@ export function useMaintenance(): MaintenanceContextValue {
 
     return () => {
       mounted = false;
+      clearTimeout(failSafe);
       supabase.removeChannel(channel);
     };
   }, []);
+
 
   return state;
 }
