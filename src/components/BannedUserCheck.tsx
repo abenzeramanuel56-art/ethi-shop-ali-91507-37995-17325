@@ -14,42 +14,42 @@ export function BannedUserCheck({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const checkBanStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+
+        const { data } = await supabase
+          .from("user_bans")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (data && !cancelled) {
+          setIsBanned(true);
+          setBanReason(data.reason);
+        }
+      } catch (e) {
+        console.error("ban check failed", e);
+      }
+    };
+
+    // Never block rendering on the network — the app must load on the first try.
     checkBanStatus();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  const checkBanStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data } = await supabase
-      .from("user_bans")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (data) {
-      setIsBanned(true);
-      setBanReason(data.reason);
-    }
-
-    setLoading(false);
-  };
 
   const handleContactSupport = () => {
     navigate("/support");
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>{t('common.loading')}</p>
-      </div>
-    );
-  }
+
 
   if (isBanned) {
     return (

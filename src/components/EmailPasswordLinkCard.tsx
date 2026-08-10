@@ -23,7 +23,10 @@ export default function EmailPasswordLinkCard() {
     supabase.auth.getUser().then(({ data }) => {
       const user = data.user;
       if (user) {
-        const isPlaceholder = !user.email || user.email.endsWith("@telegram.abeni");
+        const isPlaceholder =
+          !user.email ||
+          /@telegram\.(abeni|abeniexpress\.online|internal)$/.test(user.email) ||
+          /^tg\d+@/.test(user.email);
         setCurrentEmail(isPlaceholder ? null : user.email ?? null);
         const identities = user.identities ?? [];
         setHasPassword(identities.some((i) => i.provider === "email") && !isPlaceholder);
@@ -31,6 +34,7 @@ export default function EmailPasswordLinkCard() {
       setChecking(false);
     });
   }, []);
+
 
   if (checking) return null;
 
