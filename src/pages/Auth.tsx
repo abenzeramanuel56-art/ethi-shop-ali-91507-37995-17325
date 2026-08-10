@@ -252,12 +252,15 @@ const Auth = () => {
                 onClick={async () => {
                   setLoading(true);
                   if (linkSent === "reset") {
-                    await supabase.auth.resetPasswordForEmail(resetEmail, {
-                      redirectTo: `${window.location.origin}/reset-password`,
+                    await supabase.functions.invoke("send-password-reset", {
+                      body: { email: resetEmail, redirectTo: `${window.location.origin}/reset-password` },
                     });
                   } else {
-                    await supabase.auth.resend({ type: "signup", email: resetEmail });
+                    await supabase.functions.invoke("send-signup-link", {
+                      body: { email: resetEmail, redirectTo: `${window.location.origin}/` },
+                    });
                   }
+
                   setLoading(false);
                   toast.success("Link resent");
                 }}
