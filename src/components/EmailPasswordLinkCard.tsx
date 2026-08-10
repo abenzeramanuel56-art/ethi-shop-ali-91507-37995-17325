@@ -61,12 +61,12 @@ export default function EmailPasswordLinkCard() {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser(
-        { email, password },
-        { emailRedirectTo: `${window.location.origin}/account` }
-      );
+      const { data, error } = await supabase.functions.invoke("link-email", {
+        body: { email, password, redirectTo: `${window.location.origin}/account` },
+      });
       if (error) throw error;
-      toast.success("Check your inbox to confirm the email. Your password is set.");
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Confirmation link sent. Your email is linked once you click it.");
       setPassword("");
     } catch (err: any) {
       toast.error(err?.message ?? "Could not link your email");
@@ -74,6 +74,7 @@ export default function EmailPasswordLinkCard() {
       setLoading(false);
     }
   };
+
 
   return (
     <Card className="card-3d border-primary/30">
