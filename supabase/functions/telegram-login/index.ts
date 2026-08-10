@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     } else {
       // First-time Telegram user — create the account instead of dead-ending them.
       created = true;
-      email = `tg${telegramId}@telegram.abeniexpress.online`;
+      email = `tg${telegramId}@telegram.internal`;
       const password = crypto.randomUUID() + crypto.randomUUID();
       const fullName = verification.telegram_username
         ? `@${verification.telegram_username}`
