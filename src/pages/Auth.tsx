@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TermsAgreementDialog } from "@/components/TermsAgreementDialog";
-import { lovable } from "@/integrations/lovable";
+
 import { z } from "zod";
 import { Send } from "lucide-react";
 
