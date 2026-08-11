@@ -91,7 +91,11 @@ const Auth = () => {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error || !session) {
+        await supabase.auth.signOut().catch(() => {});
+        return;
+      }
       if (session) {
         const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
         window.location.href = targetUrl;
@@ -152,6 +156,8 @@ const Auth = () => {
       const validated = signInSchema.parse({ email, password });
       setLoading(true);
 
+      await supabase.auth.signOut().catch(() => {});
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: validated.email,
         password: validated.password,
@@ -159,7 +165,7 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("Email not confirmed")) {
-          toast.error(t('auth.verifyEmail'));
+          toast.error(t('auth.verifyEmail') || "Please verify your email address before signing in.");
         } else {
           throw error;
         }
@@ -167,7 +173,7 @@ const Auth = () => {
       }
 
       if (data?.session) {
-        toast.success(t('auth.signedIn'));
+        toast.success(t('auth.signedIn') || "Signed in successfully!");
         const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
         window.location.href = targetUrl;
       }
@@ -196,7 +202,8 @@ const Auth = () => {
       });
       
       if (error) {
-        if (error.message.includes("rate limit") || error.message.includes("security purposes") || error.status === 429) {
+        // Only throw a rate limit error if the exact server status or explicit rate-limit message is returned
+        if (error.status === 429 || (error.message && error.message.toLowerCase().includes("rate limit"))) {
           throw new Error("For security purposes, you can only request a password reset once every 60 seconds for this account.");
         }
         throw error;
