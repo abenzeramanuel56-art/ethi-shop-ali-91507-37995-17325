@@ -195,7 +195,12 @@ const Auth = () => {
         redirectTo,
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("rate limit") || error.message.includes("security purposes") || error.status === 429) {
+          throw new Error("For security purposes, you can only request a password reset once every 60 seconds for this account.");
+        }
+        throw error;
+      }
 
       toast.success("We sent a password reset link to your email");
       setLinkSent("reset");
