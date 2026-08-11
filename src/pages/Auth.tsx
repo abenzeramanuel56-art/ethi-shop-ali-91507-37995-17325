@@ -58,16 +58,12 @@ const Auth = () => {
         body: { code: tgCode.trim() },
       });
 
-      if (error) {
-        console.error("telegram-login function error:", error);
-        toast.error("Code invalid, expired, or this Telegram isn't linked to an account yet.");
-        return;
-      }
-
-      if (!data?.token_hash) {
-        toast.error(data?.error === "telegram_not_linked"
-          ? "This Telegram isn't linked yet. Sign in once with email, then link it from your Account page."
-          : "Could not sign you in with Telegram.");
+      if (error || !data?.token_hash) {
+        if (data?.error === "telegram_not_linked") {
+          toast.error("This Telegram account is not linked to any profile. Sign in with email first, then link Telegram from your account settings.");
+        } else {
+          toast.error(data?.error || "Code invalid, expired, or this Telegram isn't linked to an account yet.");
+        }
         return;
       }
 
@@ -81,10 +77,12 @@ const Auth = () => {
         return;
       }
 
-      toast.success("Signed in with Telegram");
+      toast.success("Signed in with Telegram!");
       setTgCode("");
       setShowTgCode(false);
-      navigate(returnTo, { replace: true });
+
+      const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
+      window.location.href = targetUrl;
     } catch (e: any) {
       toast.error(e?.message ?? "Telegram sign-in failed");
     } finally {
@@ -93,23 +91,13 @@ const Auth = () => {
   };
 
   useEffect(() => {
-    // Check initial session status once on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate(returnTo, { replace: true });
+        const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
+        window.location.href = targetUrl;
       }
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
-          navigate(returnTo, { replace: true });
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate, returnTo]);
+  }, [returnTo]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,7 +168,8 @@ const Auth = () => {
 
       if (data?.session) {
         toast.success(t('auth.signedIn'));
-        navigate(returnTo, { replace: true });
+        const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
+        window.location.href = targetUrl;
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
