@@ -47,35 +47,44 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo") || "/";
 
   const handleTelegramLogin = async () => {
+    if (!tgCode || tgCode.length !== 6) {
+      toast.error("Please enter a valid 6-digit code.");
+      return;
+    }
+    
     setTgLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("telegram-login", {
-        body: { code: tgCode },
+        body: { code: tgCode.trim() },
       });
+
       if (error) {
-        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
-        console.error("telegram-login failed:", details);
+        console.error("telegram-login function error:", error);
         toast.error("Code invalid, expired, or this Telegram isn't linked to an account yet.");
         return;
       }
+
       if (!data?.token_hash) {
         toast.error(data?.error === "telegram_not_linked"
-          ? "This Telegram isn't linked yet. Sign in once, then link it from your Account page."
+          ? "This Telegram isn't linked yet. Sign in once with email, then link it from your Account page."
           : "Could not sign you in with Telegram.");
         return;
       }
-      sessionStorage.setItem("auth:returnTo", returnTo);
+
       const { error: otpError } = await supabase.auth.verifyOtp({
         type: "magiclink",
         token_hash: data.token_hash,
       });
+
       if (otpError) {
         toast.error(otpError.message);
         return;
       }
+
       toast.success("Signed in with Telegram");
       setTgCode("");
       setShowTgCode(false);
+      navigate(returnTo, { replace: true });
     } catch (e: any) {
       toast.error(e?.message ?? "Telegram sign-in failed");
     } finally {
@@ -84,20 +93,17 @@ const Auth = () => {
   };
 
   useEffect(() => {
-    const targetAfterAuth = sessionStorage.getItem("auth:returnTo") || returnTo;
-
+    // Check initial session status once on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        sessionStorage.removeItem("auth:returnTo");
-        navigate(targetAfterAuth);
+        navigate(returnTo, { replace: true });
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session) {
-          sessionStorage.removeItem("auth:returnTo");
-          navigate(targetAfterAuth);
+      (event, session) => {
+        if (session && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+          navigate(returnTo, { replace: true });
         }
       }
     );
@@ -107,7 +113,6 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const validated = signUpSchema.parse({ email, password, fullName });
       setPendingSignUp({ email: validated.email, password: validated.password, fullName: validated.fullName });
@@ -137,10 +142,9 @@ const Auth = () => {
       });
       if (error) throw error;
 
-      // All transactional email goes through Resend.
       await supabase.functions.invoke("send-signup-link", {
         body: { email: pendingSignUp.email, redirectTo: redirectUrl },
-      });
+      }).catch(() => {});
 
       toast.success("Account created! Check your email for the verification link.");
       setLinkSent("signup");
@@ -156,12 +160,11 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const validated = signInSchema.parse({ email, password });
       setLoading(true);
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: validated.email,
         password: validated.password,
       });
@@ -175,7 +178,10 @@ const Auth = () => {
         return;
       }
 
-      toast.success(t('auth.signedIn'));
+      if (data?.session) {
+        toast.success(t('auth.signedIn'));
+        navigate(returnTo, { replace: true });
+      }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -196,28 +202,13 @@ const Auth = () => {
     setLoading(true);
     try {
       const redirectTo = 'https://abeniexpress.online/reset-password';
-      const { data, error } = await supabase.functions.invoke("send-password-reset", {
-        body: { email: resetEmail, redirectTo },
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo,
       });
       
-      if (error) {
-        let errorMessage = error.message;
-        if (typeof error === 'object' && 'context' in error) {
-          try {
-            const errorBody = await (error.context as Response).json();
-            errorMessage = errorBody.error || errorBody.message || errorMessage;
-          } catch (e) {
-            // Fallback if context is not json
-          }
-        }
-        throw new Error(errorMessage);
-      }
+      if (error) throw error;
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      toast.success("We sent a reset link to your email");
+      toast.success("We sent a password reset link to your email");
       setLinkSent("reset");
 
     } catch (error: any) {
@@ -270,15 +261,16 @@ const Auth = () => {
                 onClick={async () => {
                   setLoading(true);
                   if (linkSent === "reset") {
-                    await supabase.functions.invoke("send-password-reset", {
-                      body: { email: resetEmail, redirectTo: 'https://abeniexpress.online/reset-password' },
+                    await supabase.auth.resetPasswordForEmail(resetEmail, {
+                      redirectTo: 'https://abeniexpress.online/reset-password',
                     });
                   } else {
-                    await supabase.functions.invoke("send-signup-link", {
-                      body: { email: resetEmail, redirectTo: 'https://abeniexpress.online/' },
+                    await supabase.auth.signUp({
+                      email: resetEmail,
+                      password: "TemporaryPassword123!",
+                      options: { emailRedirectTo: 'https://abeniexpress.online/' },
                     });
                   }
-
                   setLoading(false);
                   toast.success("Link resent");
                 }}
