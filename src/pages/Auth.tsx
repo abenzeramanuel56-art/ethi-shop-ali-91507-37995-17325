@@ -93,7 +93,6 @@ const Auth = () => {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error || !session) {
-        await supabase.auth.signOut().catch(() => {});
         return;
       }
       if (session) {
@@ -156,8 +155,6 @@ const Auth = () => {
       const validated = signInSchema.parse({ email, password });
       setLoading(true);
 
-      await supabase.auth.signOut().catch(() => {});
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email: validated.email,
         password: validated.password,
@@ -202,8 +199,8 @@ const Auth = () => {
       });
       
       if (error) {
-        // Only throw a rate limit error if the exact server status or explicit rate-limit message is returned
-        if (error.status === 429 || (error.message && error.message.toLowerCase().includes("rate limit"))) {
+        // Use exact Supabase error code checking instead of brittle text matching
+        if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.code === 'over_request_rate_limit') {
           throw new Error("For security purposes, you can only request a password reset once every 60 seconds for this account.");
         }
         throw error;
