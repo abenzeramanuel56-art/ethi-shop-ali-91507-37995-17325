@@ -189,18 +189,39 @@ const Auth = () => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) { toast.error("Please enter your email address"); return; }
+    if (!resetEmail) { 
+      toast.error("Please enter your email address"); 
+      return; 
+    }
     setLoading(true);
     try {
       const redirectTo = 'https://abeniexpress.online/reset-password';
-      const { error } = await supabase.functions.invoke("send-password-reset", {
+      const { data, error } = await supabase.functions.invoke("send-password-reset", {
         body: { email: resetEmail, redirectTo },
       });
-      if (error) throw error;
+      
+      if (error) {
+        let errorMessage = error.message;
+        if (typeof error === 'object' && 'context' in error) {
+          try {
+            const errorBody = await (error.context as Response).json();
+            errorMessage = errorBody.error || errorBody.message || errorMessage;
+          } catch (e) {
+            // Fallback if context is not json
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       toast.success("We sent a reset link to your email");
       setLinkSent("reset");
 
     } catch (error: any) {
+      console.error("Forgot password error:", error);
       toast.error(error.message || "Failed to send reset link");
     } finally {
       setLoading(false);
