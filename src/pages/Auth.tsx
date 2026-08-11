@@ -16,7 +16,6 @@ import { Send } from "lucide-react";
 
 const TELEGRAM_BOT = "Abeniexpress_bot";
 
-
 const signUpSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -44,6 +43,8 @@ const Auth = () => {
   const [showTgCode, setShowTgCode] = useState(false);
   const [tgCode, setTgCode] = useState("");
   const [tgLoading, setTgLoading] = useState(false);
+
+  const returnTo = searchParams.get("returnTo") || "/";
 
   const handleTelegramLogin = async () => {
     setTgLoading(true);
@@ -81,9 +82,6 @@ const Auth = () => {
       setTgLoading(false);
     }
   };
-
-
-  const returnTo = searchParams.get("returnTo") || "/";
 
   useEffect(() => {
     const targetAfterAuth = sessionStorage.getItem("auth:returnTo") || returnTo;
@@ -128,7 +126,7 @@ const Auth = () => {
     setShowTerms(false);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = 'https://abeniexpress.online/';
       const { error } = await supabase.auth.signUp({
         email: pendingSignUp.email,
         password: pendingSignUp.password,
@@ -155,7 +153,6 @@ const Auth = () => {
       setLoading(false);
     }
   };
-
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +192,7 @@ const Auth = () => {
     if (!resetEmail) { toast.error("Please enter your email address"); return; }
     setLoading(true);
     try {
-      const redirectTo = `${window.location.origin}/reset-password`;
+      const redirectTo = 'https://abeniexpress.online/reset-password';
       const { error } = await supabase.functions.invoke("send-password-reset", {
         body: { email: resetEmail, redirectTo },
       });
@@ -253,11 +250,11 @@ const Auth = () => {
                   setLoading(true);
                   if (linkSent === "reset") {
                     await supabase.functions.invoke("send-password-reset", {
-                      body: { email: resetEmail, redirectTo: `${window.location.origin}/reset-password` },
+                      body: { email: resetEmail, redirectTo: 'https://abeniexpress.online/reset-password' },
                     });
                   } else {
                     await supabase.functions.invoke("send-signup-link", {
-                      body: { email: resetEmail, redirectTo: `${window.location.origin}/` },
+                      body: { email: resetEmail, redirectTo: 'https://abeniexpress.online/' },
                     });
                   }
 
@@ -315,7 +312,6 @@ const Auth = () => {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -330,7 +326,6 @@ const Auth = () => {
           <CardContent>
             <div className="space-y-2 mb-4">
               <Button
-
                 type="button"
                 variant="outline"
                 className="w-full"
