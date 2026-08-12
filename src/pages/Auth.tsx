@@ -51,7 +51,7 @@ const Auth = () => {
       toast.error("Please enter a valid 6-digit code.");
       return;
     }
-    
+
     setTgLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("telegram-login", {
@@ -90,11 +90,15 @@ const Auth = () => {
     }
   };
 
+  // FIX #1: previously guarded on window.location.pathname.includes("/auth"),
+  // which is always true on this page — so the session check below it NEVER ran,
+  // and an already-logged-in user landing on /auth was never redirected home.
+  // The actual redirect-loop risk is when `returnTo` itself points back at /auth,
+  // so that's what we guard on instead.
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      if (error || !session) {
-        return;
-      }
+    if (returnTo && returnTo.includes("/auth")) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
         window.location.href = targetUrl;
@@ -133,6 +137,11 @@ const Auth = () => {
       });
       if (error) throw error;
 
+      // NOTE: if "Confirm email" is also enabled in your Supabase Auth settings,
+      // this custom function AND Supabase's built-in confirmation email will both
+      // fire, and the user gets two emails with two different links. Either turn
+      // off Supabase's default confirmation email and keep this function as the
+      // only sender, or drop this call and rely on the built-in one. Pick one.
       await supabase.functions.invoke("send-signup-link", {
         body: { email: pendingSignUp.email, redirectTo: redirectUrl },
       }).catch(() => {});
@@ -151,9 +160,10 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
     try {
       const validated = signInSchema.parse({ email, password });
-      setLoading(true);
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: validated.email,
@@ -162,15 +172,15 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("Email not confirmed")) {
-          toast.error(t('auth.verifyEmail') || "Please verify your email address before signing in.");
+          toast.error("Please verify your email address before signing in.");
         } else {
-          throw error;
+          toast.error(error.message || "Failed to sign in");
         }
         return;
       }
 
       if (data?.session) {
-        toast.success(t('auth.signedIn') || "Signed in successfully!");
+        toast.success("Signed in successfully!");
         const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
         window.location.href = targetUrl;
       }
@@ -178,18 +188,19 @@ const Auth = () => {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error(error.message || "Failed to sign in");
+        toast.error(error?.message || "Failed to sign in");
       }
     } finally {
+      // GUARANTEE loading resets so button never gets stuck on "Signing in..."
       setLoading(false);
     }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) { 
-      toast.error("Please enter your email address"); 
-      return; 
+    if (!resetEmail) {
+      toast.error("Please enter your email address");
+      return;
     }
     setLoading(true);
     try {
@@ -197,9 +208,8 @@ const Auth = () => {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo,
       });
-      
+
       if (error) {
-        // Use exact Supabase error code checking instead of brittle text matching
         if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.code === 'over_request_rate_limit') {
           throw new Error("For security purposes, you can only request a password reset once every 60 seconds for this account.");
         }
@@ -258,19 +268,32 @@ const Auth = () => {
                 disabled={loading}
                 onClick={async () => {
                   setLoading(true);
-                  if (linkSent === "reset") {
-                    await supabase.auth.resetPasswordForEmail(resetEmail, {
-                      redirectTo: 'https://abeniexpress.online/reset-password',
-                    });
-                  } else {
-                    await supabase.auth.signUp({
-                      email: resetEmail,
-                      password: "TemporaryPassword123!",
-                      options: { emailRedirectTo: 'https://abeniexpress.online/' },
-                    });
+                  try {
+                    if (linkSent === "reset") {
+                      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+                        redirectTo: 'https://abeniexpress.online/reset-password',
+                      });
+                      if (error) throw error;
+                    } else {
+                      // FIX #2: previously called supabase.auth.signUp() again with a
+                      // hardcoded password ("TemporaryPassword123!"). If the account is
+                      // still unconfirmed, that can silently overwrite the password the
+                      // user originally chose. supabase.auth.resend() is the correct API
+                      // for "resend the confirmation email" — it does not touch the
+                      // password at all.
+                      const { error } = await supabase.auth.resend({
+                        type: "signup",
+                        email: resetEmail,
+                        options: { emailRedirectTo: 'https://abeniexpress.online/' },
+                      });
+                      if (error) throw error;
+                    }
+                    toast.success("Link resent");
+                  } catch (error: any) {
+                    toast.error(error?.message || "Failed to resend link");
+                  } finally {
+                    setLoading(false);
                   }
-                  setLoading(false);
-                  toast.success("Link resent");
                 }}
               >
                 Resend link
@@ -292,13 +315,13 @@ const Auth = () => {
         <div className="container mx-auto flex items-center justify-center px-4 py-16">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-2xl">{t('auth.forgotPassword')}</CardTitle>
-              <CardDescription>{t('auth.forgotPasswordDesc')}</CardDescription>
+              <CardTitle className="text-2xl">{"Forgot Password"}</CardTitle>
+              <CardDescription>{"Enter your email address and we'll send you a link to reset your password."}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email">{t('auth.email')}</Label>
+                  <Label htmlFor="reset-email">{"Email"}</Label>
                   <Input
                     id="reset-email"
                     type="email"
@@ -313,7 +336,7 @@ const Auth = () => {
                 </Button>
                 <Button type="button" variant="outline" className="w-full"
                   onClick={() => setShowForgotPassword(false)}>
-                  {t('auth.backToLogin')}
+                  {"Back to sign in"}
                 </Button>
               </form>
             </CardContent>
@@ -329,9 +352,9 @@ const Auth = () => {
       <div className="container mx-auto flex items-center justify-center px-4 py-16">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl">{t('auth.welcome')}</CardTitle>
+            <CardTitle className="text-2xl">{"Welcome back"}</CardTitle>
             <CardDescription>
-              {t('auth.description')}
+              {"Sign in to your account to continue"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -352,7 +375,7 @@ const Auth = () => {
               {showTgCode && (
                 <div className="space-y-2 rounded-md border border-border p-3">
                   <p className="text-xs text-muted-foreground">
-                    Tap “Start” in the bot, then paste the 6-digit code it sends you.
+                    Tap "Start" in the bot, then paste the 6-digit code it sends you.
                   </p>
                   <div className="flex gap-2">
                     <Input
@@ -376,14 +399,14 @@ const Auth = () => {
 
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
-                <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
+                <TabsTrigger value="signin">{"Sign In"}</TabsTrigger>
+                <TabsTrigger value="signup">{"Sign Up"}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">{t('auth.email')}</Label>
+                    <Label htmlFor="signin-email">{"Email"}</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -394,7 +417,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">{t('auth.password')}</Label>
+                    <Label htmlFor="signin-password">{"Password"}</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -404,15 +427,15 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t('auth.signingIn') : t('auth.signIn')}
+                    {loading ? "Signing in..." : "Sign In"}
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="link" 
+                  <Button
+                    type="button"
+                    variant="link"
                     className="w-full text-sm"
                     onClick={() => setShowForgotPassword(true)}
                   >
-                    {t('auth.forgotPassword')}
+                    {"Forgot password?"}
                   </Button>
                 </form>
               </TabsContent>
@@ -420,7 +443,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">{t('auth.fullName')}</Label>
+                    <Label htmlFor="signup-name">{"Full Name"}</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -431,7 +454,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">{t('auth.email')}</Label>
+                    <Label htmlFor="signup-email">{"Email"}</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -442,7 +465,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">{t('auth.password')}</Label>
+                    <Label htmlFor="signup-password">{"Password"}</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -453,7 +476,7 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
+                    {loading ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
@@ -461,10 +484,10 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
-      
-      <TermsAgreementDialog 
-        open={showTerms} 
-        onAccept={handleTermsAccepted} 
+
+      <TermsAgreementDialog
+        open={showTerms}
+        onAccept={handleTermsAccepted}
       />
     </div>
   );
