@@ -179,10 +179,24 @@ const Auth = () => {
         return;
       }
 
-      if (data?.session) {
+      // FIX #3: signInWithPassword sometimes returns with data.session empty even
+      // though the session was actually written to storage (commonly caused by a
+      // second GoTrueClient instance somewhere in the app — check the console for
+      // "Multiple GoTrueClient instances detected" if you hit this). Fall back to
+      // an explicit getSession() check instead of silently doing nothing.
+      let session = data?.session;
+      if (!session) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        session = sessionData.session;
+      }
+
+      if (session) {
         toast.success("Signed in successfully!");
         const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
         window.location.href = targetUrl;
+      } else {
+        console.error("Sign-in returned no error but no session was found either.", data);
+        toast.error("Signed in, but couldn't start your session. Please try again.");
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
