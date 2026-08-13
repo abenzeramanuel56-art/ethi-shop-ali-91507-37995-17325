@@ -20,24 +20,34 @@ export const Navbar = () => {
 
   const checkRoles = async (userId: string) => {
     try {
-      const { data } = await (supabase as any)
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId);
       
-      if (data) {
+      if (!error && data) {
         setIsAdmin(data.some((r: any) => r.role === "admin"));
         setIsSeller(data.some((r: any) => r.role === "reseller"));
         setIsDriver(data.some((r: any) => r.role === "driver"));
+      } else {
+        setIsAdmin(false);
+        setIsSeller(false);
+        setIsDriver(false);
       }
     } catch (err) {
-      console.error("Error checking roles:", err);
+      // Safely catch role-fetch errors so they never block UI rendering or browsing
+      setIsAdmin(false);
+      setIsSeller(false);
+      setIsDriver(false);
     }
   };
 
   useEffect(() => {
-    // 1. Fetch initial session cleanly
+    let mounted = true;
+
+    // 1. Fetch initial session safely
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
@@ -45,9 +55,10 @@ export const Navbar = () => {
       }
     });
 
-    // 2. Listen to persistent auth state changes across navigation routes
+    // 2. Listen to auth state changes safely
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!mounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         
@@ -61,7 +72,10 @@ export const Navbar = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSignOut = async () => {
@@ -149,13 +163,11 @@ export const Navbar = () => {
                     </Button>
                   </Link>
                 )}
-                {user && (
-                  <Link to="/affiliate" className="hidden md:block">
-                    <Button size="sm" variant="outline" className="border-accent/30 text-accent hover:bg-accent/10 text-xs">
-                      Affiliate
-                    </Button>
-                  </Link>
-                )}
+                <Link to="/affiliate" className="hidden md:block">
+                  <Button size="sm" variant="outline" className="border-accent/30 text-accent hover:bg-accent/10 text-xs">
+                    Affiliate
+                  </Button>
+                </Link>
                 <Link to="/cart">
                   <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
                     <ShoppingCart className="h-4 w-4" />
