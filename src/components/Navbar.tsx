@@ -18,19 +18,41 @@ export const Navbar = () => {
   const [isDriver, setIsDriver] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const checkRoles = async (userId: string) => {
+    try {
+      const { data } = await (supabase as any)
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      
+      if (data) {
+        setIsAdmin(data.some((r: any) => r.role === "admin"));
+        setIsSeller(data.some((r: any) => r.role === "reseller"));
+        setIsDriver(data.some((r: any) => r.role === "driver"));
+      }
+    } catch (err) {
+      console.error("Error checking roles:", err);
+    }
+  };
+
   useEffect(() => {
+    // 1. Fetch initial session cleanly
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkRoles(session.user.id);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        checkRoles(currentUser.id);
       }
     });
 
+    // 2. Listen to persistent auth state changes across navigation routes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          checkRoles(session.user.id);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        
+        if (currentUser) {
+          checkRoles(currentUser.id);
         } else {
           setIsAdmin(false);
           setIsSeller(false);
@@ -42,21 +64,12 @@ export const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkRoles = async (userId: string) => {
-    const { data } = await (supabase as any)
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    
-    if (data) {
-      setIsAdmin(data.some((r: any) => r.role === "admin"));
-      setIsSeller(data.some((r: any) => r.role === "reseller"));
-      setIsDriver(data.some((r: any) => r.role === "driver"));
-    }
-  };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
+    setIsSeller(false);
+    setIsDriver(false);
     navigate("/");
   };
 
@@ -194,7 +207,6 @@ export const Navbar = () => {
           </div>
         )}
       </div>
-      
     </nav>
   );
 };
