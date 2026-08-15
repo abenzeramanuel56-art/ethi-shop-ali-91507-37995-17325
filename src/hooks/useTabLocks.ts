@@ -19,43 +19,41 @@ export function useTabLocks() {
 
     const loadLocksAndRole = async (userId?: string) => {
       try {
-        // Safety timeout to ensure loading never gets stuck indefinitely (reduced to 2.5s for snappy UX)
-        const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Tab locks fetch timeout")), 2500)
-        );
-
-        const fetchPromise = (async () => {
-          const { data: setting } = await (supabase as any)
+        // 1. Fetch tab locks with independent error handling
+        try {
+          const { data: setting, error: settingError } = await (supabase as any)
             .from("app_settings")
             .select("value")
             .eq("key", "tab_locks")
             .maybeSingle();
 
-          if (!isMounted) return;
-
-          if (setting?.value) {
+          if (!settingError && setting?.value && isMounted) {
             setLocks({ ...DEFAULT, ...(setting.value as any) });
           }
+        } catch (err) {
+          console.warn("Skipped app_settings fetch, using defaults:", err);
+        }
 
-          if (userId) {
-            const { data } = await (supabase as any)
+        // 2. Fetch user role with independent error handling
+        if (userId) {
+          try {
+            const { data, error: roleError } = await (supabase as any)
               .from("user_roles")
               .select("role")
               .eq("user_id", userId);
 
-            if (isMounted) {
+            if (!roleError && isMounted) {
               setIsAdmin((data || []).some((r: any) => r.role === "admin"));
             }
-          } else {
-            if (isMounted) {
-              setIsAdmin(false);
-            }
+          } catch (err) {
+            console.warn("Skipped user_roles fetch, defaulting non-admin:", err);
+            if (isMounted) setIsAdmin(false);
           }
-        })();
-
-        await Promise.race([fetchPromise, timeout]);
+        } else {
+          if (isMounted) setIsAdmin(false);
+        }
       } catch (error) {
-        console.error("Error loading tab locks/roles:", error);
+        console.error("General error in loadLocksAndRole:", error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -63,17 +61,18 @@ export function useTabLocks() {
       }
     };
 
-    // Initial check
+    // Initial check with immediate fallback guarantee
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (isMounted) {
         loadLocksAndRole(session?.user?.id);
       }
+    }).catch(() => {
+      if (isMounted) setLoading(false);
     });
 
-    // Listen to login/logout state changes dynamically WITHOUT resetting loading to true
+    // Listen to login/logout state changes dynamically
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (isMounted) {
-        // Only fetch role/locks silently in the background without locking the UI
         loadLocksAndRole(session?.user?.id);
       }
     });
