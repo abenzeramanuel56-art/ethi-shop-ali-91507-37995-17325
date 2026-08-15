@@ -19,9 +19,9 @@ export function useTabLocks() {
 
     const loadLocksAndRole = async (userId?: string) => {
       try {
-        // Safety timeout to ensure loading never gets stuck indefinitely
+        // Safety timeout to ensure loading never gets stuck indefinitely (reduced to 2.5s for snappy UX)
         const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Tab locks fetch timeout")), 5000)
+          setTimeout(() => reject(new Error("Tab locks fetch timeout")), 2500)
         );
 
         const fetchPromise = (async () => {
@@ -70,10 +70,10 @@ export function useTabLocks() {
       }
     });
 
-    // Listen to login/logout state changes dynamically
+    // Listen to login/logout state changes dynamically WITHOUT resetting loading to true
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (isMounted) {
-        setLoading(true);
+        // Only fetch role/locks silently in the background without locking the UI
         loadLocksAndRole(session?.user?.id);
       }
     });
