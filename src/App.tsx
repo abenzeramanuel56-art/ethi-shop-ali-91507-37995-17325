@@ -51,7 +51,14 @@ import AffiliatePublicStore from "./pages/affiliate/PublicStore";
 import AffiliateCheckout from "./pages/affiliate/Checkout";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1, // Stops infinite retries on auth/network failure loops
+      refetchOnWindowFocus: false, // Prevents hanging re-fetches when switching tabs
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -109,8 +116,6 @@ const App = () => (
             <SiteFooter />
             <InstallAppPrompt />
           </MaintenanceWrapper>
-
-
         </BannedUserCheck>
       </BrowserRouter>
     </TooltipProvider>
