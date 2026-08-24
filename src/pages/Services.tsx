@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Clock, DollarSign, User, Briefcase, Phone } from "lucide-react";
-import { TabLockGate } from "@/components/TabLockGate";
 
 interface Service {
   id: string;
@@ -56,73 +55,48 @@ function ServicesInner() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    checkAuth(isMounted);
-    fetchServices(isMounted);
-    return () => {
-      isMounted = false;
-    };
+    checkAuth();
+    fetchServices();
   }, [selectedCategory]);
 
-  const checkAuth = async (isMounted: boolean) => {
+  const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (isMounted) {
-      setUserId(user?.id || null);
-    }
+    setUserId(user?.id || null);
   };
 
-  const fetchServices = async (isMounted: boolean) => {
-    try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Services fetch timeout")), 6000)
-      );
+  const fetchServices = async () => {
+    let query = supabase
+      .from("services")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
 
-      const fetchPromise = (async () => {
-        let query = (supabase as any)
-          .from("services")
-          .select("*")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false });
-
-        if (selectedCategory !== "all") {
-          query = query.eq("category", selectedCategory);
-        }
-
-        const { data, error } = await query;
-
-        if (!isMounted) return;
-        if (error) throw error;
-
-        // Fetch seller stores separately
-        const servicesWithStores = await Promise.all(
-          (data || []).map(async (service: Service) => {
-            const { data: store } = await (supabase as any)
-              .from("seller_stores")
-              .select("store_name, contact_phone")
-              .eq("id", service.seller_id)
-              .single();
-            return { ...service, seller_stores: store || undefined };
-          })
-        );
-
-        if (isMounted) {
-          setServices(servicesWithStores as Service[]);
-        }
-      })();
-
-      await Promise.race([fetchPromise, timeoutPromise]);
-    } catch (error: any) {
-      console.error("Error fetching services or timed out:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load services. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+    if (selectedCategory !== "all") {
+      query = query.eq("category", selectedCategory);
     }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching services:", error);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch seller stores separately
+    const servicesWithStores = await Promise.all(
+      (data || []).map(async (service) => {
+        const { data: store } = await supabase
+          .from("seller_stores")
+          .select("store_name, contact_phone")
+          .eq("id", service.seller_id)
+          .single();
+        return { ...service, seller_stores: store };
+      })
+    );
+
+    setServices(servicesWithStores as Service[]);
+    setLoading(false);
   };
 
   const filteredServices = services.filter((service) =>
@@ -149,28 +123,8 @@ function ServicesInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <div className="h-8 w-48 animate-pulse rounded bg-muted mb-2" />
-            <div className="h-4 w-64 animate-pulse rounded bg-muted" />
-          </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="tech-card overflow-hidden">
-                <CardHeader>
-                  <div className="h-5 w-3/4 animate-pulse rounded bg-muted" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="h-16 animate-pulse rounded bg-muted" />
-                  <div className="h-8 animate-pulse rounded bg-muted w-1/2" />
-                  <div className="h-10 animate-pulse rounded bg-muted" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading services...</p>
       </div>
     );
   }
@@ -180,11 +134,11 @@ function ServicesInner() {
       <Navbar />
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-black mb-2 flex items-center gap-2 text-foreground">
-            <Briefcase className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+            <Briefcase className="h-8 w-8" />
             Browse Services
           </h1>
-          <p className="text-sm text-muted-foreground">Find professionals for all your needs</p>
+          <p className="text-muted-foreground">Find professionals for all your needs</p>
         </div>
 
         {/* Filters */}
@@ -195,11 +149,11 @@ function ServicesInner() {
               placeholder="Search services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-muted/50 border-border/50 focus:border-primary/50"
+              className="pl-10"
             />
           </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-64 bg-muted/50 border-border/50">
+            <SelectTrigger className="w-full md:w-64">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
@@ -214,9 +168,9 @@ function ServicesInner() {
 
         {/* Services Grid */}
         {filteredServices.length === 0 ? (
-          <Card className="tech-card p-12 text-center">
-            <CardContent className="pt-6">
-              <p className="text-lg text-muted-foreground">
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-muted-foreground">
                 {searchQuery || selectedCategory !== "all"
                   ? "No services found matching your criteria"
                   : "No services available yet. Check back soon!"}
@@ -226,16 +180,16 @@ function ServicesInner() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredServices.map((service) => (
-              <Card key={service.id} className="tech-card flex flex-col hover:border-primary/40 transition-all duration-300">
+              <Card key={service.id} className="flex flex-col">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg line-clamp-2 text-foreground">{service.title}</CardTitle>
+                    <CardTitle className="text-lg line-clamp-2">{service.title}</CardTitle>
                     <Badge variant="secondary" className="shrink-0">
                       {getCategoryLabel(service.category)}
                     </Badge>
                   </div>
                   {service.custom_category && (
-                    <Badge variant="outline" className="w-fit text-xs">
+                    <Badge variant="outline" className="w-fit">
                       {service.custom_category}
                     </Badge>
                   )}
@@ -249,28 +203,28 @@ function ServicesInner() {
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4 text-primary" />
-                        <span className="font-bold text-primary">{service.price_etb.toLocaleString()} ETB</span>
+                        <span className="font-semibold">{service.price_etb} ETB</span>
                         {service.price_type === "hourly" && (
-                          <span className="text-xs text-muted-foreground">/hour</span>
+                          <span className="text-muted-foreground">/hour</span>
                         )}
                       </div>
                       {service.price_type === "hourly" && (
-                        <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                          <Clock className="h-3.5 w-3.5" />
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Clock className="h-4 w-4" />
                           <span>Hourly</span>
                         </div>
                       )}
                     </div>
                     
                     {service.seller_stores && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <User className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <User className="h-4 w-4" />
                         <span>{service.seller_stores.store_name}</span>
                       </div>
                     )}
                     
                     <Button
-                      className="w-full font-bold btn-glow h-9 text-xs"
+                      className="w-full"
                       onClick={() => handleOrderService(service)}
                     >
                       Order Service
@@ -285,11 +239,7 @@ function ServicesInner() {
     </div>
   );
 }
-
+import { TabLockGate as _TabLockGateSvc } from "@/components/TabLockGate";
 export default function ServicesPage() {
-  return (
-    <TabLockGate tab="services" label="Services marketplace">
-      <ServicesInner />
-    </TabLockGate>
-  );
+  return <_TabLockGateSvc tab="services" label="Services marketplace"><ServicesInner /></_TabLockGateSvc>;
 }

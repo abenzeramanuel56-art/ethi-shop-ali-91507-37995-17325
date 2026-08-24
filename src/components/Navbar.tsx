@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, MessageCircle, Zap, Menu, X } from "lucide-react";
+import { ShoppingCart, User, Package, MessageCircle, Zap, Menu, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import NotificationBell from "./NotificationBell";
+
 import { LanguageSelector } from "./LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -17,46 +18,19 @@ export const Navbar = () => {
   const [isDriver, setIsDriver] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const fetchUserRoles = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-
-      if (!error && data) {
-        const roles = data.map((r: any) => r.role);
-        setIsAdmin(roles.includes("admin"));
-        setIsSeller(roles.includes("reseller") || roles.includes("seller"));
-        setIsDriver(roles.includes("driver"));
-      }
-    } catch (err) {
-      console.error("Role check exception:", err);
-    }
-  };
-
   useEffect(() => {
-    let isMounted = true;
-
-    // Initialize session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return;
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchUserRoles(currentUser.id);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkRoles(session.user.id);
       }
     });
 
-    // Listen for auth changes cleanly (non-blocking)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        if (!isMounted) return;
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        
-        if (currentUser) {
-          fetchUserRoles(currentUser.id);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          checkRoles(session.user.id);
         } else {
           setIsAdmin(false);
           setIsSeller(false);
@@ -65,18 +39,24 @@ export const Navbar = () => {
       }
     );
 
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
+
+  const checkRoles = async (userId: string) => {
+    const { data } = await (supabase as any)
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    
+    if (data) {
+      setIsAdmin(data.some((r: any) => r.role === "admin"));
+      setIsSeller(data.some((r: any) => r.role === "reseller"));
+      setIsDriver(data.some((r: any) => r.role === "driver"));
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setUser(null);
-    setIsAdmin(false);
-    setIsSeller(false);
-    setIsDriver(false);
     navigate("/");
   };
 
@@ -93,6 +73,7 @@ export const Navbar = () => {
               style={{ background: 'hsl(var(--primary))' }}
             >
               <Zap className="h-5 w-5 text-white" aria-hidden="true" />
+              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ boxShadow: 'var(--glow-primary)' }} />
             </div>
             <span className="text-xl font-black tracking-tight text-foreground">
               Abeni<span className="text-primary">Express</span>
@@ -155,6 +136,13 @@ export const Navbar = () => {
                     </Button>
                   </Link>
                 )}
+                {user && (
+                  <Link to="/affiliate" className="hidden md:block">
+                    <Button size="sm" variant="outline" className="border-accent/30 text-accent hover:bg-accent/10 text-xs">
+                      Affiliate
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/cart">
                   <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
                     <ShoppingCart className="h-4 w-4" />
@@ -201,10 +189,12 @@ export const Navbar = () => {
             {isAdmin && <Link to="/admin" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-primary">Admin Panel</Button></Link>}
             {isSeller && <Link to="/seller" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-accent">Seller Dashboard</Button></Link>}
             {isDriver && <Link to="/driver" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start" style={{color:'hsl(var(--success))'}}>Driver Dashboard</Button></Link>}
+            {user && <Link to="/affiliate" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full justify-start text-accent">Affiliate Market</Button></Link>}
             {user && <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground" onClick={handleSignOut}>{t('nav.signOut')}</Button>}
           </div>
         )}
       </div>
+      
     </nav>
   );
 };

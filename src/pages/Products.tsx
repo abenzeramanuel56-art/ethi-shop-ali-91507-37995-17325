@@ -12,7 +12,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ReportItemDialog from "@/components/ReportItemDialog";
 import { AffiliateButton } from "@/components/AffiliateButton";
-import { TabLockGate } from "@/components/TabLockGate";
 
 interface Product {
   id: string;
@@ -50,57 +49,40 @@ const Products = () => {
   }, [products]);
 
   useEffect(() => {
-    let isMounted = true;
-    fetchProducts(isMounted);
-    return () => {
-      isMounted = false;
-    };
+    fetchProducts();
   }, []);
 
-  const fetchProducts = async (isMounted: boolean) => {
+  const fetchProducts = async () => {
     try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Products fetch timeout")), 6000)
-      );
+      const { data, error } = await (supabase as any)
+        .from("products")
+        .select("*")
+        .eq("stock_status", true)
+        .order("created_at", { ascending: false });
 
-      const fetchPromise = (async () => {
-        const { data, error } = await (supabase as any)
-          .from("products")
-          .select("*")
-          .eq("stock_status", true)
-          .order("created_at", { ascending: false });
+      if (error) throw error;
+      const prods = data || [];
+      setProducts(prods);
+      setFilteredProducts(prods);
 
-        if (!isMounted) return;
-        if (error) throw error;
-        
-        const prods = data || [];
-        setProducts(prods);
-        setFilteredProducts(prods);
+      // Fetch store info for seller products
+      const sellerIds = [...new Set(prods.filter((p: Product) => p.seller_id).map((p: Product) => p.seller_id))] as string[];
+      if (sellerIds.length > 0) {
+        const { data: stores } = await (supabase as any)
+          .from("seller_stores")
+          .select("id, store_name, store_slug")
+          .in("id", sellerIds);
 
-        // Fetch store info for seller products
-        const sellerIds = [...new Set(prods.filter((p: Product) => p.seller_id).map((p: Product) => p.seller_id))] as string[];
-        if (sellerIds.length > 0) {
-          const { data: stores } = await (supabase as any)
-            .from("seller_stores")
-            .select("id, store_name, store_slug")
-            .in("id", sellerIds);
-
-          if (isMounted && stores) {
-            const map: Record<string, StoreInfo> = {};
-            stores.forEach((s: StoreInfo) => { map[s.id] = s; });
-            setStoreMap(map);
-          }
+        if (stores) {
+          const map: Record<string, StoreInfo> = {};
+          stores.forEach((s: StoreInfo) => { map[s.id] = s; });
+          setStoreMap(map);
         }
-      })();
-
-      await Promise.race([fetchPromise, timeoutPromise]);
+      }
     } catch (error: any) {
-      console.error("Failed to load products or timed out:", error);
       toast.error(t('common.error'));
     } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
@@ -345,6 +327,7 @@ const Products = () => {
   );
 };
 
+import { TabLockGate } from "@/components/TabLockGate";
 const ProductsPage = () => (
   <TabLockGate tab="products" label="Products marketplace"><Products /></TabLockGate>
 );
