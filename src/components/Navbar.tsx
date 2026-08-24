@@ -48,15 +48,15 @@ export const Navbar = () => {
       }
     });
 
-    // Listen for auth changes cleanly
+    // Listen for auth changes cleanly (non-blocking)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         if (!isMounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         
         if (currentUser) {
-          await fetchUserRoles(currentUser.id);
+          fetchUserRoles(currentUser.id);
         } else {
           setIsAdmin(false);
           setIsSeller(false);
