@@ -12,7 +12,6 @@ export function BannedUserCheck({ children }: { children: React.ReactNode }) {
   const [isBanned, setIsBanned] = useState(false);
   const [banReason, setBanReason] = useState("");
   
-
   useEffect(() => {
     let cancelled = false;
 
@@ -37,7 +36,6 @@ export function BannedUserCheck({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Never block rendering on the network — the app must load on the first try.
     checkBanStatus();
 
     return () => {
@@ -48,8 +46,6 @@ export function BannedUserCheck({ children }: { children: React.ReactNode }) {
   const handleContactSupport = () => {
     navigate("/support");
   };
-
-
 
   if (isBanned) {
     return (
@@ -86,5 +82,6 @@ export function BannedUserCheck({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // THIS WAS MISSING: Render the app normally when not banned
   return <>{children}</>;
 }
