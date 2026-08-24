@@ -83,9 +83,21 @@ export function ThreeDHero({ className = "" }: { className?: string }) {
   return (
     <div className={`pointer-events-none select-none ${className}`} aria-hidden="true">
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={[1, 1.5]}
         camera={{ position: [0, 0.4, 5.2], fov: 45 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ 
+          antialias: true, 
+          alpha: true,
+          powerPreference: "high-performance",
+          failIfMajorPerformanceCaveat: false
+        }}
+        onCreated={({ gl }) => {
+          // Listen for WebGL context loss to prevent hard UI freezes
+          gl.domElement.addEventListener('webglcontextlost', (event) => {
+            event.preventDefault();
+            console.warn('WebGL context lost. Attempting recovery...');
+          }, false);
+        }}
       >
         <Suspense fallback={null}>
           <ambientLight intensity={0.6} />
