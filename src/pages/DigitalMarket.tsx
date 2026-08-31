@@ -34,62 +34,27 @@ function DigitalMarketInner() {
   const [downloadCodeInput, setDownloadCodeInput] = useState<Record<string, string>>({});
   const [activeCategory, setActiveCategory] = useState("all");
 
-  useEffect(() => {
-    let isMounted = true;
-    init(isMounted);
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  useEffect(() => { init(); }, []);
 
-  const init = async (isMounted: boolean) => {
-    try {
-      // Safety timeout promise to prevent infinite hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Init timeout")), 6000)
-      );
-
-      const fetchPromise = (async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-        setUser(session?.user || null);
-
-        const { data, error } = await (supabase as any)
-          .from("digital_products")
-          .select("*")
-          .eq("ai_verification_status", "approved")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false });
-
-        if (!isMounted) return;
-        if (error) {
-          console.error("Failed fetching digital products:", error);
-          setProducts([]);
-        } else {
-          setProducts(data || []);
-        }
-
-        if (session) {
-          const { data: orders } = await (supabase as any)
-            .from("digital_product_orders")
-            .select("*")
-            .eq("buyer_id", session.user.id)
-            .order("created_at", { ascending: false });
-          
-          if (isMounted) {
-            setMyOrders(orders || []);
-          }
-        }
-      })();
-
-      await Promise.race([fetchPromise, timeoutPromise]);
-    } catch (err) {
-      console.error("Digital market load failed or timed out:", err);
-    } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+  const init = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setUser(session?.user || null);
+    const { data } = await (supabase as any)
+      .from("digital_products")
+      .select("*")
+      .eq("ai_verification_status", "approved")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+    setProducts(data || []);
+    if (session) {
+      const { data: orders } = await (supabase as any)
+        .from("digital_product_orders")
+        .select("*")
+        .eq("buyer_id", session.user.id)
+        .order("created_at", { ascending: false });
+      setMyOrders(orders || []);
     }
+    setLoading(false);
   };
 
   const filtered = useMemo(() => {
@@ -129,8 +94,7 @@ function DigitalMarketInner() {
       if (error) throw error;
 
       toast.success("🎮 Quest accepted! Waiting for admin to verify your payment.");
-      let isMounted = true;
-      await init(isMounted);
+      await init();
     } catch (e: any) {
       toast.error(e.message || "Purchase failed");
     } finally {

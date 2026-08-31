@@ -47,42 +47,35 @@ const Auth = () => {
   const returnTo = searchParams.get("returnTo") || "/";
 
   const handleTelegramLogin = async () => {
-    if (!tgCode || tgCode.length !== 6) {
-      toast.error("Please enter a valid 6-digit code.");
-      return;
-    }
-
     setTgLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("telegram-login", {
-        body: { code: tgCode.trim() },
+        body: { code: tgCode },
       });
-
-      if (error || !data?.token_hash) {
-        if (data?.error === "telegram_not_linked") {
-          toast.error("This Telegram account is not linked to any profile. Sign in with email first, then link Telegram from your account settings.");
-        } else {
-          toast.error(data?.error || "Code invalid, expired, or this Telegram isn't linked to an account yet.");
-        }
+      if (error) {
+        const details = (error as any)?.context ? await (error as any).context.text() : error.message;
+        console.error("telegram-login failed:", details);
+        toast.error("Code invalid, expired, or this Telegram isn't linked to an account yet.");
         return;
       }
-
+      if (!data?.token_hash) {
+        toast.error(data?.error === "telegram_not_linked"
+          ? "This Telegram isn't linked yet. Sign in once, then link it from your Account page."
+          : "Could not sign you in with Telegram.");
+        return;
+      }
+      sessionStorage.setItem("auth:returnTo", returnTo);
       const { error: otpError } = await supabase.auth.verifyOtp({
         type: "magiclink",
         token_hash: data.token_hash,
       });
-
       if (otpError) {
         toast.error(otpError.message);
         return;
       }
-
-      toast.success("Signed in with Telegram!");
+      toast.success("Signed in with Telegram");
       setTgCode("");
       setShowTgCode(false);
-
-      const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
-      window.location.href = targetUrl;
     } catch (e: any) {
       toast.error(e?.message ?? "Telegram sign-in failed");
     } finally {
@@ -90,24 +83,31 @@ const Auth = () => {
     }
   };
 
-  // FIX #1: previously guarded on window.location.pathname.includes("/auth"),
-  // which is always true on this page — so the session check below it NEVER ran,
-  // and an already-logged-in user landing on /auth was never redirected home.
-  // The actual redirect-loop risk is when `returnTo` itself points back at /auth,
-  // so that's what we guard on instead.
   useEffect(() => {
-    if (returnTo && returnTo.includes("/auth")) return;
+    const targetAfterAuth = sessionStorage.getItem("auth:returnTo") || returnTo;
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
-        window.location.href = targetUrl;
+        sessionStorage.removeItem("auth:returnTo");
+        navigate(targetAfterAuth);
       }
     });
-  }, [returnTo]);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          sessionStorage.removeItem("auth:returnTo");
+          navigate(targetAfterAuth);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate, returnTo]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
       const validated = signUpSchema.parse({ email, password, fullName });
       setPendingSignUp({ email: validated.email, password: validated.password, fullName: validated.fullName });
@@ -137,14 +137,10 @@ const Auth = () => {
       });
       if (error) throw error;
 
-      // NOTE: if "Confirm email" is also enabled in your Supabase Auth settings,
-      // this custom function AND Supabase's built-in confirmation email will both
-      // fire, and the user gets two emails with two different links. Either turn
-      // off Supabase's default confirmation email and keep this function as the
-      // only sender, or drop this call and rely on the built-in one. Pick one.
+      // All transactional email goes through Resend.
       await supabase.functions.invoke("send-signup-link", {
         body: { email: pendingSignUp.email, redirectTo: redirectUrl },
-      }).catch(() => {});
+      });
 
       toast.success("Account created! Check your email for the verification link.");
       setLinkSent("signup");
@@ -160,77 +156,68 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
+    
     try {
       const validated = signInSchema.parse({ email, password });
+      setLoading(true);
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: validated.email,
         password: validated.password,
       });
 
       if (error) {
         if (error.message.includes("Email not confirmed")) {
-          toast.error("Please verify your email address before signing in.");
+          toast.error(t('auth.verifyEmail'));
         } else {
-          toast.error(error.message || "Failed to sign in");
+          throw error;
         }
         return;
       }
 
-      // FIX #3: signInWithPassword sometimes returns with data.session empty even
-      // though the session was actually written to storage (commonly caused by a
-      // second GoTrueClient instance somewhere in the app — check the console for
-      // "Multiple GoTrueClient instances detected" if you hit this). Fall back to
-      // an explicit getSession() check instead of silently doing nothing.
-      let session = data?.session;
-      if (!session) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        session = sessionData.session;
-      }
-
-      if (session) {
-        toast.success("Signed in successfully!");
-        const targetUrl = returnTo && !returnTo.includes("/auth") ? returnTo : "/";
-        window.location.href = targetUrl;
-      } else {
-        console.error("Sign-in returned no error but no session was found either.", data);
-        toast.error("Signed in, but couldn't start your session. Please try again.");
-      }
+      toast.success(t('auth.signedIn'));
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error(error?.message || "Failed to sign in");
+        toast.error(error.message || "Failed to sign in");
       }
     } finally {
-      // GUARANTEE loading resets so button never gets stuck on "Signing in..."
       setLoading(false);
     }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail) {
-      toast.error("Please enter your email address");
-      return;
+    if (!resetEmail) { 
+      toast.error("Please enter your email address"); 
+      return; 
     }
     setLoading(true);
     try {
       const redirectTo = 'https://abeniexpress.online/reset-password';
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo,
+      const { data, error } = await supabase.functions.invoke("send-password-reset", {
+        body: { email: resetEmail, redirectTo },
       });
-
+      
       if (error) {
-        if (error.status === 429 || error.code === 'over_email_send_rate_limit' || error.code === 'over_request_rate_limit') {
-          throw new Error("For security purposes, you can only request a password reset once every 60 seconds for this account.");
+        let errorMessage = error.message;
+        if (typeof error === 'object' && 'context' in error) {
+          try {
+            const errorBody = await (error.context as Response).json();
+            errorMessage = errorBody.error || errorBody.message || errorMessage;
+          } catch (e) {
+            // Fallback if context is not json
+          }
         }
-        throw error;
+        throw new Error(errorMessage);
       }
 
-      toast.success("We sent a password reset link to your email");
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast.success("We sent a reset link to your email");
       setLinkSent("reset");
 
     } catch (error: any) {
@@ -282,32 +269,18 @@ const Auth = () => {
                 disabled={loading}
                 onClick={async () => {
                   setLoading(true);
-                  try {
-                    if (linkSent === "reset") {
-                      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-                        redirectTo: 'https://abeniexpress.online/reset-password',
-                      });
-                      if (error) throw error;
-                    } else {
-                      // FIX #2: previously called supabase.auth.signUp() again with a
-                      // hardcoded password ("TemporaryPassword123!"). If the account is
-                      // still unconfirmed, that can silently overwrite the password the
-                      // user originally chose. supabase.auth.resend() is the correct API
-                      // for "resend the confirmation email" — it does not touch the
-                      // password at all.
-                      const { error } = await supabase.auth.resend({
-                        type: "signup",
-                        email: resetEmail,
-                        options: { emailRedirectTo: 'https://abeniexpress.online/' },
-                      });
-                      if (error) throw error;
-                    }
-                    toast.success("Link resent");
-                  } catch (error: any) {
-                    toast.error(error?.message || "Failed to resend link");
-                  } finally {
-                    setLoading(false);
+                  if (linkSent === "reset") {
+                    await supabase.functions.invoke("send-password-reset", {
+                      body: { email: resetEmail, redirectTo: 'https://abeniexpress.online/reset-password' },
+                    });
+                  } else {
+                    await supabase.functions.invoke("send-signup-link", {
+                      body: { email: resetEmail, redirectTo: 'https://abeniexpress.online/' },
+                    });
                   }
+
+                  setLoading(false);
+                  toast.success("Link resent");
                 }}
               >
                 Resend link
@@ -329,13 +302,13 @@ const Auth = () => {
         <div className="container mx-auto flex items-center justify-center px-4 py-16">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-2xl">{"Forgot Password"}</CardTitle>
-              <CardDescription>{"Enter your email address and we'll send you a link to reset your password."}</CardDescription>
+              <CardTitle className="text-2xl">{t('auth.forgotPassword')}</CardTitle>
+              <CardDescription>{t('auth.forgotPasswordDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email">{"Email"}</Label>
+                  <Label htmlFor="reset-email">{t('auth.email')}</Label>
                   <Input
                     id="reset-email"
                     type="email"
@@ -350,7 +323,7 @@ const Auth = () => {
                 </Button>
                 <Button type="button" variant="outline" className="w-full"
                   onClick={() => setShowForgotPassword(false)}>
-                  {"Back to sign in"}
+                  {t('auth.backToLogin')}
                 </Button>
               </form>
             </CardContent>
@@ -366,9 +339,9 @@ const Auth = () => {
       <div className="container mx-auto flex items-center justify-center px-4 py-16">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-2xl">{"Welcome back"}</CardTitle>
+            <CardTitle className="text-2xl">{t('auth.welcome')}</CardTitle>
             <CardDescription>
-              {"Sign in to your account to continue"}
+              {t('auth.description')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -389,7 +362,7 @@ const Auth = () => {
               {showTgCode && (
                 <div className="space-y-2 rounded-md border border-border p-3">
                   <p className="text-xs text-muted-foreground">
-                    Tap "Start" in the bot, then paste the 6-digit code it sends you.
+                    Tap “Start” in the bot, then paste the 6-digit code it sends you.
                   </p>
                   <div className="flex gap-2">
                     <Input
@@ -413,14 +386,14 @@ const Auth = () => {
 
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">{"Sign In"}</TabsTrigger>
-                <TabsTrigger value="signup">{"Sign Up"}</TabsTrigger>
+                <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">{"Email"}</Label>
+                    <Label htmlFor="signin-email">{t('auth.email')}</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -431,7 +404,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">{"Password"}</Label>
+                    <Label htmlFor="signin-password">{t('auth.password')}</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -441,15 +414,15 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign In"}
+                    {loading ? t('auth.signingIn') : t('auth.signIn')}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="link"
+                  <Button 
+                    type="button" 
+                    variant="link" 
                     className="w-full text-sm"
                     onClick={() => setShowForgotPassword(true)}
                   >
-                    {"Forgot password?"}
+                    {t('auth.forgotPassword')}
                   </Button>
                 </form>
               </TabsContent>
@@ -457,7 +430,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">{"Full Name"}</Label>
+                    <Label htmlFor="signup-name">{t('auth.fullName')}</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -468,7 +441,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">{"Email"}</Label>
+                    <Label htmlFor="signup-email">{t('auth.email')}</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -479,7 +452,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">{"Password"}</Label>
+                    <Label htmlFor="signup-password">{t('auth.password')}</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -490,7 +463,7 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Create Account"}
+                    {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
                   </Button>
                 </form>
               </TabsContent>
@@ -498,10 +471,10 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
-
-      <TermsAgreementDialog
-        open={showTerms}
-        onAccept={handleTermsAccepted}
+      
+      <TermsAgreementDialog 
+        open={showTerms} 
+        onAccept={handleTermsAccepted} 
       />
     </div>
   );

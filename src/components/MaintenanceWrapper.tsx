@@ -17,10 +17,7 @@ export function MaintenanceWrapper({ children }: { children: React.ReactNode }) 
     };
     check();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "INITIAL_SESSION") return;
-      setTimeout(() => check(), 0);
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(() => check());
     return () => sub.subscription.unsubscribe();
   }, []);
 
