@@ -1276,7 +1276,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   // Falls back to English when the active language is missing a key, so the
   // partially-translated languages (om, ti) still render correctly.
   const t = (key: string): string => {
-    return translations[language]?.[key] || translations.en[key] || key;
+    return (
+      translations[language]?.[key] ||
+      extraTranslations[language]?.[key] ||
+      translations.en[key] ||
+      extraTranslations.en[key] ||
+      key
+    );
+
   };
 
   useEffect(() => {
