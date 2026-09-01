@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -638,9 +638,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          image_url: string | null
           is_read: boolean | null
-          link: string | null
           message: string
           title: string
           type: string
@@ -649,9 +647,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
-          image_url?: string | null
           is_read?: boolean | null
-          link?: string | null
           message: string
           title: string
           type?: string
@@ -660,9 +656,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
-          image_url?: string | null
           is_read?: boolean | null
-          link?: string | null
           message?: string
           title?: string
           type?: string
@@ -1647,36 +1641,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_devices: {
-        Row: {
-          created_at: string
-          device_id: string
-          id: string
-          label: string | null
-          last_seen_at: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          device_id: string
-          id?: string
-          label?: string | null
-          last_seen_at?: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          device_id?: string
-          id?: string
-          label?: string | null
-          last_seen_at?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1922,15 +1886,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      notify_admins: {
-        Args: {
-          p_link: string
-          p_message: string
-          p_title: string
-          p_type: string
-        }
-        Returns: undefined
       }
       remind_telegram_link: { Args: never; Returns: boolean }
       seller_confirm_service_order: {
