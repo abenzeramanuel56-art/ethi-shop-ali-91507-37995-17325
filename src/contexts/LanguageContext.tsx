@@ -1166,6 +1166,100 @@ const translations: Record<Language, Record<string, string>> = {
   },
 };
 
+// Additional keys (auth screen) kept in a separate map so every language stays
+// in sync without editing four large objects.
+const extraTranslations: Record<Language, Record<string, string>> = {
+  en: {
+    'auth.telegram': 'Continue with Telegram',
+    'auth.telegramHint': 'Tap “Start” in the bot, then paste the 6-digit code it sends you.',
+    'auth.verify': 'Verify',
+    'auth.or': 'or',
+    'auth.sendResetLink': 'Send reset link',
+    'auth.sending': 'Sending...',
+    'auth.checkEmail': 'Check your email',
+    'auth.checkEmailVerification': 'We sent a verification link to',
+    'auth.checkEmailReset': 'We sent a password reset link to',
+    'auth.openOnDevice': 'Open it on this device to continue.',
+    'auth.linkExpires': "The link expires in 1 hour. If you don't see the email, check spam or resend below.",
+    'auth.resendLink': 'Resend link',
+    'auth.linkResent': 'Link resent',
+    'auth.tgPromoTitle': 'Get instant updates on Telegram',
+    'auth.tgPromoDesc': 'Link our bot now and receive every order, delivery and wallet update straight to Telegram.',
+    'auth.resetSent': 'We sent a reset link to your email',
+    'auth.accountCreatedLink': 'Account created! Check your email for the verification link.',
+    'auth.enterEmail': 'Please enter your email address',
+    'auth.tgFailed': "Code invalid, expired, or this Telegram isn't linked to an account yet.",
+    'auth.tgSignedIn': 'Signed in with Telegram',
+  },
+  am: {
+    'auth.telegram': 'በቴሌግራም ይቀጥሉ',
+    'auth.telegramHint': 'በቦቱ ውስጥ “Start” ይጫኑ፣ ከዚያ የተላከውን 6-አሃዝ ኮድ ያስገቡ።',
+    'auth.verify': 'አረጋግጥ',
+    'auth.or': 'ወይም',
+    'auth.sendResetLink': 'የመቀየሪያ ሊንክ ላክ',
+    'auth.sending': 'በመላክ ላይ...',
+    'auth.checkEmail': 'ኢሜይልዎን ይመልከቱ',
+    'auth.checkEmailVerification': 'የማረጋገጫ ሊንክ ልከናል ወደ',
+    'auth.checkEmailReset': 'የይለፍ ቃል መቀየሪያ ሊንክ ልከናል ወደ',
+    'auth.openOnDevice': 'ለመቀጠል በዚህ መሣሪያ ላይ ይክፈቱት።',
+    'auth.linkExpires': 'ሊንኩ በ1 ሰዓት ያበቃል። ኢሜይሉን ካላዩ ስፓም ይመልከቱ ወይም እንደገና ይላኩ።',
+    'auth.resendLink': 'ሊንክ እንደገና ላክ',
+    'auth.linkResent': 'ሊንክ እንደገና ተልኳል',
+    'auth.tgPromoTitle': 'በቴሌግራም ፈጣን መረጃ ያግኙ',
+    'auth.tgPromoDesc': 'ቦታችንን አሁን ያገናኙ እና እያንዳንዱን የትዕዛዝ፣ የማድረስ እና የቦርሳ መረጃ በቴሌግራም ይቀበሉ።',
+    'auth.resetSent': 'የመቀየሪያ ሊንክ ወደ ኢሜይልዎ ልከናል',
+    'auth.accountCreatedLink': 'መለያ ተፈጥሯል! የማረጋገጫ ሊንክ በኢሜይልዎ ይመልከቱ።',
+    'auth.enterEmail': 'እባክዎ ኢሜይል አድራሻዎን ያስገቡ',
+    'auth.tgFailed': 'ኮዱ ልክ አይደለም፣ ጊዜው አልፎበታል ወይም ይህ ቴሌግራም ገና አልተገናኘም።',
+    'auth.tgSignedIn': 'በቴሌግራም ገብተዋል',
+  },
+  om: {
+    'auth.telegram': 'Telegram waliin itti fufi',
+    'auth.telegramHint': 'Boota keessatti “Start” tuqi, sana booda koodii lakkoofsa 6 ergame galchi.',
+    'auth.verify': 'Mirkaneessi',
+    'auth.or': 'ykn',
+    'auth.sendResetLink': 'Liinkii jijjiirraa ergi',
+    'auth.sending': 'Ergaa jira...',
+    'auth.checkEmail': 'Imeelii kee ilaali',
+    'auth.checkEmailVerification': 'Liinkii mirkaneessaa erginee jirra gara',
+    'auth.checkEmailReset': 'Liinkii jecha iccitii jijjiiruu erginee jirra gara',
+    'auth.openOnDevice': 'Itti fufuuf meeshaa kana irratti bani.',
+    'auth.linkExpires': "Liinkiin sa'aatii 1 keessatti ni xumurama. Yoo hin argine spam ilaali ykn irra deebi'ii ergi.",
+    'auth.resendLink': "Liinkii irra deebi'ii ergi",
+    'auth.linkResent': 'Liinkiin irra deebi’ee ergame',
+    'auth.tgPromoTitle': 'Telegram irratti odeeffannoo battalaa argadhu',
+    'auth.tgPromoDesc': 'Boota keenya amma walqunnamsiisi, odeeffannoo ajaja, geejjibaa fi boorsaa hunda Telegram irratti argadhu.',
+    'auth.resetSent': 'Liinkii jijjiirraa imeelii keetti erginee jirra',
+    'auth.accountCreatedLink': 'Akkaawuntiin uumameera! Liinkii mirkaneessaa imeelii kee keessaa ilaali.',
+    'auth.enterEmail': 'Maaloo teessoo imeelii kee galchi',
+    'auth.tgFailed': 'Koodichi sirrii miti, yeroon isaa darbeera, ykn Telegram kun hin walqunnamsiifamne.',
+    'auth.tgSignedIn': 'Telegram waliin seentee jirta',
+  },
+  ti: {
+    'auth.telegram': 'ብቴሌግራም ቀጽል',
+    'auth.telegramHint': 'ኣብ ቦት “Start” ጠውቕ፣ ድሕሪኡ እቲ ዝተላእከ 6-ኣሃዝ ኮድ ኣእቱ።',
+    'auth.verify': 'ኣረጋግጽ',
+    'auth.or': 'ወይ',
+    'auth.sendResetLink': 'መቐየሪ ሊንክ ስደድ',
+    'auth.sending': 'ይለኣኽ ኣሎ...',
+    'auth.checkEmail': 'ኢመይልካ ርአ',
+    'auth.checkEmailVerification': 'መረጋገጺ ሊንክ ልኢኽናልካ ናብ',
+    'auth.checkEmailReset': 'መቐየሪ ናይ መሕለፊ ቃል ሊንክ ልኢኽናልካ ናብ',
+    'auth.openOnDevice': 'ንምቕጻል ኣብዚ መሳርሒ ክፈቶ።',
+    'auth.linkExpires': 'እቲ ሊንክ ድሕሪ 1 ሰዓት የብቅዕ። እንተዘይረኺብካዮ ስፓም ርአ ወይ ደጊምካ ስደድ።',
+    'auth.resendLink': 'ሊንክ ደጊምካ ስደድ',
+    'auth.linkResent': 'ሊንክ ደጊሙ ተላኢኹ',
+    'auth.tgPromoTitle': 'ኣብ ቴሌግራም ቅልጡፍ ሓበሬታ ርኸብ',
+    'auth.tgPromoDesc': 'ሕጂ ቦትና ኣራኽብ፣ ኩሉ ናይ ትእዛዝ፣ ኣቕርቦትን ዋሌትን ሓበሬታ ብቴሌግራም ትቕበል።',
+    'auth.resetSent': 'መቐየሪ ሊንክ ናብ ኢመይልካ ልኢኽናዮ',
+    'auth.accountCreatedLink': 'ኣካውንት ተፈጢሩ! መረጋገጺ ሊንክ ኣብ ኢመይልካ ርአ።',
+    'auth.enterEmail': 'በጃኻ ኢመይል ኣድራሻኻ ኣእቱ',
+    'auth.tgFailed': 'እቲ ኮድ ቅኑዕ ኣይኮነን፣ ግዜኡ ሓሊፉ፣ ወይ እዚ ቴሌግራም ገና ኣይተኣሳሰረን።',
+    'auth.tgSignedIn': 'ብቴሌግራም ኣቲኻ',
+  },
+};
+
+
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
@@ -1182,7 +1276,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   // Falls back to English when the active language is missing a key, so the
   // partially-translated languages (om, ti) still render correctly.
   const t = (key: string): string => {
-    return translations[language]?.[key] || translations.en[key] || key;
+    return (
+      translations[language]?.[key] ||
+      extraTranslations[language]?.[key] ||
+      translations.en[key] ||
+      extraTranslations.en[key] ||
+      key
+    );
+
   };
 
   useEffect(() => {
