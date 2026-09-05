@@ -96,7 +96,7 @@ export default function AdminDigitalOrders() {
     setProcessingId(orderId);
     const { error } = await (supabase as any)
       .from("digital_product_orders")
-      .update({ status: "rejected", admin_notes: notes[orderId] || "Payment rejected" })
+      .update({ status: "cancelled", admin_notes: notes[orderId] || "Payment rejected" })
       .eq("id", orderId);
     setProcessingId(null);
 
