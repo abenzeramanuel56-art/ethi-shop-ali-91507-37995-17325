@@ -22,6 +22,7 @@ export default function AdminMessaging() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchProfiles();
@@ -196,6 +197,19 @@ export default function AdminMessaging() {
                 placeholder="Type your message here..."
                 rows={5}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image">Attach Image (optional)</Label>
+              <Input
+                id="image"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              />
+              {imageFile && (
+                <p className="text-xs text-muted-foreground">Selected: {imageFile.name}</p>
+              )}
             </div>
 
             <Button onClick={handleSendMessage} disabled={loading} className="w-full">
