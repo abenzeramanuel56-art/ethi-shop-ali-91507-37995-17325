@@ -22,6 +22,7 @@ export default function AdminMessaging() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchProfiles();
@@ -62,6 +63,16 @@ export default function AdminMessaging() {
     setProfiles(withRoles);
   };
 
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+    const ext = imageFile.name.split(".").pop();
+    const path = `broadcast/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("product-images").upload(path, imageFile);
+    if (error) throw error;
+    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const handleSendMessage = async () => {
     if (!title.trim() || !message.trim()) {
       toast.error("Please fill in title and message");
@@ -76,34 +87,24 @@ export default function AdminMessaging() {
     setLoading(true);
 
     try {
-      if (sendToAll) {
-        // Fan out via dispatcher so Telegram mirroring runs per user
-        const { data: allProfiles } = await supabase.from("profiles").select("id");
-        const ids = (allProfiles || []).map((p: any) => p.id);
-        await Promise.all(
-          ids.map((id) =>
-            supabase.functions.invoke("dispatch-notification", {
-              body: { user_id: id, title, body: message, type: messageType },
-            })
-          )
-        );
-        toast.success(`Message sent to ${ids.length} users!`);
-      } else {
-        const { error } = await supabase.functions.invoke("dispatch-notification", {
-          body: { user_id: selectedUserId, title, body: message, type: messageType },
-        });
-        if (error) throw error;
-        toast.success("Message sent!");
-      }
+      const image_url = await uploadImage();
 
+      const { data, error } = await supabase.functions.invoke("dispatch-notification", {
+        body: sendToAll
+          ? { broadcast: true, title, body: message, type: messageType, image_url }
+          : { user_id: selectedUserId, title, body: message, type: messageType, image_url },
+      });
+      if (error) throw error;
+      toast.success(sendToAll ? `Message sent to ${(data as any)?.sent ?? "all"} users!` : "Message sent!");
 
       // Reset form
       setTitle("");
       setMessage("");
       setMessageType("info");
       setSelectedUserId("");
+      setImageFile(null);
     } catch (error: any) {
-      toast.error("Failed to send message");
+      toast.error(error?.message || "Failed to send message");
       console.error(error);
     } finally {
       setLoading(false);
@@ -196,6 +197,19 @@ export default function AdminMessaging() {
                 placeholder="Type your message here..."
                 rows={5}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image">Attach Image (optional)</Label>
+              <Input
+                id="image"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              />
+              {imageFile && (
+                <p className="text-xs text-muted-foreground">Selected: {imageFile.name}</p>
+              )}
             </div>
 
             <Button onClick={handleSendMessage} disabled={loading} className="w-full">

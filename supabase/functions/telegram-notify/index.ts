@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     const { data: notif } = await supabase
       .from("notifications")
-      .select("user_id, title, message")
+      .select("user_id, title, message, link, image_url")
       .eq("id", notification_id)
       .maybeSingle();
 
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         user_id: notif.user_id,
         title: notif.title,
         body: notif.message,
-        url: "/",
+        url: (notif as any).link || "/",
         tag: notification_id,
       }),
     }).catch((e) => console.error("push fanout failed", e));
@@ -67,14 +67,23 @@ Deno.serve(async (req) => {
     const escape = (s: string) =>
       String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const SITE_URL = Deno.env.get("SITE_URL") || "https://abeniexpress.lovable.app";
+    const link = (notif as any).link as string | null;
+    const imageUrl = (notif as any).image_url as string | null;
+    const text = `<b>${escape(notif.title)}</b>\n\n${escape(notif.message)}`;
+    const reply_markup = link
+      ? { inline_keyboard: [[{ text: "Open my panel", url: link.startsWith("http") ? link : `${SITE_URL}${link.startsWith("/") ? "" : "/"}${link}` }]] }
+      : undefined;
+
+    const endpoint = imageUrl ? "sendPhoto" : "sendMessage";
+    const payload: Record<string, unknown> = imageUrl
+      ? { chat_id: Number(chatId), photo: imageUrl, caption: text, parse_mode: "HTML", reply_markup }
+      : { chat_id: Number(chatId), text, parse_mode: "HTML", reply_markup };
+
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: Number(chatId),
-        text: `<b>${escape(notif.title)}</b>\n\n${escape(notif.message)}`,
-        parse_mode: "HTML",
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
