@@ -299,7 +299,7 @@ export default function AdminServiceOrders() {
                     </div>
                   )}
 
-                  {order.status === "payment_submitted" && (
+                  {["payment_submitted", "pending_payment", "awaiting_verification"].includes(order.status) && (
                     <>
                       {selectedOrder === order.id ? (
                         <div className="space-y-4">
