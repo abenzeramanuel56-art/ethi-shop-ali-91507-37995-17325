@@ -123,7 +123,7 @@ export default function AdminServiceOrders() {
     if (error) {
       toast({
         title: "Error",
-        description: "Failed to verify payment",
+        description: error.message || "Failed to verify payment",
         variant: "destructive",
       });
       return;
