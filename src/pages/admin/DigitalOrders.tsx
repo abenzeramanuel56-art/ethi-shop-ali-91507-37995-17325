@@ -176,7 +176,7 @@ export default function AdminDigitalOrders() {
                     <p className="text-sm text-muted-foreground">Notes: {order.admin_notes}</p>
                   )}
 
-                  {(order.status === "pending_payment" || order.status === "payment_submitted") && (
+                  {["pending_payment", "payment_submitted", "awaiting_verification"].includes(order.status) && (
                     <div className="space-y-2 pt-2 border-t">
                       <Textarea
                         placeholder="Admin notes (optional)"
