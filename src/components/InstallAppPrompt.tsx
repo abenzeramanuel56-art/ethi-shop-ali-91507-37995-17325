@@ -48,7 +48,7 @@ export function InstallAppPrompt() {
 
   return (
     <div className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2">
-      <div className="card-3d flex items-center gap-3 rounded-xl border border-primary/30 bg-card/95 p-3 shadow-lg backdrop-blur">
+      <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-card/95 p-3 shadow-lg backdrop-blur">
         <div className="flex-1">
           <p className="text-sm font-semibold">Install Abeni Express</p>
           <p className="text-xs text-muted-foreground">Add it to your home screen for a full app experience.</p>

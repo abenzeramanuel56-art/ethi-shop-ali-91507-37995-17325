@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     const escape = (s: string) =>
       String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    const SITE_URL = Deno.env.get("SITE_URL") || "https://abeniexpress.lovable.app";
+    const SITE_URL = Deno.env.get("SITE_URL") || "https://abeniexpress.online";
     const link = (notif as any).link as string | null;
     const imageUrl = (notif as any).image_url as string | null;
     const text = `<b>${escape(notif.title)}</b>\n\n${escape(notif.message)}`;

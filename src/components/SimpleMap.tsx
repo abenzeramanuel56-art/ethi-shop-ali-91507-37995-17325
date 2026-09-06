@@ -100,7 +100,7 @@ export function SimpleMap({ locations: rawLocations, className = "", height = 26
   }
 
   return (
-    <div className={`card-3d overflow-hidden rounded-lg border border-border/60 bg-card ${className}`}>
+    <div className={`overflow-hidden rounded-lg border border-border/60 bg-card ${className}`}>
       <div ref={nodeRef} style={{ height }} className="w-full z-0" />
 
       <div className="space-y-1.5 p-3">

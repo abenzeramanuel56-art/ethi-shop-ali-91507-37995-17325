@@ -142,6 +142,9 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.accountCreated': 'Account created! Please check your email to verify your account before signing in.',
     'auth.signedIn': 'Signed in successfully!',
     'auth.verifyEmail': 'Please verify your email before signing in. Check your inbox for the verification link.',
+    'auth.forgotPassword': 'Forgot Password?',
+    'auth.forgotPasswordDesc': 'Enter your email and we will send you a reset link.',
+    'auth.backToLogin': 'Back to Sign In',
     
     // Account page
     'account.title': 'My Account',
@@ -501,6 +504,9 @@ const translations: Record<Language, Record<string, string>> = {
     'auth.accountCreated': 'መለያ ተፈጠረ! እባክዎ ከመግባትዎ በፊት ኢሜይልዎን ያረጋግጡ።',
     'auth.signedIn': 'በተሳካ ሁኔታ ገብተዋል!',
     'auth.verifyEmail': 'ከመግባትዎ በፊት እባክዎ ኢሜይልዎን ያረጋግጡ።',
+    'auth.forgotPassword': 'የይለፍ ቃል ረሱ?',
+    'auth.forgotPasswordDesc': 'ኢሜይልዎን ያስገቡ፣ የመቀየሪያ ሊንክ እንልክልዎታለን።',
+    'auth.backToLogin': 'ወደ መግቢያ ተመለስ',
     
     // Account page
     'account.title': 'የኔ መለያ',

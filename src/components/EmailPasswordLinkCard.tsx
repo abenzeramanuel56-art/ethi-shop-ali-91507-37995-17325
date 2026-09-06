@@ -77,7 +77,7 @@ export default function EmailPasswordLinkCard() {
 
 
   return (
-    <Card className="card-3d border-primary/30">
+    <Card className="border-primary/30">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Mail className="h-4 w-4 text-primary" /> Add email sign-in
