@@ -372,15 +372,20 @@ const AdminDashboard = () => {
         .select();
 
       if (pendingError) {
-        console.error("Failed to create pending driver order:", pendingError);
-        toast.error("Failed to send order to drivers: " + pendingError.message);
+        // The database already queues verified orders automatically; a duplicate here just
+        // means drivers were notified already — never surface it as a failure to the admin.
+        if (pendingError.code === "23505") {
+          toast.success("Payment approved — drivers have been notified.");
+        } else {
+          console.error("Failed to create pending driver order:", pendingError);
+          toast.error("Failed to send order to drivers: " + pendingError.message);
+        }
       } else {
         console.log("Pending driver order created:", insertedData);
         toast.success("Order sent to drivers for pickup!");
       }
     } catch (err) {
       console.error("Error creating pending driver order:", err);
-      toast.error("Error sending order to drivers");
     }
   };
 
