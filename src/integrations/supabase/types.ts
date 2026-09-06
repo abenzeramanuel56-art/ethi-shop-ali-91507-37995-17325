@@ -14,21 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _diag: {
-        Row: {
-          msg: string | null
-          t: string | null
-        }
-        Insert: {
-          msg?: string | null
-          t?: string | null
-        }
-        Update: {
-          msg?: string | null
-          t?: string | null
-        }
-        Relationships: []
-      }
       advertisements: {
         Row: {
           created_at: string | null
