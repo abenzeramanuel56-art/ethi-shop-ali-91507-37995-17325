@@ -134,15 +134,19 @@ export function SimpleMap({ locations: rawLocations, className = "", height = 26
           </div>
         ))}
 
-        {locations.length >= 2 && (
-          <button
-            onClick={openDirections}
-            className="btn-3d mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-primary p-3 text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Navigation className="h-4 w-4" />
-            Navigate with Google Maps
-          </button>
-        )}
+        <button
+          onClick={() => {
+            if (locations.length >= 2) return openDirections();
+            const dest = locations[0];
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}&travelmode=driving`;
+            const win = window.open(url, "_blank", "noopener,noreferrer");
+            if (!win) window.location.href = url;
+          }}
+          className="btn-3d mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-primary p-3 text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Navigation className="h-4 w-4" />
+          Navigate with Google Maps
+        </button>
       </div>
     </div>
   );
