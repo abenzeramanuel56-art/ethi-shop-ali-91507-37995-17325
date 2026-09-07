@@ -1,1 +1,44 @@
 project_id = "xzdxljodgyyildniobqi"
+
+[functions.send-order-confirmation]
+verify_jwt = false
+
+[functions.send-tracking-notification]
+verify_jwt = false
+
+[functions.analyze-support-ticket]
+verify_jwt = false
+
+[functions.fetch-aliexpress-image]
+verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
+[functions.send-signup-link]
+verify_jwt = false
+
+[functions.reset-password-with-code]
+verify_jwt = false
+
+[functions.send-signup-code]
+verify_jwt = false
+
+[functions.verify-signup-code]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.dispatch-notification]
+verify_jwt = false
+
+[functions.telegram-notify]
+verify_jwt = false
+
+[functions.telegram-login]
+verify_jwt = false
+
+
+[functions.send-push]
+verify_jwt = false
