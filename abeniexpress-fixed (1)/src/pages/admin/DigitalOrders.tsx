@@ -22,6 +22,8 @@ interface DigitalOrder {
   admin_notes: string | null;
   created_at: string;
   product_title?: string;
+  product_type?: string;
+  store_name?: string;
   buyer_name?: string;
 }
 
@@ -44,14 +46,23 @@ export default function AdminDigitalOrders() {
       return;
     }
 
-    // Enrich with product title + buyer name
+    // Enrich with product title/type + store name + buyer name
     const enriched = await Promise.all(
       (data || []).map(async (o: any) => {
         const [{ data: prod }, { data: prof }] = await Promise.all([
-          (supabase as any).from("digital_products").select("title").eq("id", o.digital_product_id).maybeSingle(),
+          (supabase as any).from("digital_products").select("title, product_type, seller_id").eq("id", o.digital_product_id).maybeSingle(),
           (supabase as any).from("profiles").select("full_name").eq("id", o.buyer_id).maybeSingle(),
         ]);
-        return { ...o, product_title: prod?.title, buyer_name: prof?.full_name };
+        let storeName: string | undefined;
+        if (prod?.seller_id) {
+          const { data: store } = await (supabase as any)
+            .from("seller_stores")
+            .select("store_name")
+            .eq("id", prod.seller_id)
+            .maybeSingle();
+          storeName = store?.store_name;
+        }
+        return { ...o, product_title: prod?.title, product_type: prod?.product_type, store_name: storeName, buyer_name: prof?.full_name };
       })
     );
 
@@ -79,12 +90,26 @@ export default function AdminDigitalOrders() {
     }
     const order = orders.find((o: any) => o.id === orderId);
     if (order?.buyer_id) {
+      const receiptHtml = `
+        <p>Your payment has been verified. Here is your receipt:</p>
+        <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
+          <tr><td style="padding:4px 0;color:#64748b">Company</td><td style="padding:4px 0;text-align:right"><strong>AbeniExpress</strong></td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Date</td><td style="padding:4px 0;text-align:right">${new Date().toLocaleString()}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Store</td><td style="padding:4px 0;text-align:right">${order.store_name || "AbeniExpress Marketplace"}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Product</td><td style="padding:4px 0;text-align:right">${order.product_title || "Digital Product"}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Type</td><td style="padding:4px 0;text-align:right">${order.product_type ? order.product_type[0].toUpperCase() + order.product_type.slice(1) : "N/A"}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Product ID</td><td style="padding:4px 0;text-align:right">${order.digital_product_id.slice(0, 8)}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Payment method</td><td style="padding:4px 0;text-align:right">${order.payment_method ? order.payment_method.toUpperCase() : "N/A"}</td></tr>
+          <tr><td style="padding:4px 0;color:#64748b">Amount</td><td style="padding:4px 0;text-align:right">${order.price_etb} ETB</td></tr>
+        </table>
+        <p>Your download code is now available in your account notifications — use it on the digital marketplace page to access your purchase.</p>
+      `;
       supabase.functions.invoke("send-user-email", {
         body: {
           userId: order.buyer_id,
           subject: "Your Digital Purchase is Ready",
           heading: "Download Ready 🎉",
-          message: "Your payment has been verified. Your download code is now available in your account notifications — use it on the digital marketplace page to access your purchase.",
+          message: receiptHtml,
         },
       }).catch((e: any) => console.error("email error", e));
     }

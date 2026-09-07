@@ -157,7 +157,7 @@ export default function NotificationBell() {
                       <h4 className={`font-semibold text-sm ${getNotificationColor(notification.type)}`}>
                         {notification.title}
                       </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
                         {notification.message}
                       </p>
                       {notification.image_url && (
