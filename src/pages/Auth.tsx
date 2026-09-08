@@ -42,6 +42,8 @@ const Auth = () => {
   const [linkSent, setLinkSent] = useState<null | "signup" | "reset">(null);
   const [showTgCode, setShowTgCode] = useState(false);
   const [tgCode, setTgCode] = useState("");
+  const [tgName, setTgName] = useState("");
+  const [tgNeedsName, setTgNeedsName] = useState(false);
   const [tgLoading, setTgLoading] = useState(false);
 
   const returnTo = searchParams.get("returnTo") || "/";
