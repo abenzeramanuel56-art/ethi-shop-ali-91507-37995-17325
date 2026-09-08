@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 type Language = 'en' | 'am' | 'om' | 'ti';
 
@@ -1274,9 +1275,20 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     return (saved as Language) || 'en';
   });
 
+  const persistLanguage = async (lang: Language) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await (supabase as any).from('profiles').update({ language: lang }).eq('id', user.id);
+    } catch {
+      /* offline or signed out — localStorage still holds the choice */
+    }
+  };
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
+    void persistLanguage(lang);
   };
 
   // Falls back to English when the active language is missing a key, so the

@@ -85,7 +85,9 @@ Deno.serve(async (req) => {
 
     const created = new Date((order as any).created_at ?? Date.now());
     const dateStr = created.toISOString().slice(0, 16).replace("T", " ") + " UTC";
-    const total = Number((order as any).total_etb ?? 0).toLocaleString();
+    const total = Number(
+      (order as any).total_etb ?? (order as any).sold_price_etb ?? 0,
+    ).toLocaleString();
     const shortId = String(orderId).slice(0, 8).toUpperCase();
 
     const message =

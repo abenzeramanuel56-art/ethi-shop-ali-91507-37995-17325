@@ -29,7 +29,7 @@ const signInSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -141,6 +141,15 @@ const Auth = () => {
       await supabase.functions.invoke("send-signup-link", {
         body: { email: pendingSignUp.email, redirectTo: redirectUrl },
       });
+
+      // Terms & Conditions in the language the person is browsing in.
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        await (supabase as any).from("profiles").update({ language }).eq("id", newUser.id);
+        await supabase.functions.invoke("send-terms", {
+          body: { user_id: newUser.id, language },
+        });
+      }
 
       toast.success(t('auth.accountCreatedLink'));
       setLinkSent("signup");

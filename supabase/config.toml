@@ -42,3 +42,9 @@ verify_jwt = false
 
 [functions.send-push]
 verify_jwt = false
+
+[functions.send-receipt]
+verify_jwt = false
+
+[functions.send-terms]
+verify_jwt = false

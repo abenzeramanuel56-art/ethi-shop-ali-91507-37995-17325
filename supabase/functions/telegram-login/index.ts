@@ -5,6 +5,7 @@
 // create their Abeni Express account on the spot, link the telegram_id, and
 // return a magic-link token so they land signed in.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { TERMS_MSG } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,6 +101,17 @@ Deno.serve(async (req) => {
           "Your account was created with Telegram. Add an email and password from your Account page so you can also sign in without Telegram.",
         type: "success",
         is_read: false,
+      });
+
+      // Terms & Conditions for the brand-new account.
+      const doc = TERMS_MSG.en;
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: doc.title,
+        message: doc.body,
+        type: "info",
+        is_read: false,
+        link: "/terms",
       });
     }
 
