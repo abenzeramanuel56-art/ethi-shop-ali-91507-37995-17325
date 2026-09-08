@@ -290,7 +290,10 @@ const AdminDashboard = () => {
           await supabase.functions.invoke("send-order-confirmation", {
             body: { orderId },
           });
-          console.log("Confirmation email sent successfully");
+          await supabase.functions.invoke("send-receipt", {
+            body: { orderId },
+          });
+          console.log("Confirmation email + receipt sent successfully");
         } catch (emailError) {
           console.error("Failed to send confirmation email:", emailError);
         }
