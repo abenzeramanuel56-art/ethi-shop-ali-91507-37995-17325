@@ -1197,6 +1197,7 @@ const extraTranslations: Record<Language, Record<string, string>> = {
     'auth.enterEmail': 'Please enter your email address',
     'auth.tgFailed': "Code invalid, expired, or this Telegram isn't linked to an account yet.",
     'auth.tgSignedIn': 'Signed in with Telegram',
+    'auth.tgEnterName': 'First time here? Enter your full name to create your account.',
   },
   am: {
     'auth.telegram': 'በቴሌግራም ይቀጥሉ',
@@ -1219,6 +1220,7 @@ const extraTranslations: Record<Language, Record<string, string>> = {
     'auth.enterEmail': 'እባክዎ ኢሜይል አድራሻዎን ያስገቡ',
     'auth.tgFailed': 'ኮዱ ልክ አይደለም፣ ጊዜው አልፎበታል ወይም ይህ ቴሌግራም ገና አልተገናኘም።',
     'auth.tgSignedIn': 'በቴሌግራም ገብተዋል',
+    'auth.tgEnterName': 'ለመጀመሪያ ጊዜ ከሆነ ሙሉ ስምዎን ያስገቡ።',
   },
   om: {
     'auth.telegram': 'Telegram waliin itti fufi',
@@ -1242,6 +1244,7 @@ const extraTranslations: Record<Language, Record<string, string>> = {
     'auth.tgFailed': 'Koodichi sirrii miti, yeroon isaa darbeera, ykn Telegram kun hin walqunnamsiifamne.',
     'auth.tgSignedIn': 'Telegram waliin seentee jirta',
   },
+    'auth.tgEnterName': 'Yeroo jalqabaa yoo ta'e, maqaa guutuu keessan galchi.',
   ti: {
     'auth.telegram': 'ብቴሌግራም ቀጽል',
     'auth.telegramHint': 'ኣብ ቦት “Start” ጠውቕ፣ ድሕሪኡ እቲ ዝተላእከ 6-ኣሃዝ ኮድ ኣእቱ።',
@@ -1265,6 +1268,7 @@ const extraTranslations: Record<Language, Record<string, string>> = {
     'auth.tgSignedIn': 'ብቴሌግራም ኣቲኻ',
   },
 };
+    'auth.tgEnterName': 'ንመጀመርያ ግዜ እንተኾይንኩም ሙሉእ ስምኩም ኣእትዉ።',
 
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
