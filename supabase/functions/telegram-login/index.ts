@@ -25,8 +25,9 @@ Deno.serve(async (req) => {
     });
 
   try {
-    const { code } = await req.json();
+    const { code, full_name } = await req.json();
     if (!code || !/^\d{6}$/.test(String(code))) return json({ error: "invalid_code" }, 400);
+    const fullNameInput = typeof full_name === "string" ? full_name.trim().slice(0, 100) : "";
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -57,13 +58,14 @@ Deno.serve(async (req) => {
       if (userErr || !userRes?.user?.email) return json({ error: "no_email_on_account" }, 400);
       email = userRes.user.email;
     } else {
-      // First-time Telegram user — create the account instead of dead-ending them.
+      // First-time Telegram user — we need their full name to create the account.
+      if (fullNameInput.length < 2) {
+        return json({ error: "name_required" }, 400);
+      }
       created = true;
       email = `tg${telegramId}@telegram.internal`;
       const password = crypto.randomUUID() + crypto.randomUUID();
-      const fullName = verification.telegram_username
-        ? `@${verification.telegram_username}`
-        : `Telegram user ${telegramId}`;
+      const fullName = fullNameInput;
 
       const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
         email,
