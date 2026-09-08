@@ -25,8 +25,9 @@ Deno.serve(async (req) => {
     });
 
   try {
-    const { code } = await req.json();
+    const { code, full_name } = await req.json();
     if (!code || !/^\d{6}$/.test(String(code))) return json({ error: "invalid_code" }, 400);
+    const fullNameInput = typeof full_name === "string" ? full_name.trim().slice(0, 100) : "";
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
