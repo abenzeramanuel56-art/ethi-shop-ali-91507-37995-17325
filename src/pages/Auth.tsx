@@ -380,6 +380,15 @@ const Auth = () => {
                   <p className="text-xs text-muted-foreground">
                     {t('auth.telegramHint')}
                   </p>
+                  {tgNeedsName && (
+                    <Input
+                      type="text"
+                      placeholder={t('auth.fullName')}
+                      value={tgName}
+                      onChange={(e) => setTgName(e.target.value)}
+                      required
+                    />
+                  )}
                   <div className="flex gap-2">
                     <Input
                       inputMode="numeric"
