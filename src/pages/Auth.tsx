@@ -52,18 +52,21 @@ const Auth = () => {
     setTgLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("telegram-login", {
-        body: { code: tgCode },
+        body: { code: tgCode, full_name: tgName.trim() || undefined },
       });
       if (error) {
         const details = (error as any)?.context ? await (error as any).context.text() : error.message;
         console.error("telegram-login failed:", details);
+        if (details.includes("name_required")) {
+          setTgNeedsName(true);
+          toast.info(t('auth.tgEnterName'));
+          return;
+        }
         toast.error(t('auth.tgFailed'));
         return;
       }
       if (!data?.token_hash) {
-        toast.error(data?.error === "telegram_not_linked"
-          ? t('auth.tgFailed')
-          : t('auth.tgFailed'));
+        toast.error(t('auth.tgFailed'));
         return;
       }
       sessionStorage.setItem("auth:returnTo", returnTo);
@@ -77,6 +80,8 @@ const Auth = () => {
       }
       toast.success(t('auth.tgSignedIn'));
       setTgCode("");
+      setTgName("");
+      setTgNeedsName(false);
       setShowTgCode(false);
     } catch (e: any) {
       toast.error(e?.message ?? "Telegram sign-in failed");
