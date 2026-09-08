@@ -1266,9 +1266,9 @@ const extraTranslations: Record<Language, Record<string, string>> = {
     'auth.enterEmail': 'በጃኻ ኢመይል ኣድራሻኻ ኣእቱ',
     'auth.tgFailed': 'እቲ ኮድ ቅኑዕ ኣይኮነን፣ ግዜኡ ሓሊፉ፣ ወይ እዚ ቴሌግራም ገና ኣይተኣሳሰረን።',
     'auth.tgSignedIn': 'ብቴሌግራም ኣቲኻ',
+    'auth.tgEnterName': 'ንመጀመርያ ግዜ እንተኾይንኩም ሙሉእ ስምኩም ኣእትዉ።',
   },
 };
-    'auth.tgEnterName': 'ንመጀመርያ ግዜ እንተኾይንኩም ሙሉእ ስምኩም ኣእትዉ።',
 
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
