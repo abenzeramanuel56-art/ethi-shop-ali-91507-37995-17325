@@ -5,6 +5,7 @@
 // create their Abeni Express account on the spot, link the telegram_id, and
 // return a magic-link token so they land signed in.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { TERMS_MSG } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
