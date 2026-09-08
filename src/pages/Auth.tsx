@@ -142,6 +142,15 @@ const Auth = () => {
         body: { email: pendingSignUp.email, redirectTo: redirectUrl },
       });
 
+      // Terms & Conditions in the language the person is browsing in.
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        await (supabase as any).from("profiles").update({ language }).eq("id", newUser.id);
+        await supabase.functions.invoke("send-terms", {
+          body: { user_id: newUser.id, language },
+        });
+      }
+
       toast.success(t('auth.accountCreatedLink'));
       setLinkSent("signup");
       setResetEmail(pendingSignUp.email);
