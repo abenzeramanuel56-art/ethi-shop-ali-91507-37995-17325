@@ -101,6 +101,17 @@ Deno.serve(async (req) => {
         type: "success",
         is_read: false,
       });
+
+      // Terms & Conditions for the brand-new account.
+      const doc = TERMS_MSG.en;
+      await supabase.from("notifications").insert({
+        user_id: userId,
+        title: doc.title,
+        message: doc.body,
+        type: "info",
+        is_read: false,
+        link: "/terms",
+      });
     }
 
     const { data: link, error: linkErr } = await supabase.auth.admin.generateLink({
