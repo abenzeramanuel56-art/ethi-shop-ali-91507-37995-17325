@@ -105,6 +105,15 @@ Deno.serve(async (req) => {
         chatId,
         `✅ <b>Linked!</b>\n\nHi ${firstName}, your Telegram is now connected to your <b>Abeni Express</b> account. Every order, wallet and delivery update will arrive here.`,
       );
+
+      // Terms & Conditions in the user's language, straight to this chat.
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("language")
+        .eq("id", tokenRow.user_id)
+        .maybeSingle();
+      const doc = TERMS_MSG[pickLang((prof as any)?.language)];
+      await sendMessage(chatId, `<b>${doc.title}</b>\n\n${doc.body}`);
       return ok();
     }
 
