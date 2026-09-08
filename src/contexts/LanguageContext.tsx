@@ -1243,8 +1243,8 @@ const extraTranslations: Record<Language, Record<string, string>> = {
     'auth.enterEmail': 'Maaloo teessoo imeelii kee galchi',
     'auth.tgFailed': 'Koodichi sirrii miti, yeroon isaa darbeera, ykn Telegram kun hin walqunnamsiifamne.',
     'auth.tgSignedIn': 'Telegram waliin seentee jirta',
+    'auth.tgEnterName': "Yeroo jalqabaa yoo ta'e, maqaa guutuu keessan galchi.",
   },
-    'auth.tgEnterName': 'Yeroo jalqabaa yoo ta'e, maqaa guutuu keessan galchi.',
   ti: {
     'auth.telegram': 'ብቴሌግራም ቀጽል',
     'auth.telegramHint': 'ኣብ ቦት “Start” ጠውቕ፣ ድሕሪኡ እቲ ዝተላእከ 6-ኣሃዝ ኮድ ኣእቱ።',
