@@ -3,6 +3,7 @@
 //   /start <32-hex token>  -> instantly links that Telegram account to the Abeni Express user who generated the token
 //   /start login | auth    -> replies with a 6-digit code used to link OR sign in from the web app
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { TERMS_MSG, pickLang } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
