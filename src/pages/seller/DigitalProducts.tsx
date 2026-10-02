@@ -152,6 +152,11 @@ export default function SellerDigitalProducts() {
                   </div>
                 </div>
                 <div>
+                  <Label>App / Website preview link (optional)</Label>
+                  <Input type="url" placeholder="https://your-demo.com or Play Store link" value={previewUrl} onChange={(e) => setPreviewUrl(e.target.value)} maxLength={500} />
+                  <p className="text-xs text-muted-foreground mt-1">Buyers can open this to try your app or site before buying.</p>
+                </div>
+                <div>
                   <Label>File (max 50MB) *</Label>
                   <Input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required />
                   {file && <p className="text-xs text-muted-foreground mt-1">{file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB</p>}
@@ -181,6 +186,7 @@ export default function SellerDigitalProducts() {
                     {p.ai_verification_status === "rejected" && <Badge variant="outline" className="text-destructive border-destructive/50"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{p.description}</p>
+                  {p.preview_url && <a href={p.preview_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block mt-1">Preview link</a>}
                   {p.ai_verification_notes && <p className="text-xs italic text-muted-foreground mt-1">{p.ai_verification_notes}</p>}
                   <div className="text-sm font-bold text-primary mt-2">{Number(p.price_etb).toLocaleString()} ETB</div>
                 </div>
