@@ -27,6 +27,7 @@ export default function SellerDigitalProducts() {
   const [productType, setProductType] = useState<"code" | "file">("code");
   const [category, setCategory] = useState<string>("apps");
   const [price, setPrice] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => { init(); }, []);
@@ -69,6 +70,7 @@ export default function SellerDigitalProducts() {
         file_name: file.name,
         file_size_bytes: file.size,
         price_etb: parseFloat(price),
+        preview_url: previewUrl.trim() || null,
       }).select().single();
 
       if (insErr) throw insErr;
@@ -81,7 +83,7 @@ export default function SellerDigitalProducts() {
         toast.warning("Uploaded but verification is pending review.");
       }
 
-      setTitle(""); setDescription(""); setPrice(""); setFile(null); setShowForm(false);
+      setTitle(""); setDescription(""); setPrice(""); setPreviewUrl(""); setFile(null); setShowForm(false);
       await loadProducts(user.id);
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
@@ -132,11 +134,9 @@ export default function SellerDigitalProducts() {
                     <select className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
                       <option value="apps">📱 Apps</option>
                       <option value="websites">🌐 Websites</option>
-                      <option value="code">💻 Code / Scripts</option>
                       <option value="courses">🎓 Courses</option>
                       <option value="videos">🎬 Videos</option>
                       <option value="documents">📄 Documents</option>
-                      <option value="other">✨ Other</option>
                     </select>
                   </div>
                   <div>

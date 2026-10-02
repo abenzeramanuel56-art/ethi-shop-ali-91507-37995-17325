@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
-import { ArrowRight, Package, Shield, TrendingUp, Truck, Wrench, Zap, Star, Globe, ChevronRight } from "lucide-react";
+import { ArrowRight, Package, Shield, TrendingUp, Truck, Wrench, Zap, Star, Globe, ChevronRight, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ThreeDHero } from "@/components/ThreeDHero";
 
