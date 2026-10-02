@@ -27,6 +27,7 @@ export default function SellerDigitalProducts() {
   const [productType, setProductType] = useState<"code" | "file">("code");
   const [category, setCategory] = useState<string>("apps");
   const [price, setPrice] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => { init(); }, []);
@@ -69,6 +70,7 @@ export default function SellerDigitalProducts() {
         file_name: file.name,
         file_size_bytes: file.size,
         price_etb: parseFloat(price),
+        preview_url: previewUrl.trim() || null,
       }).select().single();
 
       if (insErr) throw insErr;
@@ -81,7 +83,7 @@ export default function SellerDigitalProducts() {
         toast.warning("Uploaded but verification is pending review.");
       }
 
-      setTitle(""); setDescription(""); setPrice(""); setFile(null); setShowForm(false);
+      setTitle(""); setDescription(""); setPrice(""); setPreviewUrl(""); setFile(null); setShowForm(false);
       await loadProducts(user.id);
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
@@ -132,11 +134,9 @@ export default function SellerDigitalProducts() {
                     <select className="flex h-10 w-full rounded-md border border-border bg-background px-3 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
                       <option value="apps">📱 Apps</option>
                       <option value="websites">🌐 Websites</option>
-                      <option value="code">💻 Code / Scripts</option>
                       <option value="courses">🎓 Courses</option>
                       <option value="videos">🎬 Videos</option>
                       <option value="documents">📄 Documents</option>
-                      <option value="other">✨ Other</option>
                     </select>
                   </div>
                   <div>
@@ -150,6 +150,11 @@ export default function SellerDigitalProducts() {
                     <Label>Price (ETB) *</Label>
                     <Input type="number" min="1" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required />
                   </div>
+                </div>
+                <div>
+                  <Label>App / Website preview link (optional)</Label>
+                  <Input type="url" placeholder="https://your-demo.com or Play Store link" value={previewUrl} onChange={(e) => setPreviewUrl(e.target.value)} maxLength={500} />
+                  <p className="text-xs text-muted-foreground mt-1">Buyers can open this to try your app or site before buying.</p>
                 </div>
                 <div>
                   <Label>File (max 50MB) *</Label>
@@ -181,6 +186,7 @@ export default function SellerDigitalProducts() {
                     {p.ai_verification_status === "rejected" && <Badge variant="outline" className="text-destructive border-destructive/50"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{p.description}</p>
+                  {p.preview_url && <a href={p.preview_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block mt-1">Preview link</a>}
                   {p.ai_verification_notes && <p className="text-xs italic text-muted-foreground mt-1">{p.ai_verification_notes}</p>}
                   <div className="text-sm font-bold text-primary mt-2">{Number(p.price_etb).toLocaleString()} ETB</div>
                 </div>

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, Package, MessageCircle, Zap, Menu, X } from "lucide-react";
+import { ShoppingCart, User, Package, MessageCircle, Zap, Menu, X, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -146,6 +146,11 @@ export const Navbar = () => {
                 <Link to="/cart">
                   <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
                     <ShoppingCart className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/messages">
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" aria-label="Messages">
+                    <Mail className="h-4 w-4" />
                   </Button>
                 </Link>
                 <NotificationBell />

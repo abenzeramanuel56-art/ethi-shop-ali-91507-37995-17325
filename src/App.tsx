@@ -1,3 +1,4 @@
+import Messages from "./pages/Messages";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -105,6 +106,8 @@ const App = () => (
               <Route path="/a/:storeSlug" element={<AffiliatePublicStore />} />
               <Route path="/a/:storeSlug/:productId" element={<AffiliateCheckout />} />
               <Route path="/store/:storeSlug" element={<Store />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/messages/:conversationId" element={<Messages />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -324,6 +324,65 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_conversations: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          last_message_at: string
+          seller_id: string
+          subject: string | null
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          seller_id: string
+          subject?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          seller_id?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digital_product_orders: {
         Row: {
           admin_notes: string | null
@@ -392,6 +451,7 @@ export type Database = {
           file_url: string
           id: string
           is_active: boolean | null
+          preview_url: string | null
           price_etb: number
           product_type: string
           seller_id: string
@@ -410,6 +470,7 @@ export type Database = {
           file_url: string
           id?: string
           is_active?: boolean | null
+          preview_url?: string | null
           price_etb: number
           product_type: string
           seller_id: string
@@ -428,6 +489,7 @@ export type Database = {
           file_url?: string
           id?: string
           is_active?: boolean | null
+          preview_url?: string | null
           price_etb?: number
           product_type?: string
           seller_id?: string
