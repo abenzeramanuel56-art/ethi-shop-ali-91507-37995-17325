@@ -8,8 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, FileCode, FileText, Download, ShoppingCart, Smartphone, Globe, GraduationCap, Video, FileArchive, Sparkles, Zap, Trophy } from "lucide-react";
+import { Loader2, FileCode, FileText, Download, ShoppingCart, Smartphone, Globe, GraduationCap, Video, FileArchive, Sparkles, Zap, Trophy, ExternalLink, MessageCircle } from "lucide-react";
 import ReportItemDialog from "@/components/ReportItemDialog";
+import { startChatWithSeller } from "@/pages/Messages";
 
 const CATEGORIES = [
   { id: "all", label: "All", icon: Sparkles, color: "from-primary to-accent" },
@@ -250,6 +251,18 @@ function DigitalMarketInner() {
                             {Number(p.price_etb).toLocaleString()} ETB
                           </div>
                           <ReportItemDialog itemId={p.id} itemName={p.title} reportType="digital_product" triggerLabel="" variant="ghost" size="icon" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {p.preview_url ? (
+                            <a href={p.preview_url} target="_blank" rel="noopener noreferrer">
+                              <Button variant="outline" size="sm" className="w-full"><ExternalLink className="h-4 w-4 mr-1" /> Live Preview</Button>
+                            </a>
+                          ) : (
+                            <Button variant="outline" size="sm" disabled className="w-full">No preview</Button>
+                          )}
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => chatWithSeller(p, navigate)}>
+                            <MessageCircle className="h-4 w-4 mr-1" /> Chat with seller
+                          </Button>
                         </div>
 
                         <div className="space-y-2 pt-2 border-t border-border/50">
