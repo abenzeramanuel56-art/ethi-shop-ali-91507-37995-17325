@@ -15,12 +15,17 @@ const CATEGORIES = [
   { id: "all", label: "All", icon: Sparkles, color: "from-primary to-accent" },
   { id: "apps", label: "Apps", icon: Smartphone, color: "from-blue-500 to-cyan-500" },
   { id: "websites", label: "Websites", icon: Globe, color: "from-purple-500 to-pink-500" },
-  { id: "code", label: "Code", icon: FileCode, color: "from-emerald-500 to-teal-500" },
   { id: "courses", label: "Courses", icon: GraduationCap, color: "from-orange-500 to-red-500" },
   { id: "videos", label: "Videos", icon: Video, color: "from-rose-500 to-pink-500" },
   { id: "documents", label: "Docs", icon: FileText, color: "from-amber-500 to-orange-500" },
-  { id: "other", label: "Other", icon: FileArchive, color: "from-slate-500 to-slate-700" },
 ];
+
+const chatWithSeller = async (p: any, navigate: (to: string) => void) => {
+  const r = await startChatWithSeller(p.seller_id, p.title);
+  if ("needsAuth" in r) { navigate(`/auth?returnTo=/digital-market`); return; }
+  if ("error" in r) { toast.error(r.error); return; }
+  navigate(`/messages/${r.id}`);
+};
 
 function DigitalMarketInner() {
   const navigate = useNavigate();

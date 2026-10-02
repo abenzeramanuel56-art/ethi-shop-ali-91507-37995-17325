@@ -52,6 +52,12 @@ const Home = () => {
                   {t('home.services.browse')}
                 </Button>
               </Link>
+              <Link to="/digital-market">
+                <Button size="lg" variant="outline" className="gap-2 font-semibold text-base px-8 h-12 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary">
+                  <Smartphone className="h-5 w-5" />
+                  Browse Digital
+                </Button>
+              </Link>
               <Link to="/download">
                 <Button size="lg" variant="ghost" className="gap-2 font-semibold text-base px-8 h-12 text-muted-foreground hover:text-foreground">
                   Get us on Android &amp; iOS
