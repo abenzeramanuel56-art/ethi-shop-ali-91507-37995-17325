@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Trash2, ShoppingBag, MapPin, Loader2, Navigation, CheckCircle2, AlertCircle, Bike, Car, Truck as TruckIcon } from "lucide-react";
+import { Trash2, ShoppingBag, MapPin, Loader2, Navigation, CheckCircle2, AlertCircle, Bike, Car, Truck as TruckIcon, Zap, Copy, Check, FolderUp, XCircle, Landmark, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { deliveryFee, productSubtotal } from "@/lib/pricing";
@@ -42,6 +42,11 @@ const Cart = () => {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [vehicle, setVehicle] = useState<"any" | "motorbike" | "car" | "van" | "truck">("any");
   const { loading: locationLoading, requestLocation } = useGeolocation();
+  const [verifyError, setVerifyError] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [confirmedRef, setConfirmedRef] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
   // distance is unknown at checkout time; use a flat min fee preview
   const subtotal = productSubtotal(cartItems);
   const previewDeliveryFee = deliveryFee(0); // min 50 ETB shown until route is known
@@ -443,18 +448,71 @@ const Cart = () => {
                 <p className="text-xs text-muted-foreground">Only drivers with this vehicle will be notified</p>
               </div>
 
-              {/* Payment Method */}
-              <div className="space-y-1">
+              {/* Payment */}
+              <div className="space-y-3">
+                <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 flex gap-2.5">
+                  <Zap className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="text-xs leading-relaxed text-foreground">
+                    <span className="font-black text-primary">⚡ Instant Automated Verification:</span> Do not wait for an admin to manually verify your payment! Our system automatically verifies your receipt with the bank network in under 2 seconds for instant order approval.
+                  </p>
+                </div>
+
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t('cart.paymentMethod')} *</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-border/50 bg-muted/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as any)}
-                >
-                  <option value="">{t('cart.selectPayment')}</option>
-                  <option value="telebirr">TeleBirr</option>
-                  <option value="cbe">CBE (Commercial Bank of Ethiopia)</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  {([["cbe", "CBE", "Commercial Bank of Ethiopia", Landmark], ["telebirr", "Telebirr", "Mobile money", Smartphone]] as const).map(([id, name, sub, Icon]) => {
+                    const active = paymentMethod === id;
+                    return (
+                      <button key={id} type="button" onClick={() => setPaymentMethod(id)}
+                        className={`relative rounded-xl border p-3 text-left transition-all ${active ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.25)]" : "border-border/50 bg-muted/40 hover:border-primary/40"}`}>
+                        {active && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
+                        <Icon className="h-5 w-5 text-primary mb-1.5" />
+                        <p className="font-bold text-sm text-foreground">{name}</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{sub}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {paymentMethod && (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2 animate-fade-in">
+                    {instructions.map((row) => (
+                      <div key={row.k} className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{row.k}</p>
+                          <p className={`font-bold text-foreground break-words ${row.copy ? "font-mono text-base" : "text-sm"}`}>{row.v}</p>
+                        </div>
+                        {row.copy && (
+                          <Button type="button" size="sm" variant="outline" className="h-8 gap-1 flex-shrink-0" onClick={() => copy(row.v)}>
+                            {copied === row.v ? <><Check className="h-3.5 w-3.5 text-success" />Copied</> : <><Copy className="h-3.5 w-3.5" />Copy</>}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <p className="text-xs text-muted-foreground border-t border-border/40 pt-2">
+                      Note: Please {paymentMethod === "cbe" ? "transfer" : "send"} the exact order total (<span className="font-bold text-primary">{grandTotal.toLocaleString()} ETB</span>) and upload the receipt screenshot below.
+                    </p>
+                  </div>
+                )}
+
+                <label
+                  onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={(e) => { e.preventDefault(); setDragging(false); pickFile(e.dataTransfer.files?.[0]); }}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 text-center cursor-pointer transition-all ${dragging ? "border-primary bg-primary/10" : paymentProof ? "border-success/50 bg-success/5" : "border-border/60 bg-muted/30 hover:border-primary/50"}`}>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
+                  {paymentProof ? (
+                    <><CheckCircle2 className="h-8 w-8 text-success" /><p className="text-sm font-semibold text-foreground truncate max-w-full">{paymentProof.name}</p><p className="text-xs text-muted-foreground">Tap to replace</p></>
+                  ) : (
+                    <><FolderUp className="h-8 w-8 text-primary" /><p className="text-sm font-semibold text-foreground">Upload receipt screenshot *</p><p className="text-xs text-muted-foreground">Drag & drop or tap to browse</p></>
+                  )}
+                </label>
+
+                {verifyError && (
+                  <div className="flex gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3">
+                    <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+                    <p className="text-xs text-destructive font-medium">Verification Failed. Please make sure you uploaded the correct, unedited screenshot of your transfer with the exact order total.</p>
+                  </div>
+                )}
               </div>
 
               {paymentMethod && (
