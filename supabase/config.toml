@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.send-terms]
 verify_jwt = false
+
+[functions.verify-payment-receipt]
+verify_jwt = false
