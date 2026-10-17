@@ -155,6 +155,12 @@ const Cart = () => {
 
     setSubmitting(true);
 
+    if (!paymentProof) {
+      toast.error("Please upload your payment receipt screenshot.");
+      return;
+    }
+    setVerifyError(false);
+
     try {
       let paymentProofUrl = null;
       if (paymentProof) {
@@ -173,51 +179,110 @@ const Cart = () => {
       const subtotalNow = productSubtotal(cartItems);
       const feeNow = deliveryFee(0); // recalculated on driver acceptance using real distance
 
-      const { data: order, error: orderError } = await (supabase as any)
-        .from("orders")
-        .insert({
-          customer_id: user.id,
-          shipping_address: shippingAddress,
-          city: city,
-          phone: phone,
-          total_etb: subtotalNow + feeNow,
-          delivery_fee_etb: feeNow,
-          payment_proof_url: paymentProofUrl,
-          payment_method: paymentMethod,
-          status: "pending_payment",
-          store_type: storeType,
-          seller_id: sellerId,
-          customer_latitude: lat,
-          customer_longitude: lng,
-          preferred_vehicle_type: vehicle,
-        })
-        .select()
-        .single();
+      let orderId = pendingOrderId;
+      if (orderId) {
+        await (supabase as any).from("orders").update({ payment_proof_url: paymentProofUrl, payment_method: paymentMethod }).eq("id", orderId);
+      } else {
+        const { data: order, error: orderError } = await (supabase as any)
+          .from("orders")
+          .insert({
+            customer_id: user.id,
+            shipping_address: shippingAddress,
+            city: city,
+            phone: phone,
+            total_etb: subtotalNow + feeNow,
+            delivery_fee_etb: feeNow,
+            payment_proof_url: paymentProofUrl,
+            payment_method: paymentMethod,
+            status: "pending_payment",
+            store_type: storeType,
+            seller_id: sellerId,
+            customer_latitude: lat,
+            customer_longitude: lng,
+            preferred_vehicle_type: vehicle,
+          })
+          .select()
+          .single();
+        if (orderError) throw new Error(orderError.message || 'Failed to create order');
+        if (!order) throw new Error("Order creation failed");
 
-      if (orderError) throw new Error(orderError.message || 'Failed to create order');
-      if (!order) throw new Error("Order creation failed");
+        const orderItems = cartItems.map(item => ({
+          order_id: order.id,
+          product_id: item.product_id || null,
+          product_name: item.product_name,
+          quantity: item.quantity,
+          price_etb: item.price_etb,
+          reseller_profit_etb: item.reseller_profit_etb ?? 0
+        }));
+        const { error: itemsError } = await (supabase as any).from("order_items").insert(orderItems);
+        if (itemsError) throw new Error(itemsError.message || 'Failed to create order items');
+        orderId = order.id;
+        setPendingOrderId(order.id);
+      }
 
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id || null,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        price_etb: item.price_etb,
-        reseller_profit_etb: item.reseller_profit_etb ?? 0
-      }));
-
-      const { error: itemsError } = await (supabase as any).from("order_items").insert(orderItems);
-      if (itemsError) throw new Error(itemsError.message || 'Failed to create order items');
-
-      localStorage.removeItem("cart");
-      toast.success(t('cart.orderSuccess'));
-      navigate("/account");
+      // Automated receipt verification (amount = exact order total)
+      const fd = new FormData();
+      fd.append("receipt", paymentProof);
+      fd.append("order_id", orderId!);
+      fd.append("amount", String(subtotalNow + feeNow));
+      fd.append("payment_method", paymentMethod);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment-receipt`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: fd,
+      });
+      const result = await res.json().catch(() => ({}));
+      if (result?.verified) {
+        localStorage.removeItem("cart");
+        setCartItems([]);
+        setConfirmedRef(String(result.reference || orderId).slice(0, 8).toUpperCase());
+      } else {
+        setVerifyError(true);
+      }
     } catch (error: any) {
       toast.error(error.message || t('cart.orderFailed'));
     } finally {
       setSubmitting(false);
     }
   };
+
+  const copy = async (v: string) => {
+    await navigator.clipboard.writeText(v);
+    setCopied(v);
+    setTimeout(() => setCopied(null), 1800);
+  };
+
+  const pickFile = (f?: File | null) => {
+    if (f && f.type.startsWith("image/")) { setPaymentProof(f); setVerifyError(false); }
+    else if (f) toast.error("Please upload an image screenshot.");
+  };
+
+  const instructions = paymentMethod === "cbe"
+    ? [{ k: "Bank Name", v: "Commercial Bank of Ethiopia (CBE)" }, { k: "Account Number", v: "1000036292017", copy: true }, { k: "Account Name", v: "Selamawit Gebretsadik" }]
+    : [{ k: "Payment Type", v: "Telebirr" }, { k: "Phone Number", v: "0998265025", copy: true }, { k: "Account Name", v: "Selamawit Gebretsadik" }];
+
+  if (confirmedRef) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-16 flex justify-center">
+          <div className="tech-card p-8 sm:p-10 text-center max-w-md w-full space-y-5">
+            <div className="mx-auto h-20 w-20 rounded-full bg-success/15 border border-success/40 flex items-center justify-center animate-scale-in">
+              <CheckCircle2 className="h-11 w-11 text-success" />
+            </div>
+            <h1 className="text-3xl font-black text-foreground">Order Confirmed!</h1>
+            <p className="text-muted-foreground text-sm">Your payment was verified automatically. We're preparing your order now.</p>
+            <div className="rounded-xl bg-muted/50 border border-border/50 p-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Order Reference</p>
+              <p className="text-2xl font-mono font-black text-primary">#{confirmedRef}</p>
+            </div>
+            <Button className="w-full btn-glow" onClick={() => navigate("/account")}>View My Orders</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
