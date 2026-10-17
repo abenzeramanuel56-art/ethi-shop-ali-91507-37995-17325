@@ -16,4 +16,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://abeniexpress.netlify.app/sitemap.xml
+Sitemap: https://abeniexpress.online/sitemap.xml
