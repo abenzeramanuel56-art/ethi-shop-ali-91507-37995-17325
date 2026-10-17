@@ -1,6 +1,3 @@
-// Abeni Express Terms & Conditions in the 4 supported languages.
-// The Amharic text is the authoritative source; en/om/ti are faithful translations.
-
 export interface TermsSection {
   title: string;
   paragraphs: string[];

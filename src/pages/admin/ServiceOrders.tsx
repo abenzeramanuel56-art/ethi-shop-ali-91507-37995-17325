@@ -123,7 +123,7 @@ export default function AdminServiceOrders() {
     if (error) {
       toast({
         title: "Error",
-        description: "Failed to verify payment",
+        description: error.message || "Failed to verify payment",
         variant: "destructive",
       });
       return;
@@ -299,7 +299,7 @@ export default function AdminServiceOrders() {
                     </div>
                   )}
 
-                  {order.status === "payment_submitted" && (
+                  {["payment_submitted", "pending_payment", "awaiting_verification"].includes(order.status) && (
                     <>
                       {selectedOrder === order.id ? (
                         <div className="space-y-4">

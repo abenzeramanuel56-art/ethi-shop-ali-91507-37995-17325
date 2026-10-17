@@ -90,8 +90,9 @@ export default function AdminAffiliateOrders() {
 
   if (loading) return <div className="p-6 text-muted-foreground">Loading affiliate orders...</div>;
 
-  const pending = orders.filter(o => o.status === "pending");
-  const others = orders.filter(o => o.status !== "pending");
+  const PENDING_STATES = ["pending", "pending_payment", "payment_submitted", "awaiting_verification"];
+  const pending = orders.filter(o => PENDING_STATES.includes(o.status));
+  const others = orders.filter(o => !PENDING_STATES.includes(o.status));
 
   return (
     <div className="space-y-6">

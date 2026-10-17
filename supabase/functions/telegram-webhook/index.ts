@@ -3,6 +3,7 @@
 //   /start <32-hex token>  -> instantly links that Telegram account to the Abeni Express user who generated the token
 //   /start login | auth    -> replies with a 6-digit code used to link OR sign in from the web app
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { TERMS_MSG, pickLang } from "../_shared/i18n.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,6 +106,15 @@ Deno.serve(async (req) => {
         chatId,
         `✅ <b>Linked!</b>\n\nHi ${firstName}, your Telegram is now connected to your <b>Abeni Express</b> account. Every order, wallet and delivery update will arrive here.`,
       );
+
+      // Terms & Conditions in the user's language, straight to this chat.
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("language")
+        .eq("id", tokenRow.user_id)
+        .maybeSingle();
+      const doc = TERMS_MSG[pickLang((prof as any)?.language)];
+      await sendMessage(chatId, `<b>${doc.title}</b>\n\n${doc.body}`);
       return ok();
     }
 

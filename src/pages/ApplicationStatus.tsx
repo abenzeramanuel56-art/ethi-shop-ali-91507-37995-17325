@@ -87,7 +87,7 @@ export default function ApplicationStatus() {
               const meta = statusMeta(app.status);
               const Icon = meta.icon;
               return (
-                <Card key={`${app.kind}-${app.id}`} className="card-3d">
+                <Card key={`${app.kind}-${app.id}`}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-lg capitalize">{app.kind} Application</CardTitle>
                     <Badge variant="secondary" className="gap-1">

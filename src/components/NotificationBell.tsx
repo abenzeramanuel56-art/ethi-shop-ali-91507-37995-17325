@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -14,12 +15,15 @@ interface Notification {
   type: string;
   is_read: boolean;
   created_at: string;
+  link?: string | null;
+  image_url?: string | null;
 }
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchNotifications();
@@ -136,16 +140,34 @@ export default function NotificationBell() {
                   className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
                     !notification.is_read ? "bg-muted/20" : ""
                   }`}
-                  onClick={() => markAsRead(notification.id)}
+                  onClick={() => {
+                    markAsRead(notification.id);
+                    if (notification.link) {
+                      setOpen(false);
+                      if (notification.link.startsWith("http")) {
+                        window.open(notification.link, "_blank");
+                      } else {
+                        navigate(notification.link);
+                      }
+                    }
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
                       <h4 className={`font-semibold text-sm ${getNotificationColor(notification.type)}`}>
                         {notification.title}
                       </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">
                         {notification.message}
                       </p>
+                      {notification.image_url && (
+                        <img
+                          src={notification.image_url}
+                          alt={notification.title}
+                          loading="lazy"
+                          className="mt-2 max-h-40 w-full rounded object-cover"
+                        />
+                      )}
                       <p className="text-xs text-muted-foreground mt-2">
                         {new Date(notification.created_at).toLocaleString()}
                       </p>

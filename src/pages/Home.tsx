@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
-import { ArrowRight, Package, Shield, TrendingUp, Truck, Wrench, Zap, Star, Globe, ChevronRight } from "lucide-react";
+import { ArrowRight, Package, Shield, TrendingUp, Truck, Wrench, Zap, Star, Globe, ChevronRight, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ThreeDHero } from "@/components/ThreeDHero";
 
@@ -50,6 +50,12 @@ const Home = () => {
                 <Button size="lg" variant="outline" className="gap-2 font-semibold text-base px-8 h-12 border-accent/40 text-accent hover:bg-accent/10 hover:border-accent">
                   <Wrench className="h-5 w-5" />
                   {t('home.services.browse')}
+                </Button>
+              </Link>
+              <Link to="/digital-market">
+                <Button size="lg" variant="outline" className="gap-2 font-semibold text-base px-8 h-12 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary">
+                  <Smartphone className="h-5 w-5" />
+                  Browse Digital
                 </Button>
               </Link>
               <Link to="/download">

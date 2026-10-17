@@ -33,7 +33,13 @@ function pinIcon(type?: string) {
   });
 }
 
-export function SimpleMap({ locations, className = "", height = 260 }: SimpleMapProps) {
+const isValidCoord = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v) && Math.abs(v) > 0.0001;
+
+export function SimpleMap({ locations: rawLocations, className = "", height = 260 }: SimpleMapProps) {
+  const locations = (rawLocations ?? []).filter(
+    (l) => isValidCoord(l?.latitude) && isValidCoord(l?.longitude) && Math.abs(l.latitude) <= 90 && Math.abs(l.longitude) <= 180,
+  );
   const nodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
@@ -76,25 +82,25 @@ export function SimpleMap({ locations, className = "", height = 260 }: SimpleMap
   }, []);
 
   const openDirections = () => {
+    if (locations.length === 0) return;
     const seller = locations.find((l) => l.type === "seller") || locations[0];
     const customer = locations.find((l) => l.type === "customer") || locations[1] || locations[0];
-    window.open(
-      `https://www.google.com/maps/dir/${seller.latitude},${seller.longitude}/${customer.latitude},${customer.longitude}`,
-      "_blank",
-    );
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${seller.latitude},${seller.longitude}&destination=${customer.latitude},${customer.longitude}&travelmode=driving`;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) window.location.href = url;
   };
 
   if (locations.length === 0) {
     return (
       <div className={`bg-muted rounded-lg p-8 text-center ${className}`}>
         <MapPin className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-        <p className="text-muted-foreground">No locations available</p>
+        <p className="text-muted-foreground">Location not shared yet</p>
       </div>
     );
   }
 
   return (
-    <div className={`card-3d overflow-hidden rounded-lg border border-border/60 bg-card ${className}`}>
+    <div className={`overflow-hidden rounded-lg border border-border/60 bg-card ${className}`}>
       <div ref={nodeRef} style={{ height }} className="w-full z-0" />
 
       <div className="space-y-1.5 p-3">
@@ -114,10 +120,11 @@ export function SimpleMap({ locations, className = "", height = 260 }: SimpleMap
             </div>
             <button
               onClick={() =>
-                window.open(
-                  `https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`,
-                  "_blank",
-                )
+                {
+                  const url = `https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`;
+                  const win = window.open(url, "_blank", "noopener,noreferrer");
+                  if (!win) window.location.href = url;
+                }
               }
               className="rounded-md p-2 transition-colors hover:bg-muted"
               title="Open in Google Maps"
@@ -127,15 +134,19 @@ export function SimpleMap({ locations, className = "", height = 260 }: SimpleMap
           </div>
         ))}
 
-        {locations.length >= 2 && (
-          <button
-            onClick={openDirections}
-            className="btn-3d mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-primary p-3 text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Navigation className="h-4 w-4" />
-            Navigate with Google Maps
-          </button>
-        )}
+        <button
+          onClick={() => {
+            if (locations.length >= 2) return openDirections();
+            const dest = locations[0];
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}&travelmode=driving`;
+            const win = window.open(url, "_blank", "noopener,noreferrer");
+            if (!win) window.location.href = url;
+          }}
+          className="btn-3d mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-primary p-3 text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          <Navigation className="h-4 w-4" />
+          Navigate with Google Maps
+        </button>
       </div>
     </div>
   );

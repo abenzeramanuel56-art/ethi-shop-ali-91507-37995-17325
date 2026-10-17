@@ -29,7 +29,7 @@ const signInSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -42,6 +42,8 @@ const Auth = () => {
   const [linkSent, setLinkSent] = useState<null | "signup" | "reset">(null);
   const [showTgCode, setShowTgCode] = useState(false);
   const [tgCode, setTgCode] = useState("");
+  const [tgName, setTgName] = useState("");
+  const [tgNeedsName, setTgNeedsName] = useState(false);
   const [tgLoading, setTgLoading] = useState(false);
 
   const returnTo = searchParams.get("returnTo") || "/";
@@ -50,18 +52,21 @@ const Auth = () => {
     setTgLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("telegram-login", {
-        body: { code: tgCode },
+        body: { code: tgCode, full_name: tgName.trim() || undefined },
       });
       if (error) {
         const details = (error as any)?.context ? await (error as any).context.text() : error.message;
         console.error("telegram-login failed:", details);
-        toast.error("Code invalid, expired, or this Telegram isn't linked to an account yet.");
+        if (details.includes("name_required")) {
+          setTgNeedsName(true);
+          toast.info(t('auth.tgEnterName'));
+          return;
+        }
+        toast.error(t('auth.tgFailed'));
         return;
       }
       if (!data?.token_hash) {
-        toast.error(data?.error === "telegram_not_linked"
-          ? "This Telegram isn't linked yet. Sign in once, then link it from your Account page."
-          : "Could not sign you in with Telegram.");
+        toast.error(t('auth.tgFailed'));
         return;
       }
       sessionStorage.setItem("auth:returnTo", returnTo);
@@ -73,8 +78,10 @@ const Auth = () => {
         toast.error(otpError.message);
         return;
       }
-      toast.success("Signed in with Telegram");
+      toast.success(t('auth.tgSignedIn'));
       setTgCode("");
+      setTgName("");
+      setTgNeedsName(false);
       setShowTgCode(false);
     } catch (e: any) {
       toast.error(e?.message ?? "Telegram sign-in failed");
@@ -142,7 +149,16 @@ const Auth = () => {
         body: { email: pendingSignUp.email, redirectTo: redirectUrl },
       });
 
-      toast.success("Account created! Check your email for the verification link.");
+      // Terms & Conditions in the language the person is browsing in.
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        await (supabase as any).from("profiles").update({ language }).eq("id", newUser.id);
+        await supabase.functions.invoke("send-terms", {
+          body: { user_id: newUser.id, language },
+        });
+      }
+
+      toast.success(t('auth.accountCreatedLink'));
       setLinkSent("signup");
       setResetEmail(pendingSignUp.email);
       setEmail(""); setPassword(""); setFullName("");
@@ -190,7 +206,7 @@ const Auth = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail) { 
-      toast.error("Please enter your email address"); 
+      toast.error(t('auth.enterEmail')); 
       return; 
     }
     setLoading(true);
@@ -217,7 +233,7 @@ const Auth = () => {
         throw new Error(data.error);
       }
 
-      toast.success("We sent a reset link to your email");
+      toast.success(t('auth.resetSent'));
       setLinkSent("reset");
 
     } catch (error: any) {
@@ -235,21 +251,21 @@ const Auth = () => {
         <div className="container mx-auto flex items-center justify-center px-4 py-16">
           <Card className="w-full max-w-md">
             <CardHeader>
-              <CardTitle className="text-2xl">Check your email</CardTitle>
+              <CardTitle className="text-2xl">{t('auth.checkEmail')}</CardTitle>
               <CardDescription>
-                We sent a {linkSent === "signup" ? "verification" : "password reset"} link to <strong>{resetEmail}</strong>.
-                Open it on this device to continue.
+                {linkSent === "signup" ? t('auth.checkEmailVerification') : t('auth.checkEmailReset')} <strong>{resetEmail}</strong>.{" "}
+                {t('auth.openOnDevice')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                The link expires in 1 hour. If you don't see the email, check spam or resend below.
+                {t('auth.linkExpires')}
               </p>
               {linkSent === "signup" && (
                 <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-2">
-                  <p className="text-sm font-medium">Get instant updates on Telegram</p>
+                  <p className="text-sm font-medium">{t('auth.tgPromoTitle')}</p>
                   <p className="text-xs text-muted-foreground">
-                    New here? Link our bot now and receive every order, delivery and wallet update straight to Telegram.
+                    {t('auth.tgPromoDesc')}
                   </p>
                   <Button
                     type="button"
@@ -258,7 +274,7 @@ const Auth = () => {
                     onClick={() => window.open(`https://t.me/${TELEGRAM_BOT}?start=login`, "_blank", "noopener")}
                   >
                     <Send className="h-4 w-4 mr-1" />
-                    Continue with Telegram
+                    {t('auth.telegram')}
                   </Button>
                 </div>
               )}
@@ -280,13 +296,13 @@ const Auth = () => {
                   }
 
                   setLoading(false);
-                  toast.success("Link resent");
+                  toast.success(t('auth.linkResent'));
                 }}
               >
-                Resend link
+                {t('auth.resendLink')}
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => { setLinkSent(null); setShowForgotPassword(false); }}>
-                Back to sign in
+                {t('auth.backToLogin')}
               </Button>
             </CardContent>
           </Card>
@@ -319,7 +335,7 @@ const Auth = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Sending..." : "Send reset link"}
+                  {loading ? t('auth.sending') : t('auth.sendResetLink')}
                 </Button>
                 <Button type="button" variant="outline" className="w-full"
                   onClick={() => setShowForgotPassword(false)}>
@@ -357,13 +373,22 @@ const Auth = () => {
                 }}
               >
                 <Send className="h-4 w-4 mr-1" />
-                Continue with Telegram
+                {t('auth.telegram')}
               </Button>
               {showTgCode && (
                 <div className="space-y-2 rounded-md border border-border p-3">
                   <p className="text-xs text-muted-foreground">
-                    Tap “Start” in the bot, then paste the 6-digit code it sends you.
+                    {t('auth.telegramHint')}
                   </p>
+                  {tgNeedsName && (
+                    <Input
+                      type="text"
+                      placeholder={t('auth.fullName')}
+                      value={tgName}
+                      onChange={(e) => setTgName(e.target.value)}
+                      required
+                    />
+                  )}
                   <div className="flex gap-2">
                     <Input
                       inputMode="numeric"
@@ -373,14 +398,14 @@ const Auth = () => {
                       onChange={(e) => setTgCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     />
                     <Button type="button" onClick={handleTelegramLogin} disabled={tgLoading || tgCode.length !== 6}>
-                      {tgLoading ? "..." : "Verify"}
+                      {tgLoading ? "..." : t('auth.verify')}
                     </Button>
                   </div>
                 </div>
               )}
               <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-                <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">or</span></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">{t('auth.or')}</span></div>
               </div>
             </div>
 

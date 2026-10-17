@@ -550,21 +550,21 @@ export default function DriverDashboard() {
                     </div>
 
                     {/* Map Preview */}
-                    {order.seller_latitude && order.customer_latitude && (
+                    {(order.seller_latitude || order.customer_latitude) && (
                       <SimpleMap
                         locations={[
-                          { 
-                            latitude: order.seller_latitude, 
-                            longitude: order.seller_longitude!, 
-                            label: "Pickup (Seller)", 
-                            type: "seller" 
+                          {
+                            latitude: order.seller_latitude as number,
+                            longitude: order.seller_longitude as number,
+                            label: "Pickup (Seller)",
+                            type: "seller",
                           },
-                          { 
-                            latitude: order.customer_latitude, 
-                            longitude: order.customer_longitude!, 
-                            label: "Delivery (Customer)", 
-                            type: "customer" 
-                          }
+                          {
+                            latitude: order.customer_latitude as number,
+                            longitude: order.customer_longitude as number,
+                            label: "Delivery (Customer)",
+                            type: "customer",
+                          },
                         ]}
                         className="mb-4"
                       />
@@ -622,21 +622,21 @@ export default function DriverDashboard() {
                     </div>
 
                     {/* Map */}
-                    {order.seller_latitude && order.customer_latitude && (
+                    {(order.seller_latitude || order.customer_latitude) && (
                       <SimpleMap
                         locations={[
-                          { 
-                            latitude: order.seller_latitude, 
-                            longitude: order.seller_longitude!, 
-                            label: "Pickup (Seller)", 
-                            type: "seller" 
+                          {
+                            latitude: order.seller_latitude as number,
+                            longitude: order.seller_longitude as number,
+                            label: "Pickup (Seller)",
+                            type: "seller",
                           },
-                          { 
-                            latitude: order.customer_latitude, 
-                            longitude: order.customer_longitude!, 
-                            label: "Delivery (Customer)", 
-                            type: "customer" 
-                          }
+                          {
+                            latitude: order.customer_latitude as number,
+                            longitude: order.customer_longitude as number,
+                            label: "Delivery (Customer)",
+                            type: "customer",
+                          },
                         ]}
                         className="mb-4"
                       />

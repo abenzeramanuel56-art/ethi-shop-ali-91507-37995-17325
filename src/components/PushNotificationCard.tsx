@@ -50,7 +50,7 @@ export function PushNotificationCard({
   };
 
   return (
-    <Card className="card-3d mb-6 border-primary/30 bg-primary/5">
+    <Card className="mb-6 border-primary/30 bg-primary/5">
       <CardContent className="pt-6 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-start gap-3">
           {status === "on" ? (

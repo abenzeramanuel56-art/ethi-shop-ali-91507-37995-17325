@@ -92,6 +92,15 @@ export default function OrderService() {
   const handleGetLocation = async () => {
     try {
       const coords = await requestLocation();
+      if (
+        !coords ||
+        typeof coords.latitude !== "number" ||
+        typeof coords.longitude !== "number" ||
+        Number.isNaN(coords.latitude) ||
+        Number.isNaN(coords.longitude)
+      ) {
+        throw new Error("Could not read your coordinates. Please type your address instead.");
+      }
       setCustomerLatitude(coords.latitude);
       setCustomerLongitude(coords.longitude);
       toast({
@@ -99,9 +108,13 @@ export default function OrderService() {
         description: "Your location has been saved for this order.",
       });
     } catch (err: any) {
+      const description =
+        typeof err === "string"
+          ? err
+          : err?.message || "Failed to get your location. Please enable location access.";
       toast({
         title: "Location Error",
-        description: err || "Failed to get your location. Please enable location access.",
+        description,
         variant: "destructive",
       });
     }
