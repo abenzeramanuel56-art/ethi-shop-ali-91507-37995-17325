@@ -303,6 +303,15 @@ const Cart = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      {submitting && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 backdrop-blur-md px-6">
+          <div className="tech-card p-8 max-w-sm w-full text-center space-y-4">
+            <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
+            <p className="font-bold text-foreground">Automatically verifying payment with the network...</p>
+            <p className="text-sm text-muted-foreground">Please do not close this window.</p>
+          </div>
+        </div>
+      )}
       
       <div className="container mx-auto px-4 py-8">
         <h1 className="mb-6 text-3xl font-black text-foreground">{t('cart.title')}</h1>
@@ -515,27 +524,6 @@ const Cart = () => {
                 )}
               </div>
 
-              {paymentMethod && (
-                <div className="rounded-lg border p-3 space-y-1" style={{ borderColor: 'hsl(var(--primary) / 0.2)', background: 'hsl(var(--primary) / 0.05)' }}>
-                  <p className="text-xs font-bold text-primary uppercase tracking-wide">Payment Instructions</p>
-                  {paymentMethod === "telebirr" ? (
-                    <><p className="text-xs text-muted-foreground">Send to TeleBirr:</p><p className="text-base font-black text-foreground">+251998265025</p></>
-                  ) : (
-                    <><p className="text-xs text-muted-foreground">CBE Account:</p><p className="text-base font-black text-foreground">1000036292017</p></>
-                  )}
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t('cart.paymentProof')}</Label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setPaymentProof(e.target.files?.[0] || null)}
-                  className="bg-muted/50 border-border/50 text-sm"
-                />
-              </div>
-
               <div className="border-t border-border/50 pt-4 space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{subtotal.toLocaleString()} ETB</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Delivery (min, recalculated by driver)</span><span>{previewDeliveryFee.toLocaleString()} ETB</span></div>
@@ -543,8 +531,8 @@ const Cart = () => {
                   <span className="text-sm font-bold">Total</span>
                   <span className="text-2xl font-black text-primary">{grandTotal.toLocaleString()} ETB</span>
                 </div>
-                <Button className="w-full btn-glow font-bold h-11 mt-2" onClick={handleCheckout} disabled={submitting}>
-                  {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Placing Order...</> : t('cart.placeOrder')}
+                <Button className="w-full btn-glow font-bold h-12 mt-2 gap-2" onClick={handleCheckout} disabled={submitting}>
+                  <ShieldCheck className="h-4 w-4" /> Verify & Complete Order
                 </Button>
               </div>
             </div>
