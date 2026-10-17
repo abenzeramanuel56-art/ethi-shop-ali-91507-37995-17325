@@ -1,42 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://abeniexpress.netlify.app/</loc>
+    <loc>https://abeniexpress.online/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://abeniexpress.netlify.app/products</loc>
+    <loc>https://abeniexpress.online/products</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://abeniexpress.netlify.app/services</loc>
+    <loc>https://abeniexpress.online/services</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://abeniexpress.netlify.app/digital-market</loc>
+    <loc>https://abeniexpress.online/digital-market</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://abeniexpress.netlify.app/request-item</loc>
+    <loc>https://abeniexpress.online/request-item</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://abeniexpress.netlify.app/apply-seller</loc>
+    <loc>https://abeniexpress.online/apply-seller</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://abeniexpress.netlify.app/apply-driver</loc>
+    <loc>https://abeniexpress.online/apply-driver</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://abeniexpress.netlify.app/support</loc>
+    <loc>https://abeniexpress.online/support</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
