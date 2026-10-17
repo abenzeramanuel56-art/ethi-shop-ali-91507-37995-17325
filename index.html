@@ -13,6 +13,17 @@
     <meta name="description" content="Abeni Express is a secure e-commerce ecosystem facilitating local and international trade in Ethiopia. Shop, trade, and connect safely.">
     <meta name="author" content="Abeni Express" />
     <meta name="robots" content="index, follow" />
+    <script>
+      // Hosting domains share this HTML with production; never block the custom domain.
+      (function () {
+        var hostname = window.location.hostname.toLowerCase().replace(/\.$/, "");
+        var stagingDomain = /(^|\.)(lovable\.app|vercel\.app)$/.test(hostname);
+        if (stagingDomain) {
+          var robots = document.querySelector('meta[name="robots"]');
+          if (robots) robots.setAttribute("content", "noindex, follow");
+        }
+      })();
+    </script>
     <meta http-equiv="Permissions-Policy" content="geolocation=(self)" />
     <link rel="canonical" href="https://abeniexpress.netlify.app/" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
