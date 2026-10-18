@@ -880,6 +880,174 @@ export type Database = {
           },
         ]
       }
+      payment_receipt_claims: {
+        Row: {
+          created_at: string
+          identifier: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string
+          identifier: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string
+          identifier?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_receipt_claims_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_verification_calls: {
+        Row: {
+          created_at: string
+          id: number
+          ip_hash: string
+          mode: string | null
+          order_id: string
+          request_id: string | null
+          service_error: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          ip_hash: string
+          mode?: string | null
+          order_id: string
+          request_id?: string | null
+          service_error?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          ip_hash?: string
+          mode?: string | null
+          order_id?: string
+          request_id?: string | null
+          service_error?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payment_verification_events: {
+        Row: {
+          admin_id: string | null
+          created_at: string
+          id: number
+          order_id: string
+          reason: string | null
+          request_id: string | null
+          state: string
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string
+          id?: never
+          order_id: string
+          reason?: string | null
+          request_id?: string | null
+          state: string
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string
+          id?: never
+          order_id?: string
+          reason?: string | null
+          request_id?: string | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_verification_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_verifications: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          attempts: number
+          lock_token: string | null
+          locked_at: string | null
+          method: string | null
+          mode: string | null
+          order_id: string
+          payment_method: string | null
+          reason: string | null
+          reference_id: string | null
+          request_id: string | null
+          screenshot_path: string | null
+          service_error: boolean
+          state: string
+          transaction_id: string | null
+          updated_at: string
+          verified_amount: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          lock_token?: string | null
+          locked_at?: string | null
+          method?: string | null
+          mode?: string | null
+          order_id: string
+          payment_method?: string | null
+          reason?: string | null
+          reference_id?: string | null
+          request_id?: string | null
+          screenshot_path?: string | null
+          service_error?: boolean
+          state?: string
+          transaction_id?: string | null
+          updated_at?: string
+          verified_amount?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          lock_token?: string | null
+          locked_at?: string | null
+          method?: string | null
+          mode?: string | null
+          order_id?: string
+          payment_method?: string | null
+          reason?: string | null
+          reference_id?: string | null
+          request_id?: string | null
+          screenshot_path?: string | null
+          service_error?: boolean
+          state?: string
+          transaction_id?: string | null
+          updated_at?: string
+          verified_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_verifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_driver_orders: {
         Row: {
           accepted_at: string | null
@@ -1917,6 +2085,10 @@ export type Database = {
         Returns: string
       }
       admin_factory_reset_transactional: { Args: never; Returns: undefined }
+      admin_review_payment: {
+        Args: { p_approve: boolean; p_order_id: string; p_reason: string }
+        Returns: Json
+      }
       admin_suspend_user: {
         Args: { p_days: number; p_reason: string; p_user_id: string }
         Returns: string
@@ -1996,6 +2168,33 @@ export type Database = {
           p_type: string
         }
         Returns: undefined
+      }
+      payment_begin: {
+        Args: {
+          p_ip_hash: string
+          p_method: string
+          p_order_id: string
+          p_payment_method: string
+          p_screenshot_path: string
+          p_transaction_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      payment_finish: {
+        Args: {
+          p_amount: number
+          p_call_id: number
+          p_mode: string
+          p_order_id: string
+          p_reason: string
+          p_reference: string
+          p_request: string
+          p_service_error: boolean
+          p_state: string
+          p_token: string
+        }
+        Returns: Json
       }
       remind_telegram_link: { Args: never; Returns: boolean }
       seller_confirm_service_order: {
