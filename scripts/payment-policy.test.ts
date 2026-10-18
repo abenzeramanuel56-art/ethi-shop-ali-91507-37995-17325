@@ -1,0 +1,13 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { paymentDecision, normalizeReceiptId, validReceipt } from '../supabase/functions/verify-payment-receipt/policy';
+test('exact saved total and recipient permit confirmation', () => assert.deepEqual(paymentDecision(true, '100.00', '100', true), { state: 'confirmed', reason: null }));
+test('underpayment is rejected even if verified', () => assert.equal(paymentDecision(true, 99, 100, true).state, 'failed'));
+test('overpayment requires review', () => assert.equal(paymentDecision(true, 101, 100, true).state, 'pending_review'));
+test('missing paid amount requires review', () => assert.equal(paymentDecision(true, undefined, 100, true).state, 'pending_review'));
+test('wrong recipient is rejected', () => assert.equal(paymentDecision(true, 100, 100, false).reason, 'recipient_mismatch'));
+test('missing recipient requires review', () => assert.equal(paymentDecision(true, 100, 100, null).state, 'pending_review'));
+test('unverified receipt cannot confirm', () => assert.equal(paymentDecision(false, 100, 100, true).state, 'failed'));
+test('receipt identifiers normalize case and spaces', () => assert.equal(normalizeReceiptId(' AB c 123 '), 'abc123'));
+test('10 MB receipt limit is enforced', () => { assert.equal(validReceipt('application/pdf', 10485760), true); assert.equal(validReceipt('application/pdf', 10485761), false); });
+test('only JPG PNG PDF accepted', () => { assert.equal(validReceipt('image/jpeg', 1), true); assert.equal(validReceipt('image/png', 1), true); assert.equal(validReceipt('image/gif', 1), false); });

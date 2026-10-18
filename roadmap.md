@@ -1,5 +1,14 @@
 # Roadmap
 
+## Current scope: ShegerPay
+- [ ] Extend existing checkout with ID/screenshot verification and localized result states
+- [ ] Secure backend verification, atomic receipt reuse checks, limits and private uploads
+- [ ] Admin review, editable payment details, health/mode visibility
+- [ ] Run local safeguards and browser checks
+- [ ] Run 13 real ShegerPay scenarios (requires new test key and test receipts)
+
+## Earlier requests (outside this task's scope)
+
 - [ ] Fix admin payment verification for product, service, digital, and affiliate orders
 - [ ] Fix service-order location crash
 - [ ] Complete auth page localization
