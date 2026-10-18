@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { paymentTranslations } from '@/lib/paymentTranslations';
 
 type Language = 'en' | 'am' | 'om' | 'ti';
 
@@ -1298,6 +1299,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   // Falls back to English when the active language is missing a key, so the
   // partially-translated languages (om, ti) still render correctly.
   const t = (key: string): string => {
+    if (key.startsWith('payment.')) {
+      const paymentKey = key.slice(8) as keyof typeof paymentTranslations.en;
+      return paymentTranslations[language]?.[paymentKey] || paymentTranslations.en[paymentKey] || key;
+    }
     return (
       translations[language]?.[key] ||
       extraTranslations[language]?.[key] ||
