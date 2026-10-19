@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
@@ -43,6 +43,16 @@ const Cart = () => {
   const [vehicle, setVehicle] = useState<"any" | "motorbike" | "car" | "van" | "truck">("any");
   const { loading: locationLoading, requestLocation } = useGeolocation();
   const [verifyError, setVerifyError] = useState(false);
+  const [verifyReason, setVerifyReason] = useState("unknown");
+  const [pendingReview, setPendingReview] = useState(false);
+  const [transactionId, setTransactionId] = useState("");
+  const [savedTotal, setSavedTotal] = useState<number | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<Record<string, { name: string; account: string }> | null>(null);
+  const [healthy, setHealthy] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const busy = useRef(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const pt = (key: string) => t(`payment.${key}`);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [confirmedRef, setConfirmedRef] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -54,7 +64,18 @@ const Cart = () => {
 
   useEffect(() => {
     checkAuth();
+    supabase.from("app_settings").select("value").eq("key", "checkout_payment_details").maybeSingle().then(({ data }) => {
+      if (data) setPaymentDetails(data.value as typeof paymentDetails);
+    });
+    supabase.functions.invoke("payment-service-status").then(({ data }) => setHealthy(data?.healthy === true));
   }, []);
+
+  useEffect(() => {
+    if (!paymentProof || paymentProof.type === "application/pdf") { setPreview(null); return; }
+    const url = URL.createObjectURL(paymentProof);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [paymentProof]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -138,118 +159,64 @@ const Cart = () => {
   };
 
 
-  const handleCheckout = async () => {
-    if (!shippingAddress?.trim() || !city?.trim() || !phone?.trim()) {
-      toast.error("Please fill in your address, city and phone number to deliver your order.");
-      return;
+  const saveOrder = async (): Promise<string | null> => {
+    if (busy.current || !user?.id) return null;
+    if (!shippingAddress.trim() || !city.trim() || !phone.trim() || !cartItems.length) {
+      toast.error(pt('prepare_error')); return null;
     }
-    if (!paymentMethod) {
-      toast.error(t('cart.selectPaymentMethod'));
-      return;
-    }
-    if (cartItems.length === 0) {
-      toast.error(t('cart.emptyCart'));
-      return;
-    }
-
-    // GPS is OPTIONAL — never auto-request (avoids the "abeniexpress.lovable.app
-    // wants to know your location" browser popup at checkout). User can opt-in
-    // explicitly via the "Share My Location" button above.
-    const lat = customerLatitude;
-    const lng = customerLongitude;
-
+    busy.current = true;
     setSubmitting(true);
-
-    if (!paymentProof) {
-      toast.error("Please upload your payment receipt screenshot.");
-      return;
-    }
-    setVerifyError(false);
-
     try {
-      let paymentProofUrl = null;
-      if (paymentProof) {
-        const fileExt = paymentProof.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('payment-proofs').upload(fileName, paymentProof);
-        if (uploadError) throw new Error(`Could not upload payment proof: ${uploadError.message}`);
-        const { data: { publicUrl } } = supabase.storage.from('payment-proofs').getPublicUrl(fileName);
-        paymentProofUrl = publicUrl;
-      }
+      const sellerId = cartItems.find(i => i.seller_id)?.seller_id || null;
+      const { data: order, error } = await supabase.from("orders").insert({
+        customer_id: user.id, shipping_address: shippingAddress, city, phone,
+        total_etb: grandTotal, delivery_fee_etb: previewDeliveryFee,
+        status: "pending_payment", store_type: sellerId ? "seller" : "admin", seller_id: sellerId,
+        customer_latitude: customerLatitude, customer_longitude: customerLongitude,
+        preferred_vehicle_type: vehicle,
+      }).select('id,total_etb').single();
+      if (error || !order) throw error;
+      const { error: itemsError } = await supabase.from('order_items').insert(cartItems.map(item => ({
+        order_id: order.id, product_id: item.product_id || null, product_name: item.product_name,
+        quantity: item.quantity, price_etb: item.price_etb, reseller_profit_etb: item.reseller_profit_etb ?? 0,
+      })));
+      if (itemsError) throw itemsError;
+      setPendingOrderId(order.id);
+      setSavedTotal(Number(order.total_etb));
+      return order.id;
+    } catch {
+      toast.error(pt('prepare_error')); return null;
+    } finally { busy.current = false; setSubmitting(false); }
+  };
 
-      const hasSellerItems = cartItems.some(i => i.store_type === "seller" || i.store_type === "reseller");
-      const storeType = hasSellerItems ? "seller" : "admin";
-      const sellerId = hasSellerItems ? cartItems.find(i => i.store_type === "seller" || i.store_type === "reseller")?.seller_id || null : null;
-
-      const subtotalNow = productSubtotal(cartItems);
-      const feeNow = deliveryFee(0); // recalculated on driver acceptance using real distance
-
-      let orderId = pendingOrderId;
-      if (orderId) {
-        await (supabase as any).from("orders").update({ payment_proof_url: paymentProofUrl, payment_method: paymentMethod }).eq("id", orderId);
-      } else {
-        const { data: order, error: orderError } = await (supabase as any)
-          .from("orders")
-          .insert({
-            customer_id: user.id,
-            shipping_address: shippingAddress,
-            city: city,
-            phone: phone,
-            total_etb: subtotalNow + feeNow,
-            delivery_fee_etb: feeNow,
-            payment_proof_url: paymentProofUrl,
-            payment_method: paymentMethod,
-            status: "pending_payment",
-            store_type: storeType,
-            seller_id: sellerId,
-            customer_latitude: lat,
-            customer_longitude: lng,
-            preferred_vehicle_type: vehicle,
-          })
-          .select()
-          .single();
-        if (orderError) throw new Error(orderError.message || 'Failed to create order');
-        if (!order) throw new Error("Order creation failed");
-
-        const orderItems = cartItems.map(item => ({
-          order_id: order.id,
-          product_id: item.product_id || null,
-          product_name: item.product_name,
-          quantity: item.quantity,
-          price_etb: item.price_etb,
-          reseller_profit_etb: item.reseller_profit_etb ?? 0
-        }));
-        const { error: itemsError } = await (supabase as any).from("order_items").insert(orderItems);
-        if (itemsError) throw new Error(itemsError.message || 'Failed to create order items');
-        orderId = order.id;
-        setPendingOrderId(order.id);
-      }
-
-      // Automated receipt verification (amount = exact order total)
+  const handleCheckout = async () => {
+    if (busy.current || !pendingOrderId) return;
+    if (!paymentMethod) { toast.error(t('cart.selectPaymentMethod')); return; }
+    if (!paymentProof && !transactionId.trim()) { toast.error(pt('missing_input')); return; }
+    busy.current = true;
+    setSubmitting(true);
+    setVerifyError(false);
+    try {
       const fd = new FormData();
-      fd.append("receipt", paymentProof);
-      fd.append("order_id", orderId!);
-      fd.append("amount", String(subtotalNow + feeNow));
-      fd.append("payment_method", paymentMethod);
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment-receipt`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session?.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: fd,
-      });
-      const result = await res.json().catch(() => ({}));
-      if (result?.verified) {
-        localStorage.removeItem("cart");
-        setCartItems([]);
-        setConfirmedRef(String(result.reference || orderId).slice(0, 8).toUpperCase());
+      if (paymentProof) fd.append('receipt', paymentProof);
+      fd.append('order_id', pendingOrderId);
+      fd.append('payment_method', paymentMethod);
+      fd.append('transaction_id', transactionId.trim().replace(/\s/g, ''));
+      const { data: result, error } = await supabase.functions.invoke('verify-payment-receipt', { body: fd });
+      if (error || result?.saved === false) throw error;
+      if (result?.state === 'confirmed') {
+        localStorage.removeItem('cart'); setCartItems([]);
+        setConfirmedRef(pendingOrderId);
+      } else if (result?.state === 'pending_review' || result?.state === 'verifying') {
+        setPendingReview(true);
+        setVerifyReason(result?.reason || 'service_error');
       } else {
-        setVerifyError(true);
+        setVerifyError(true); setVerifyReason(result?.reason || 'unknown');
       }
-    } catch (error: any) {
-      toast.error(error.message || t('cart.orderFailed'));
-    } finally {
-      setSubmitting(false);
-    }
+    } catch {
+      // A transport failure does not establish that the backend saved the receipt.
+      setVerifyError(true); setVerifyReason('unknown');
+    } finally { busy.current = false; setSubmitting(false); }
   };
 
   const copy = async (v: string) => {
@@ -259,13 +226,25 @@ const Cart = () => {
   };
 
   const pickFile = (f?: File | null) => {
-    if (f && f.type.startsWith("image/")) { setPaymentProof(f); setVerifyError(false); }
-    else if (f) toast.error("Please upload an image screenshot.");
+    if (!f) return;
+    if (!['image/jpeg', 'image/png', 'application/pdf'].includes(f.type) || f.size <= 0 || f.size > 10 * 1024 * 1024) {
+      toast.error(pt('invalid_file')); return;
+    }
+    setPaymentProof(f); setVerifyError(false);
   };
 
-  const instructions = paymentMethod === "cbe"
-    ? [{ k: "Bank Name", v: "Commercial Bank of Ethiopia (CBE)" }, { k: "Account Number", v: "1000036292017", copy: true }, { k: "Account Name", v: "Selamawit Gebretsadik" }]
-    : [{ k: "Payment Type", v: "Telebirr" }, { k: "Phone Number", v: "0998265025", copy: true }, { k: "Account Name", v: "Selamawit Gebretsadik" }];
+  const details = paymentMethod ? paymentDetails?.[paymentMethod] : null;
+  const instructions = details ? [{ k: pt('name'), v: details.name }, { k: pt(paymentMethod === 'cbe' ? 'account' : 'phone'), v: details.account, copy: true }] : [];
+
+  if (pendingReview) {
+    return <div className="min-h-screen bg-background"><Navbar /><main className="container mx-auto px-4 py-16 text-center space-y-5">
+      <AlertCircle className="mx-auto h-16 w-16 text-warning" />
+      <h1 className="text-3xl font-bold">{pt('pending_review')}</h1>
+      <p className="text-warning">{pt(verifyReason === 'attempt_limit' ? 'attempt_limit' : 'pending')}</p>
+      <p className="font-mono break-all">{pt('reference')}: {pendingOrderId}</p>
+      <Button onClick={() => navigate('/account')}>{pt('orders')}</Button>
+    </main></div>;
+  }
 
   if (confirmedRef) {
     return (
@@ -276,13 +255,13 @@ const Cart = () => {
             <div className="mx-auto h-20 w-20 rounded-full bg-success/15 border border-success/40 flex items-center justify-center animate-scale-in">
               <CheckCircle2 className="h-11 w-11 text-success" />
             </div>
-            <h1 className="text-3xl font-black text-foreground">Order Confirmed!</h1>
-            <p className="text-muted-foreground text-sm">Your payment was verified automatically. We're preparing your order now.</p>
+            <h1 className="text-3xl font-black text-foreground">{pt('confirmed')}</h1>
+            <p className="text-muted-foreground text-sm">{pt('confirmed')}</p>
             <div className="rounded-xl bg-muted/50 border border-border/50 p-4">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Order Reference</p>
-              <p className="text-2xl font-mono font-black text-primary">#{confirmedRef}</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{pt('reference')}</p>
+              <p className="text-2xl font-mono font-black text-primary break-all">#{confirmedRef}</p>
             </div>
-            <Button className="w-full btn-glow" onClick={() => navigate("/account")}>View My Orders</Button>
+            <Button className="w-full btn-glow" onClick={() => navigate("/account")}>{pt('orders')}</Button>
           </div>
         </div>
       </div>
@@ -307,8 +286,8 @@ const Cart = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 backdrop-blur-md px-6">
           <div className="tech-card p-8 max-w-sm w-full text-center space-y-4">
             <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
-            <p className="font-bold text-foreground">Automatically verifying payment with the network...</p>
-            <p className="text-sm text-muted-foreground">Please do not close this window.</p>
+            <p className="font-bold text-foreground">{pt('verifying')}</p>
+            <p className="text-sm text-muted-foreground">{pt('stay')}</p>
           </div>
         </div>
       )}
@@ -340,13 +319,13 @@ const Cart = () => {
                     <h3 className="font-semibold text-foreground truncate">{item.product_name}</h3>
                     <p className="text-primary font-bold">{item.price_etb.toLocaleString()} {t('common.etb')}</p>
                     <div className="mt-2 flex items-center gap-2">
-                      <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</Button>
+                      <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={!!pendingOrderId} onClick={() => updateQuantity(item.id, item.quantity - 1)}>-</Button>
                       <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
-                      <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</Button>
+                      <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={!!pendingOrderId} onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</Button>
                     </div>
                   </div>
                   <div className="flex flex-col items-end justify-between">
-                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" disabled={!!pendingOrderId} onClick={() => removeItem(item.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                     <p className="font-bold text-sm">{(item.price_etb * item.quantity).toLocaleString()} ETB</p>
@@ -457,27 +436,29 @@ const Cart = () => {
                 <p className="text-xs text-muted-foreground">Only drivers with this vehicle will be notified</p>
               </div>
 
+              {!pendingOrderId && <Button className="w-full" disabled={submitting} onClick={saveOrder}>{pt('save_order')}</Button>}
+              {savedTotal !== null && <div className="border-y border-primary/30 py-3 space-y-1"><p className="text-sm">{pt('exact')}</p><p className="text-2xl font-bold text-primary">{savedTotal.toLocaleString()} ETB</p><p className="font-mono text-xs break-all">{pendingOrderId}</p></div>}
               {/* Payment */}
               <div className="space-y-3">
-                <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 flex gap-2.5">
+                {healthy && <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 flex gap-2.5">
                   <Zap className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <p className="text-xs leading-relaxed text-foreground">
-                    <span className="font-black text-primary">⚡ Instant Automated Verification:</span> Do not wait for an admin to manually verify your payment! Our system automatically verifies your receipt with the bank network in under 2 seconds for instant order approval.
+                    <span className="font-black text-primary">⚡ {pt('instant')}: </span>{pt('banner')}
                   </p>
-                </div>
+                </div>}
 
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">{t('cart.paymentMethod')} *</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {([["cbe", "CBE", "Commercial Bank of Ethiopia", Landmark], ["telebirr", "Telebirr", "Mobile money", Smartphone]] as const).map(([id, name, sub, Icon]) => {
                     const active = paymentMethod === id;
                     return (
-                      <button key={id} type="button" onClick={() => setPaymentMethod(id)}
-                        className={`relative rounded-xl border p-3 text-left transition-all ${active ? "border-primary bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.25)]" : "border-border/50 bg-muted/40 hover:border-primary/40"}`}>
+                      <Button variant="outline" key={id} type="button" disabled={!pendingOrderId} onClick={() => setPaymentMethod(id)}
+                        className={`relative h-auto block rounded-lg border p-3 text-left transition-all ${active ? "border-primary bg-primary/10 " : "border-border/50 bg-muted/40 hover:border-primary/40"}`}>
                         {active && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
                         <Icon className="h-5 w-5 text-primary mb-1.5" />
                         <p className="font-bold text-sm text-foreground">{name}</p>
                         <p className="text-[10px] text-muted-foreground leading-tight">{sub}</p>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -492,36 +473,34 @@ const Cart = () => {
                         </div>
                         {row.copy && (
                           <Button type="button" size="sm" variant="outline" className="h-8 gap-1 flex-shrink-0" onClick={() => copy(row.v)}>
-                            {copied === row.v ? <><Check className="h-3.5 w-3.5 text-success" />Copied</> : <><Copy className="h-3.5 w-3.5" />Copy</>}
+                            {copied === row.v ? <><Check className="h-3.5 w-3.5 text-success" />{pt('copied')}</> : <><Copy className="h-3.5 w-3.5" />{pt('copy')}</>}
                           </Button>
                         )}
                       </div>
                     ))}
                     <p className="text-xs text-muted-foreground border-t border-border/40 pt-2">
-                      Note: Please {paymentMethod === "cbe" ? "transfer" : "send"} the exact order total (<span className="font-bold text-primary">{grandTotal.toLocaleString()} ETB</span>) and upload the receipt screenshot below.
+                      {pt('exact')}: <span className="font-bold text-primary">{savedTotal?.toLocaleString()} ETB</span>
                     </p>
                   </div>
                 )}
 
-                <label
-                  onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                  onDragLeave={() => setDragging(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragging(false); pickFile(e.dataTransfer.files?.[0]); }}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 text-center cursor-pointer transition-all ${dragging ? "border-primary bg-primary/10" : paymentProof ? "border-success/50 bg-success/5" : "border-border/60 bg-muted/30 hover:border-primary/50"}`}>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
-                  {paymentProof ? (
-                    <><CheckCircle2 className="h-8 w-8 text-success" /><p className="text-sm font-semibold text-foreground truncate max-w-full">{paymentProof.name}</p><p className="text-xs text-muted-foreground">Tap to replace</p></>
-                  ) : (
-                    <><FolderUp className="h-8 w-8 text-primary" /><p className="text-sm font-semibold text-foreground">Upload receipt screenshot *</p><p className="text-xs text-muted-foreground">Drag & drop or tap to browse</p></>
-                  )}
-                </label>
-
-                {verifyError && (
-                  <div className="flex gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3">
-                    <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
-                    <p className="text-xs text-destructive font-medium">Verification Failed. Please make sure you uploaded the correct, unedited screenshot of your transfer with the exact order total.</p>
-                  </div>
-                )}
+                {!paymentDetails && <p className="text-warning">{pt('settings_error')}</p>}
+                <Label htmlFor="receipt-id">{pt('transaction')}</Label>
+                <Input id="receipt-id" maxLength={64} value={transactionId} disabled={!pendingOrderId || submitting} onChange={e => setTransactionId(e.target.value.replace(/\s/g, ''))} />
+                <p className="text-xs text-muted-foreground">{pt('either')}</p>
+                <div onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
+                  onDrop={e => { e.preventDefault(); setDragging(false); if (pendingOrderId) pickFile(e.dataTransfer.files[0]); }}
+                  className={`rounded-lg border-2 border-dashed p-4 space-y-3 text-center ${dragging ? 'border-primary bg-primary/10' : 'border-border'}`}>
+                  <FolderUp className="mx-auto h-8 w-8 text-primary" />
+                  <p className="text-sm">{pt('drop')}</p>
+                  <input ref={fileInput} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={e => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
+                  <Button variant="outline" disabled={!pendingOrderId || submitting} onClick={() => fileInput.current?.click()}>{pt('choose')}</Button>
+                  {preview && <img src={preview} alt={pt('receipt')} className="max-h-40 mx-auto object-contain" />}
+                  {paymentProof && <div><p className="text-xs break-all">{paymentProof.name}</p><Button variant="ghost" size="sm" onClick={() => setPaymentProof(null)}>{pt('remove')}</Button></div>}
+                </div>
+                {verifyError && <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-destructive space-y-1">
+                  <p className="font-bold">{pt('failed')}</p><p className="text-sm">{pt(verifyReason)}</p>
+                </div>}
               </div>
 
               <div className="border-t border-border/50 pt-4 space-y-2">
@@ -531,8 +510,8 @@ const Cart = () => {
                   <span className="text-sm font-bold">Total</span>
                   <span className="text-2xl font-black text-primary">{grandTotal.toLocaleString()} ETB</span>
                 </div>
-                <Button className="w-full btn-glow font-bold h-12 mt-2 gap-2" onClick={handleCheckout} disabled={submitting}>
-                  <ShieldCheck className="h-4 w-4" /> Verify & Complete Order
+                <Button className="w-full btn-glow font-bold h-12 mt-2 gap-2" onClick={handleCheckout} disabled={submitting || !pendingOrderId || !paymentDetails || !paymentMethod || (!paymentProof && !transactionId)}>
+                  <ShieldCheck className="h-4 w-4" /> {pt(verifyError ? 'retry' : 'verify')}
                 </Button>
               </div>
             </div>

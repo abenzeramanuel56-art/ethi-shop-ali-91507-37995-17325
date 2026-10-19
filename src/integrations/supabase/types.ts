@@ -2089,6 +2089,15 @@ export type Database = {
         Args: { p_approve: boolean; p_order_id: string; p_reason: string }
         Returns: Json
       }
+      admin_review_payment_with_receipt: {
+        Args: {
+          p_approve: boolean
+          p_order_id: string
+          p_reason: string
+          p_receipt_id?: string
+        }
+        Returns: Json
+      }
       admin_suspend_user: {
         Args: { p_days: number; p_reason: string; p_user_id: string }
         Returns: string
