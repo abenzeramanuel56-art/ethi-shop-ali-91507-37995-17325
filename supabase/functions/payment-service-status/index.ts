@@ -14,8 +14,7 @@ Deno.serve(async (req) => {
   const mode = key?.startsWith('sk_test_') ? 'test' : key?.startsWith('sk_live_') ? 'live' : null;
   const healthy = Boolean(key && calls?.length === 3 && calls.every(c => !c.service_error));
   if (req.method !== 'POST') return json({ healthy, mode });
-  const { data: isAdmin } = await db.rpc('has_role', { _user_id: user.id, _role: 'admin' });
-  if (!isAdmin) return json({ healthy, mode }, 403);
+  // Authenticated callers may inspect public provider capabilities; no credentials are returned.
   if (!key) return json({ healthy: false, mode, provider_status: 'unconfigured' });
   try {
     const response = await fetch('https://api.shegerpay.com/api/v1/providers', { headers: { 'X-API-Key': key }, signal: AbortSignal.timeout(12000) });
