@@ -21,6 +21,7 @@ import AdminDigitalOrders from "./DigitalOrders";
 import AdminAffiliateOrders from "./AffiliateOrders";
 import { SignedImage, openSignedUrl } from "@/components/SignedImage";
 import { driverPayout } from "@/lib/pricing";
+import { PaymentReview } from "@/components/PaymentReview";
 
 interface Stats {
   pendingQuotes: number;
@@ -265,6 +266,13 @@ const AdminDashboard = () => {
     }
 
     try {
+      if (statusToUse === 'payment_verified') {
+        const { data: verification } = await supabase.from('payment_verifications').select('state').eq('order_id', orderId).maybeSingle();
+        if (verification) {
+          document.getElementById('payment-review-tab')?.click();
+          return;
+        }
+      }
       const currentOrder = orders.find(o => o.id === orderId);
       const isPaymentJustVerified = statusToUse === "payment_verified" && 
                                    currentOrder?.status !== "payment_verified";
@@ -535,6 +543,7 @@ const AdminDashboard = () => {
         <TabsList className="flex-wrap">
           <TabsTrigger value="quotes">Quote Requests</TabsTrigger>
           <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger id="payment-review-tab" value="payment_review">Payment review</TabsTrigger>
           <TabsTrigger value="reseller_orders">Reseller Orders</TabsTrigger>
           <TabsTrigger value="service_orders">Service Orders</TabsTrigger>
           <TabsTrigger value="digital_orders">Digital Orders</TabsTrigger>
@@ -548,6 +557,7 @@ const AdminDashboard = () => {
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="punishments">Punishments</TabsTrigger>
         </TabsList>
+        <TabsContent value="payment_review"><PaymentReview onChange={fetchData} /></TabsContent>
 
         <TabsContent value="digital_orders">
           <AdminDigitalOrders />
