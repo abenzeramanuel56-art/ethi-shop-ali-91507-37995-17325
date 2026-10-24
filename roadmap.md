@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Current scope: ShegerPay
+- [ ] Connect service and digital checkout to private receipt verification and audited admin review
 - [ ] Extend existing checkout with ID/screenshot verification and localized result states
 - [ ] Secure backend verification, atomic receipt reuse checks, limits and private uploads
 - [ ] Admin review, editable payment details, health/mode visibility
