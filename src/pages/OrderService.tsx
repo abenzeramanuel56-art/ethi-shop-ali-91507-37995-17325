@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Clock, DollarSign, Briefcase, Upload, Loader2, MapPin } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { CommercePayment } from "@/components/CommercePayment";
 
 interface Service {
   id: string;
@@ -44,8 +45,7 @@ export default function OrderService() {
   const [quantity, setQuantity] = useState(1);
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [savedOrder, setSavedOrder] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -156,92 +156,19 @@ export default function OrderService() {
     return service.price_etb * quantity;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!service || !userId) return;
-
-    if (!phone) {
-      toast({
-        title: "Phone required",
-        description: "Please enter your phone number",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!paymentMethod) {
-      toast({
-        title: "Payment method required",
-        description: "Please select a payment method",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      let paymentProofUrl = null;
-
-      // Upload payment proof if provided
-      if (paymentProof) {
-        const fileExt = paymentProof.name.split('.').pop();
-        const fileName = `${userId}/${Date.now()}.${fileExt}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("payment-proofs")
-          .upload(fileName, paymentProof);
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from("payment-proofs")
-          .getPublicUrl(fileName);
-        
-        paymentProofUrl = urlData.publicUrl;
-      }
-
-      // Create service order with location
-      const { error } = await supabase
-        .from("service_orders")
-        .insert({
-          service_id: service.id,
-          customer_id: userId,
-          seller_id: service.seller_id,
-          quantity: service.price_type === "fixed" ? quantity : 1,
-          hours: service.price_type === "hourly" ? hours : null,
-          total_etb: calculateTotal(),
-          status: paymentProofUrl ? "payment_submitted" : "pending_payment",
-          payment_proof_url: paymentProofUrl,
-          payment_method: paymentMethod,
-          customer_phone: phone,
-          customer_name: customerName,
-          customer_latitude: customerLatitude,
-          customer_longitude: customerLongitude,
-          notes,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Order placed!",
-        description: paymentProofUrl 
-          ? "Your order has been submitted. We'll verify your payment and notify you."
-          : "Please complete your payment and upload proof.",
-      });
-
-      navigate("/account");
-    } catch (error: any) {
-      console.error("Error creating order:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create order",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+  const prepareOrder = async () => {
+    if (!service || !userId || !phone.trim()) throw new Error("Phone required");
+    const { data, error } = await supabase.from("service_orders").insert({
+      service_id: service.id, customer_id: userId, seller_id: service.seller_id,
+      quantity: service.price_type === "fixed" ? quantity : 1,
+      hours: service.price_type === "hourly" ? hours : null,
+      total_etb: calculateTotal(), status: "pending_payment", customer_phone: phone,
+      customer_name: customerName, customer_latitude: customerLatitude,
+      customer_longitude: customerLongitude, notes,
+    }).select("id,total_etb").single();
+    if (error || !data) throw error ?? new Error("Order unavailable");
+    setSavedOrder(true);
+    return { id: data.id, total: Number(data.total_etb) };
   };
 
   if (loading) {
@@ -287,7 +214,8 @@ export default function OrderService() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
+              <fieldset disabled={savedOrder} className="space-y-6">
               {/* Quantity/Hours */}
               {service.price_type === "hourly" ? (
                 <div className="space-y-2">
@@ -371,47 +299,7 @@ export default function OrderService() {
                 />
               </div>
 
-              {/* Payment Method */}
-              <div className="space-y-2">
-                <Label>Payment Method *</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cbe">CBE (Commercial Bank of Ethiopia)</SelectItem>
-                    <SelectItem value="telebirr">Telebirr</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {paymentMethod && (
-                <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <p className="font-medium">Payment Instructions:</p>
-                  {paymentMethod === "cbe" && (
-                    <p className="text-sm">Transfer to CBE Account: 1000XXXXXXXX</p>
-                  )}
-                  {paymentMethod === "telebirr" && (
-                    <p className="text-sm">Send to Telebirr: 09XXXXXXXX</p>
-                  )}
-                </div>
-              )}
-
-              {/* Payment Proof */}
-              <div className="space-y-2">
-                <Label>Payment Proof (Screenshot)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setPaymentProof(e.target.files?.[0] || null)}
-                    className="flex-1"
-                  />
-                  {paymentProof && (
-                    <span className="text-sm text-green-600">✓ Selected</span>
-                  )}
-                </div>
-              </div>
+              </fieldset>
 
               {/* Total */}
               <div className="p-4 bg-primary/10 rounded-lg">
@@ -421,18 +309,8 @@ export default function OrderService() {
                 </div>
               </div>
 
-              {/* Submit */}
-              <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Placing Order...
-                  </>
-                ) : (
-                  "Place Order"
-                )}
-              </Button>
-            </form>
+              <CommercePayment kind="service" prepare={prepareOrder} />
+            </div>
           </CardContent>
         </Card>
       </div>
