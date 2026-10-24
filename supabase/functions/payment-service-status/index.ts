@@ -20,12 +20,7 @@ Deno.serve(async (req) => {
     const response = await fetch('https://api.shegerpay.com/api/v1/providers', { headers: { 'X-API-Key': key }, signal: AbortSignal.timeout(12000) });
     // Providers contain public integration metadata only, never receipt or customer data.
     const providers = response.ok ? await response.json() : null;
-    let sample = null;
-    if (mode === 'test' && response.ok) {
-      const probe = await fetch('https://api.shegerpay.com/api/v1/verify', { method: 'POST', headers: { 'X-API-Key': key, 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: 'cbe', transaction_id: 'ABENI_TEST_NONEXISTENT', amount: 100, merchant_name: 'Selamawit Gebretsadik' }), signal: AbortSignal.timeout(12000) });
-      sample = { status: probe.status, response: await probe.json() };
-    }
-    return json({ healthy, mode, provider_status: response.status, providers, sample });
+    return json({ healthy, mode, provider_status: response.status, providers });
   } catch {
     return json({ healthy: false, mode, provider_status: 'unavailable' });
   }

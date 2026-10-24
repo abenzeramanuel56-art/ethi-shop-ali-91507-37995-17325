@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, FileCode, FileText, Download, ShoppingCart, Smartphone, Globe, GraduationCap, Video, FileArchive, Sparkles, Zap, Trophy, ExternalLink, MessageCircle } from "lucide-react";
 import ReportItemDialog from "@/components/ReportItemDialog";
 import { startChatWithSeller } from "@/pages/Messages";
+import { CommercePayment } from "@/components/CommercePayment";
 
 const CATEGORIES = [
   { id: "all", label: "All", icon: Sparkles, color: "from-primary to-accent" },
@@ -34,9 +35,7 @@ function DigitalMarketInner() {
   const [products, setProducts] = useState<any[]>([]);
   const [myOrders, setMyOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [buying, setBuying] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<Record<string, string>>({});
-  const [paymentProof, setPaymentProof] = useState<Record<string, File | null>>({});
+
   const [downloadCodeInput, setDownloadCodeInput] = useState<Record<string, string>>({});
   const [activeCategory, setActiveCategory] = useState("all");
 
@@ -74,38 +73,14 @@ function DigitalMarketInner() {
     return m;
   }, [products]);
 
-  const buy = async (p: any) => {
-    if (!user) { navigate("/auth"); return; }
-    const method = paymentMethod[p.id];
-    const proof = paymentProof[p.id];
-    if (!method) { toast.error("Choose payment method"); return; }
-    if (!proof) { toast.error("Upload payment proof screenshot"); return; }
-
-    setBuying(p.id);
-    try {
-      const ext = proof.name.split('.').pop();
-      const path = `${user.id}/digital-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("payment-proofs").upload(path, proof);
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("payment-proofs").getPublicUrl(path);
-
-      const { error } = await (supabase as any).from("digital_product_orders").insert({
-        digital_product_id: p.id,
-        buyer_id: user.id,
-        seller_id: p.seller_id,
-        price_etb: p.price_etb,
-        payment_method: method,
-        payment_proof_url: pub.publicUrl,
-      });
-      if (error) throw error;
-
-      toast.success("🎮 Quest accepted! Waiting for admin to verify your payment.");
-      await init();
-    } catch (e: any) {
-      toast.error(e.message || "Purchase failed");
-    } finally {
-      setBuying(null);
-    }
+  const preparePurchase = async (p: any) => {
+    if (!user) { navigate("/auth?returnTo=/digital-market"); throw new Error("Sign in required"); }
+    const { data, error } = await supabase.from("digital_product_orders").insert({
+      digital_product_id: p.id, buyer_id: user.id, seller_id: p.seller_id,
+      price_etb: p.price_etb, status: "pending_payment",
+    }).select("id,price_etb").single();
+    if (error || !data) throw error ?? new Error("Order unavailable");
+    return { id: data.id, total: Number(data.price_etb) };
   };
 
   const downloadWithCode = async (order: any) => {
@@ -190,7 +165,7 @@ function DigitalMarketInner() {
                       </div>
                     )}
                     {o.status === "pending_payment" && (
-                      <p className="text-xs text-muted-foreground">⏳ Waiting for admin to verify your payment.</p>
+                      <CommercePayment kind="digital" existing={{ id: o.id, total: Number(o.price_etb) }} prepare={async () => ({ id: o.id, total: Number(o.price_etb) })} onConfirmed={() => { void init(); }} />
                     )}
                   </CardContent>
                 </Card>
@@ -265,26 +240,7 @@ function DigitalMarketInner() {
                           </Button>
                         </div>
 
-                        <div className="space-y-2 pt-2 border-t border-border/50">
-                          <select
-                            className="flex h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
-                            value={paymentMethod[p.id] || ""}
-                            onChange={(e) => setPaymentMethod((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                          >
-                            <option value="">Payment method...</option>
-                            <option value="telebirr">TeleBirr</option>
-                            <option value="cbe">CBE</option>
-                          </select>
-                          {paymentMethod[p.id] && (
-                            <div className="text-xs bg-muted/50 rounded p-2 border border-border/50">
-                              💸 Send <b>{Number(p.price_etb).toLocaleString()} ETB</b> to {paymentMethod[p.id] === "telebirr" ? "+251998265025 (TeleBirr)" : "1000036292017 (CBE)"}
-                            </div>
-                          )}
-                          <Input type="file" accept="image/*" onChange={(e) => setPaymentProof((prev) => ({ ...prev, [p.id]: e.target.files?.[0] || null }))} className="text-xs" />
-                          <Button onClick={() => buy(p)} disabled={buying === p.id} className="w-full btn-glow font-bold">
-                            {buying === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ShoppingCart className="h-4 w-4 mr-1" /> Buy Now</>}
-                          </Button>
-                        </div>
+                        <CommercePayment kind="digital" prepare={() => preparePurchase(p)} onConfirmed={() => { void init(); }} />
                       </CardContent>
                     </Card>
                   );

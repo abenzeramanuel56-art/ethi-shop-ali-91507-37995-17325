@@ -9,7 +9,7 @@ import { SignedImage, openSignedUrl } from '@/components/SignedImage';
 import { toast } from 'sonner';
 
 type Details = { cbe: { name: string; account: string }; telebirr: { name: string; account: string }; expected_sender_enabled: boolean };
-type Review = { order_id: string; state: string; reason: string | null; method: string | null; payment_method: string | null; transaction_id: string | null; reference_id: string | null; request_id: string | null; verified_amount: number | null; attempts: number; service_error: boolean; orders: { total_etb: number; customer_id: string; payment_proof_url: string | null; order_items: { product_name: string; quantity: number; price_etb: number }[] } };
+type Review = { kind?: 'physical' | 'service' | 'digital'; order_id: string; state: string; reason: string | null; method: string | null; payment_method: string | null; transaction_id: string | null; reference_id: string | null; request_id: string | null; verified_amount: number | null; attempts: number; service_error: boolean; orders: { total_etb: number; customer_id: string; payment_proof_url: string | null; order_items: { product_name: string; quantity: number; price_etb: number }[] } };
 
 export function PaymentReview({ onChange }: { onChange: () => void }) {
   const { t } = useLanguage();
@@ -27,7 +27,19 @@ export function PaymentReview({ onChange }: { onChange: () => void }) {
   const load = async () => {
     const { data, error } = await supabase.from('payment_verifications').select('*,orders(total_etb,customer_id,payment_proof_url,order_items(product_name,quantity,price_etb))').order('updated_at', { ascending: false });
     if (error) { toast.error(pt('review_error')); return; }
-    const records = data as unknown as Review[];
+    const { data: commerce, error: commerceError } = await supabase.from('commerce_payment_verifications').select('*').order('updated_at', { ascending: false });
+    if (commerceError) { toast.error(pt('review_error')); return; }
+    const extra = await Promise.all((commerce || []).map(async verification => {
+      if (verification.kind === 'service') {
+        const { data: order } = await supabase.from('service_orders').select('total_etb,customer_id,payment_proof_url,quantity,hours,services(title,price_etb,price_type)').eq('id', verification.order_id).maybeSingle();
+        if (!order) return null;
+        return { ...verification, kind: 'service' as const, orders: { ...order, order_items: [{ product_name: order.services?.title ?? verification.order_id, quantity: order.services?.price_type === 'hourly' ? order.hours ?? 1 : order.quantity ?? 1, price_etb: Number(order.services?.price_etb ?? order.total_etb) }] } };
+      }
+      const { data: order } = await supabase.from('digital_product_orders').select('price_etb,buyer_id,payment_proof_url,digital_products(title)').eq('id', verification.order_id).maybeSingle();
+      if (!order) return null;
+      return { ...verification, kind: 'digital' as const, orders: { total_etb: Number(order.price_etb), customer_id: order.buyer_id, payment_proof_url: order.payment_proof_url, order_items: [{ product_name: order.digital_products?.title ?? verification.order_id, quantity: 1, price_etb: Number(order.price_etb) }] } };
+    }));
+    const records: Review[] = [...(data as unknown as Review[]), ...extra.filter((row): row is NonNullable<typeof row> => row !== null)];
     setRows(records);
     const ids = [...new Set(records.map(r => r.orders.customer_id))];
     if (ids.length) {
@@ -42,17 +54,19 @@ export function PaymentReview({ onChange }: { onChange: () => void }) {
   }, []);
   const open = async (id: string) => {
     setSelected(id); setReason(''); setReceiptId('');
-    const { data } = await supabase.from('payment_verification_events').select('state,reason,created_at').eq('order_id', id).order('created_at');
+    const row = rows.find(r => r.order_id === id);
+    const { data } = await supabase.from(row?.kind ? 'commerce_payment_events' : 'payment_verification_events').select('state,reason,created_at').eq('order_id', id).order('created_at');
     setHistory(data || []);
   };
   const review = async (approve: boolean) => {
     if (!selected || busy || reason.trim().length < 3) return;
     setBusy(true);
-    const { data, error } = await supabase.rpc('admin_review_payment_with_receipt', { p_order_id: selected, p_approve: approve, p_reason: reason.trim(), p_receipt_id: receiptId.trim() || null });
+    const row = rows.find(r => r.order_id === selected);
+    const { data, error } = await supabase.rpc(row?.kind ? 'admin_review_commerce_payment' : 'admin_review_payment_with_receipt', { p_order_id: selected, p_approve: approve, p_reason: reason.trim(), p_receipt_id: receiptId.trim() || null });
     if (error) toast.error(error.message.includes('receipt_used') ? pt('receipt_used') : pt('review_error'));
     else {
       if ((data as { state?: string })?.state === 'confirmed') {
-        await supabase.functions.invoke('send-receipt', { body: { orderId: selected } });
+        await supabase.functions.invoke('send-receipt', { body: { orderId: selected, kind: row?.kind } });
       }
       setSelected(null); await load(); onChange();
     }

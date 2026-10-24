@@ -383,6 +383,121 @@ export type Database = {
           },
         ]
       }
+      commerce_payment_events: {
+        Row: {
+          admin_id: string | null
+          created_at: string
+          id: number
+          order_id: string
+          reason: string | null
+          request_id: string | null
+          state: string
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string
+          id?: never
+          order_id: string
+          reason?: string | null
+          request_id?: string | null
+          state: string
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string
+          id?: never
+          order_id?: string
+          reason?: string | null
+          request_id?: string | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_payment_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_payment_verifications"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
+      commerce_payment_verifications: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          attempts: number
+          customer_id: string
+          kind: string
+          lock_token: string | null
+          locked_at: string | null
+          method: string | null
+          mode: string | null
+          order_id: string
+          payment_method: string | null
+          reason: string | null
+          reference_id: string | null
+          request_id: string | null
+          screenshot_path: string | null
+          service_error: boolean
+          state: string
+          transaction_id: string | null
+          updated_at: string
+          verified_amount: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          customer_id: string
+          kind: string
+          lock_token?: string | null
+          locked_at?: string | null
+          method?: string | null
+          mode?: string | null
+          order_id: string
+          payment_method?: string | null
+          reason?: string | null
+          reference_id?: string | null
+          request_id?: string | null
+          screenshot_path?: string | null
+          service_error?: boolean
+          state?: string
+          transaction_id?: string | null
+          updated_at?: string
+          verified_amount?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          attempts?: number
+          customer_id?: string
+          kind?: string
+          lock_token?: string | null
+          locked_at?: string | null
+          method?: string | null
+          mode?: string | null
+          order_id?: string
+          payment_method?: string | null
+          reason?: string | null
+          reference_id?: string | null
+          request_id?: string | null
+          screenshot_path?: string | null
+          service_error?: boolean
+          state?: string
+          transaction_id?: string | null
+          updated_at?: string
+          verified_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_payment_verifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digital_product_orders: {
         Row: {
           admin_notes: string | null
@@ -879,6 +994,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payment_identifier_registry: {
+        Row: {
+          created_at: string
+          identifier: string
+          kind: string
+          order_id: string
+        }
+        Insert: {
+          created_at?: string
+          identifier: string
+          kind: string
+          order_id: string
+        }
+        Update: {
+          created_at?: string
+          identifier?: string
+          kind?: string
+          order_id?: string
+        }
+        Relationships: []
       }
       payment_receipt_claims: {
         Row: {
@@ -2085,6 +2221,15 @@ export type Database = {
         Returns: string
       }
       admin_factory_reset_transactional: { Args: never; Returns: undefined }
+      admin_review_commerce_payment: {
+        Args: {
+          p_approve: boolean
+          p_order_id: string
+          p_reason: string
+          p_receipt_id?: string
+        }
+        Returns: Json
+      }
       admin_review_payment: {
         Args: { p_approve: boolean; p_order_id: string; p_reason: string }
         Returns: Json
@@ -2109,6 +2254,34 @@ export type Database = {
       affiliate_product_click: {
         Args: { p_product_id: string }
         Returns: undefined
+      }
+      commerce_payment_begin: {
+        Args: {
+          p_ip_hash: string
+          p_kind: string
+          p_method: string
+          p_order_id: string
+          p_payment_method: string
+          p_screenshot_path: string
+          p_transaction_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      commerce_payment_finish: {
+        Args: {
+          p_amount: number
+          p_call_id: number
+          p_mode: string
+          p_order_id: string
+          p_reason: string
+          p_reference: string
+          p_request: string
+          p_service_error: boolean
+          p_state: string
+          p_token: string
+        }
+        Returns: Json
       }
       complete_service_order: {
         Args: { p_order_id: string; p_verification_code: string }
