@@ -15,6 +15,13 @@
       "when": 1792414022549,
       "tag": "0001_admin_receipt_review_identifier",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792814928798,
+      "tag": "0002_service_digital_payment_verification",
+      "breakpoints": true
     }
   ]
 }
