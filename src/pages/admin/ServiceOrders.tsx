@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Briefcase, Phone, User, Calendar, DollarSign, CheckCircle, XCircle } from "lucide-react";
 import { SignedImage, openSignedUrl } from "@/components/SignedImage";
+import { PaymentReview } from "@/components/PaymentReview";
 
 interface ServiceOrder {
   id: string;
@@ -42,6 +43,7 @@ interface ServiceOrder {
 export default function AdminServiceOrders() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [managed, setManaged] = useState<string[]>([]);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
@@ -71,6 +73,8 @@ export default function AdminServiceOrders() {
   };
 
   const fetchOrders = async () => {
+    const { data: verifications } = await supabase.from("commerce_payment_verifications").select("order_id").eq("kind", "service");
+    setManaged((verifications || []).map(v => v.order_id));
     const { data, error } = await supabase
       .from("service_orders")
       .select(`
@@ -208,6 +212,8 @@ export default function AdminServiceOrders() {
           Service Orders
         </h1>
 
+        <PaymentReview onChange={() => { void fetchOrders(); }} />
+
         {orders.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
@@ -299,7 +305,7 @@ export default function AdminServiceOrders() {
                     </div>
                   )}
 
-                  {["payment_submitted", "pending_payment", "awaiting_verification"].includes(order.status) && (
+                  {!managed.includes(order.id) && ["payment_submitted", "pending_payment", "awaiting_verification"].includes(order.status) && (
                     <>
                       {selectedOrder === order.id ? (
                         <div className="space-y-4">

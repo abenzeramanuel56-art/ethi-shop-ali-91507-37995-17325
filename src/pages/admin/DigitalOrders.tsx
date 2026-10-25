@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { SignedImage, openSignedUrl } from "@/components/SignedImage";
 import { Download, CheckCircle, XCircle, Package } from "lucide-react";
+import { PaymentReview } from "@/components/PaymentReview";
 
 interface DigitalOrder {
   id: string;
@@ -28,12 +29,15 @@ interface DigitalOrder {
 }
 
 export default function AdminDigitalOrders() {
+  const [managed, setManaged] = useState<string[]>([]);
   const [orders, setOrders] = useState<DigitalOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const fetchOrders = async () => {
+    const { data: verifications } = await supabase.from("commerce_payment_verifications").select("order_id").eq("kind", "digital");
+    setManaged((verifications || []).map(v => v.order_id));
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("digital_product_orders")
@@ -150,6 +154,7 @@ export default function AdminDigitalOrders() {
         <CardDescription>Verify payment proofs to release download codes to buyers</CardDescription>
       </CardHeader>
       <CardContent>
+        <PaymentReview onChange={() => { void fetchOrders(); }} />
         {loading ? (
           <p className="text-muted-foreground">Loading...</p>
         ) : orders.length === 0 ? (
@@ -201,7 +206,7 @@ export default function AdminDigitalOrders() {
                     <p className="text-sm text-muted-foreground">Notes: {order.admin_notes}</p>
                   )}
 
-                  {["pending_payment", "payment_submitted", "awaiting_verification"].includes(order.status) && (
+                  {!managed.includes(order.id) && ["pending_payment", "payment_submitted", "awaiting_verification"].includes(order.status) && (
                     <div className="space-y-2 pt-2 border-t">
                       <Textarea
                         placeholder="Admin notes (optional)"
