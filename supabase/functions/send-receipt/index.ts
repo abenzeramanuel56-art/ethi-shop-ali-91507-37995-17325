@@ -1,15 +1,11 @@
 // Builds a localized receipt after admin payment approval and delivers it through
 // the notifications table (which mirrors to Telegram + browser push via DB trigger).
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 import { RECEIPT, pickLang } from "../_shared/i18n.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const Body = z.object({ orderId: z.string().uuid(), kind: z.enum(['physical','affiliate','service','digital']).optional() });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -21,11 +17,15 @@ Deno.serve(async (req) => {
     });
 
   try {
-    const { orderId, kind } = await req.json();
-    if (!orderId) return json({ error: "orderId required" }, 400);
-
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const table = kind === "affiliate" ? "affiliate_orders" : "orders";
+    const parsed = Body.safeParse(await req.json());
+    if (!parsed.success) return json({ error: 'Invalid order' }, 400);
+    const { orderId, kind } = parsed.data;
+    const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return json({ error: 'Unavailable' }, 503);
+    const supabase = createClient(url, key);
+    const { data: { user } } = await supabase.auth.getUser((req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, ''));
+    if (!user) return json({ error: 'Authentication required' }, 401);
+    const table = kind === "affiliate" ? "affiliate_orders" : kind === 'service' ? 'service_orders' : kind === 'digital' ? 'digital_product_orders' : "orders";
 
     const { data: order, error: orderErr } = await supabase
       .from(table)
@@ -35,6 +35,9 @@ Deno.serve(async (req) => {
     if (orderErr || !order) return json({ error: "order not found" }, 404);
 
     const buyerId = (order as any).customer_id ?? (order as any).buyer_id;
+    const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
+    if (!isAdmin && user.id !== buyerId) return json({ error: 'Not permitted' }, 403);
+    if (!['payment_verified','in_progress','completed','shipped','delivered','ready_to_order','ordered_on_aliexpress','awaiting_customer_confirmation'].includes(order.status)) return json({ error: 'Payment not confirmed' }, 409);
     if (!buyerId) return json({ ok: true, skipped: "guest_order" });
 
     const { data: profile } = await supabase
@@ -68,7 +71,10 @@ Deno.serve(async (req) => {
 
     // Items
     let itemLines = "";
-    if (kind !== "affiliate") {
+    if (kind === 'service' || kind === 'digital') {
+      const { data: product } = await supabase.from(kind === 'service' ? 'services' : 'digital_products').select('title').eq('id', kind === 'service' ? order.service_id : order.digital_product_id).maybeSingle();
+      itemLines = `• ${product?.title ?? ''} × ${kind === 'service' ? order.hours ?? order.quantity ?? 1 : 1}`;
+    } else if (kind !== "affiliate") {
       const { data: items } = await supabase
         .from("order_items")
         .select("product_name, quantity, price_etb")
@@ -86,7 +92,7 @@ Deno.serve(async (req) => {
     const created = new Date((order as any).created_at ?? Date.now());
     const dateStr = created.toISOString().slice(0, 16).replace("T", " ") + " UTC";
     const total = Number(
-      (order as any).total_etb ?? (order as any).sold_price_etb ?? 0,
+      (order as any).total_etb ?? (order as any).price_etb ?? (order as any).sold_price_etb ?? 0,
     ).toLocaleString();
     const shortId = String(orderId).slice(0, 8).toUpperCase();
 

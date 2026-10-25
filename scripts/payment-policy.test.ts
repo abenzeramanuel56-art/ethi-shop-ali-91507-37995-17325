@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { paymentDecision, normalizeReceiptId, validReceipt } from '../supabase/functions/verify-payment-receipt/policy';
+import { paymentDecision, normalizeReceiptId, validReceipt, paymentTarget } from '../supabase/functions/verify-payment-receipt/policy';
 test('exact saved total and recipient permit confirmation', () => assert.deepEqual(paymentDecision(true, '100.00', '100', true), { state: 'confirmed', reason: null }));
 test('underpayment is rejected even if verified', () => assert.equal(paymentDecision(true, 99, 100, true).state, 'failed'));
 test('overpayment requires review', () => assert.equal(paymentDecision(true, 101, 100, true).state, 'pending_review'));
@@ -11,3 +11,6 @@ test('unverified receipt cannot confirm', () => assert.equal(paymentDecision(fal
 test('receipt identifiers normalize case and spaces', () => assert.equal(normalizeReceiptId(' AB c 123 '), 'abc123'));
 test('10 MB receipt limit is enforced', () => { assert.equal(validReceipt('application/pdf', 10485760), true); assert.equal(validReceipt('application/pdf', 10485761), false); });
 test('only JPG PNG PDF accepted', () => { assert.equal(validReceipt('image/jpeg', 1), true); assert.equal(validReceipt('image/png', 1), true); assert.equal(validReceipt('image/gif', 1), false); });
+test('service verification uses only the service order and customer ownership', () => assert.deepEqual(paymentTarget('service'), { table: 'service_orders', owner: 'customer_id', begin: 'commerce_payment_begin', finish: 'commerce_payment_finish' }));
+test('digital verification uses only the digital order and buyer ownership', () => assert.deepEqual(paymentTarget('digital'), { table: 'digital_product_orders', owner: 'buyer_id', begin: 'commerce_payment_begin', finish: 'commerce_payment_finish' }));
+test('physical verification preserves its existing pipeline', () => assert.deepEqual(paymentTarget('physical'), { table: 'orders', owner: 'customer_id', begin: 'payment_begin', finish: 'payment_finish' }));

@@ -107,7 +107,7 @@ export function CommercePayment({ kind, prepare, existing, onConfirmed }: {
         {file && <><p className="break-all text-sm">{file.name}</p>{preview && <img src={preview} alt={pt('receipt')} className="max-h-48 max-w-full object-contain" />}<Button type="button" variant="ghost" onClick={() => setFile(null)}>{pt('remove')}</Button></>}
       </div>
       {state === 'failed' && <div role="alert" className="border border-destructive rounded-md p-3 text-destructive"><strong>{pt('failed')}</strong><p>{pt(reason)}</p></div>}
-      <Button type="button" className="w-full" disabled={working || !receiver} onClick={verify}>{pt('verify')}</Button>
+      <Button type="button" className="w-full" disabled={working || !receiver || state === 'rejected'} onClick={verify}>{pt('verify')}</Button>
     </>}
   </section>;
 }
