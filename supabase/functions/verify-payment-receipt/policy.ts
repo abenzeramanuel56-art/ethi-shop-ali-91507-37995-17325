@@ -2,6 +2,11 @@ export const MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
 export const RECEIPT_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 export function normalizeReceiptId(value: string) { return value.trim().replace(/\s/g, '').toLowerCase(); }
 export function validReceipt(type: string, size: number) { return RECEIPT_TYPES.includes(type) && size > 0 && size <= MAX_RECEIPT_BYTES; }
+export function paymentTarget(kind: 'physical' | 'service' | 'digital') {
+  if (kind === 'service') return { table: 'service_orders', owner: 'customer_id', begin: 'commerce_payment_begin', finish: 'commerce_payment_finish' } as const;
+  if (kind === 'digital') return { table: 'digital_product_orders', owner: 'buyer_id', begin: 'commerce_payment_begin', finish: 'commerce_payment_finish' } as const;
+  return { table: 'orders', owner: 'customer_id', begin: 'payment_begin', finish: 'payment_finish' } as const;
+}
 export function paymentDecision(verified: boolean, paid: unknown, expected: string | number, recipientMatches: boolean | null) {
   const decimal = (value: unknown): string | null => {
     if (typeof value !== 'string' && typeof value !== 'number') return null;
