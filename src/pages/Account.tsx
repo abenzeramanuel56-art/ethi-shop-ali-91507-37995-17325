@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import TelegramLinkCard from "@/components/TelegramLinkCard";
 import EmailPasswordLinkCard from "@/components/EmailPasswordLinkCard";
 import { PushNotificationCard } from "@/components/PushNotificationCard";
+import { CommercePayment } from "@/components/CommercePayment";
 
 
 
@@ -595,12 +596,7 @@ const Account = () => {
                         )}
 
                         {order.status === "pending_payment" && (
-                          <div className="rounded-lg border bg-warning/10 p-4 text-sm">
-                            <p className="font-medium">⏳ Waiting for payment verification</p>
-                            <p className="text-muted-foreground">
-                              Please upload your payment proof and wait for admin verification.
-                            </p>
-                          </div>
+                          <CommercePayment kind="service" existing={{ id: order.id, total: order.total_etb }} prepare={async () => ({ id: order.id, total: order.total_etb })} onConfirmed={() => { void fetchData(); }} />
                         )}
 
                         {order.status === "payment_submitted" && (
