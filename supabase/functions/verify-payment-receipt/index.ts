@@ -100,6 +100,9 @@ Deno.serve(async (req) => {
     const requestId = typeof result.request_id === 'string' ? result.request_id.slice(0, 128) : null;
     const reference = typeof result.reference_id === 'string' ? normalizeReceiptId(result.reference_id).slice(0, 128) : null;
     if (requestId) console.info('Payment verification request', requestId);
+    // Field names only (no values) so the real response contract can be mapped safely.
+    const shape = (v: unknown, d = 0): unknown => v && typeof v === 'object' && d < 3 ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, shape(x, d + 1)])) : typeof v;
+    console.info('ShegerPay response shape', response.status, JSON.stringify(shape(result)));
     // Paid amount, recipient and async job field names have not been established by
     // a real receipt response. Fail closed instead of guessing those fields.
     const serviceError = !response.ok && response.status !== 400 || ['pending','processing'].includes(result.status);
