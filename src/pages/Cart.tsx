@@ -458,7 +458,7 @@ const Cart = () => {
                   {([["cbe", "CBE", "Commercial Bank of Ethiopia", Landmark], ["telebirr", "Telebirr", "Mobile money", Smartphone]] as const).map(([id, name, sub, Icon]) => {
                     const active = paymentMethod === id;
                     return (
-                      <Button variant="outline" key={id} type="button" disabled={!pendingOrderId} onClick={() => setPaymentMethod(id)}
+                      <Button variant="outline" key={id} type="button" onClick={() => setPaymentMethod(id)}
                         className={`relative h-auto block rounded-lg border p-3 text-left transition-all ${active ? "border-primary bg-primary/10 " : "border-border/50 bg-muted/40 hover:border-primary/40"}`}>
                         {active && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
                         <Icon className="h-5 w-5 text-primary mb-1.5" />
@@ -492,7 +492,7 @@ const Cart = () => {
 
                 {!paymentDetails && <p className="text-warning">{pt('settings_error')}</p>}
                 <Label htmlFor="receipt-id">{pt('transaction')}</Label>
-                <Input id="receipt-id" maxLength={64} value={transactionId} disabled={!pendingOrderId || submitting} onChange={e => setTransactionId(e.target.value.replace(/\s/g, ''))} />
+                <Input id="receipt-id" maxLength={64} value={transactionId} disabled={submitting} onChange={e => setTransactionId(e.target.value.replace(/\s/g, ''))} />
                 <p className="text-xs text-muted-foreground">{pt('either')}</p>
                 <div onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
                   onDrop={e => { e.preventDefault(); setDragging(false); if (pendingOrderId) pickFile(e.dataTransfer.files[0]); }}
@@ -500,7 +500,7 @@ const Cart = () => {
                   <FolderUp className="mx-auto h-8 w-8 text-primary" />
                   <p className="text-sm">{pt('drop')}</p>
                   <input ref={fileInput} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={e => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
-                  <Button variant="outline" disabled={!pendingOrderId || submitting} onClick={() => fileInput.current?.click()}>{pt('choose')}</Button>
+                  <Button type="button" variant="outline" disabled={submitting} onClick={() => fileInput.current?.click()}>{pt('choose')}</Button>
                   {preview && <img src={preview} alt={pt('receipt')} className="max-h-40 mx-auto object-contain" />}
                   {paymentProof && <div><p className="text-xs break-all">{paymentProof.name}</p><Button variant="ghost" size="sm" onClick={() => setPaymentProof(null)}>{pt('remove')}</Button></div>}
                 </div>
