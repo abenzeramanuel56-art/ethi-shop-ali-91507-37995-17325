@@ -436,8 +436,14 @@ const Cart = () => {
                 <p className="text-xs text-muted-foreground">Only drivers with this vehicle will be notified</p>
               </div>
 
-              {!pendingOrderId && <Button className="w-full" disabled={submitting} onClick={saveOrder}>{pt('save_order')}</Button>}
-              {savedTotal !== null && <div className="border-y border-primary/30 py-3 space-y-1"><p className="text-sm">{pt('exact')}</p><p className="text-2xl font-bold text-primary">{savedTotal.toLocaleString()} ETB</p><p className="font-mono text-xs break-all">{pendingOrderId}</p></div>}
+              {!pendingOrderId && <Button className="w-full btn-glow h-12 font-bold" disabled={submitting} onClick={saveOrder}>{pt('save_order')}</Button>}
+              {pendingOrderId && <>
+              <div className="rounded-xl border border-primary/40 bg-primary/10 p-4 space-y-1 text-center">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">{pt('exact')}</p>
+                <p className="text-3xl font-black text-primary">{(savedTotal ?? grandTotal).toLocaleString()} ETB</p>
+                <p className="text-[11px] text-muted-foreground">Subtotal {subtotal.toLocaleString()} + Delivery {previewDeliveryFee.toLocaleString()} ETB</p>
+                <p className="font-mono text-[10px] break-all text-muted-foreground">#{pendingOrderId}</p>
+              </div>
               {/* Payment */}
               <div className="space-y-3">
                 {healthy && <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 flex gap-2.5">
@@ -504,16 +510,11 @@ const Cart = () => {
               </div>
 
               <div className="border-t border-border/50 pt-4 space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{subtotal.toLocaleString()} ETB</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Delivery (min, recalculated by driver)</span><span>{previewDeliveryFee.toLocaleString()} ETB</span></div>
-                <div className="flex justify-between items-center pt-2 border-t border-border/30">
-                  <span className="text-sm font-bold">Total</span>
-                  <span className="text-2xl font-black text-primary">{grandTotal.toLocaleString()} ETB</span>
-                </div>
-                <Button className="w-full btn-glow font-bold h-12 mt-2 gap-2" onClick={handleCheckout} disabled={submitting || !pendingOrderId || !paymentDetails || !paymentMethod || (!paymentProof && !transactionId)}>
+                <Button className="w-full btn-glow font-bold h-12 mt-2 gap-2" onClick={handleCheckout} disabled={submitting || !paymentMethod || (!paymentProof && !transactionId)}>
                   <ShieldCheck className="h-4 w-4" /> {pt(verifyError ? 'retry' : 'verify')}
                 </Button>
               </div>
+              </>}
             </div>
           </div>
         )}
