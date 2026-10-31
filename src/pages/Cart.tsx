@@ -436,8 +436,14 @@ const Cart = () => {
                 <p className="text-xs text-muted-foreground">Only drivers with this vehicle will be notified</p>
               </div>
 
-              {!pendingOrderId && <Button className="w-full" disabled={submitting} onClick={saveOrder}>{pt('save_order')}</Button>}
-              {savedTotal !== null && <div className="border-y border-primary/30 py-3 space-y-1"><p className="text-sm">{pt('exact')}</p><p className="text-2xl font-bold text-primary">{savedTotal.toLocaleString()} ETB</p><p className="font-mono text-xs break-all">{pendingOrderId}</p></div>}
+              {!pendingOrderId && <Button className="w-full btn-glow h-12 font-bold" disabled={submitting} onClick={saveOrder}>{pt('save_order')}</Button>}
+              {pendingOrderId && <>
+              <div className="rounded-xl border border-primary/40 bg-primary/10 p-4 space-y-1 text-center">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">{pt('exact')}</p>
+                <p className="text-3xl font-black text-primary">{(savedTotal ?? grandTotal).toLocaleString()} ETB</p>
+                <p className="text-[11px] text-muted-foreground">Subtotal {subtotal.toLocaleString()} + Delivery {previewDeliveryFee.toLocaleString()} ETB</p>
+                <p className="font-mono text-[10px] break-all text-muted-foreground">#{pendingOrderId}</p>
+              </div>
               {/* Payment */}
               <div className="space-y-3">
                 {healthy && <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 flex gap-2.5">
@@ -452,7 +458,7 @@ const Cart = () => {
                   {([["cbe", "CBE", "Commercial Bank of Ethiopia", Landmark], ["telebirr", "Telebirr", "Mobile money", Smartphone]] as const).map(([id, name, sub, Icon]) => {
                     const active = paymentMethod === id;
                     return (
-                      <Button variant="outline" key={id} type="button" disabled={!pendingOrderId} onClick={() => setPaymentMethod(id)}
+                      <Button variant="outline" key={id} type="button" onClick={() => setPaymentMethod(id)}
                         className={`relative h-auto block rounded-lg border p-3 text-left transition-all ${active ? "border-primary bg-primary/10 " : "border-border/50 bg-muted/40 hover:border-primary/40"}`}>
                         {active && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
                         <Icon className="h-5 w-5 text-primary mb-1.5" />
@@ -486,7 +492,7 @@ const Cart = () => {
 
                 {!paymentDetails && <p className="text-warning">{pt('settings_error')}</p>}
                 <Label htmlFor="receipt-id">{pt('transaction')}</Label>
-                <Input id="receipt-id" maxLength={64} value={transactionId} disabled={!pendingOrderId || submitting} onChange={e => setTransactionId(e.target.value.replace(/\s/g, ''))} />
+                <Input id="receipt-id" maxLength={64} value={transactionId} disabled={submitting} onChange={e => setTransactionId(e.target.value.replace(/\s/g, ''))} />
                 <p className="text-xs text-muted-foreground">{pt('either')}</p>
                 <div onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
                   onDrop={e => { e.preventDefault(); setDragging(false); if (pendingOrderId) pickFile(e.dataTransfer.files[0]); }}
@@ -494,7 +500,7 @@ const Cart = () => {
                   <FolderUp className="mx-auto h-8 w-8 text-primary" />
                   <p className="text-sm">{pt('drop')}</p>
                   <input ref={fileInput} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={e => { pickFile(e.target.files?.[0]); e.target.value = ''; }} />
-                  <Button variant="outline" disabled={!pendingOrderId || submitting} onClick={() => fileInput.current?.click()}>{pt('choose')}</Button>
+                  <Button type="button" variant="outline" disabled={submitting} onClick={() => fileInput.current?.click()}>{pt('choose')}</Button>
                   {preview && <img src={preview} alt={pt('receipt')} className="max-h-40 mx-auto object-contain" />}
                   {paymentProof && <div><p className="text-xs break-all">{paymentProof.name}</p><Button variant="ghost" size="sm" onClick={() => setPaymentProof(null)}>{pt('remove')}</Button></div>}
                 </div>
@@ -504,16 +510,11 @@ const Cart = () => {
               </div>
 
               <div className="border-t border-border/50 pt-4 space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{subtotal.toLocaleString()} ETB</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Delivery (min, recalculated by driver)</span><span>{previewDeliveryFee.toLocaleString()} ETB</span></div>
-                <div className="flex justify-between items-center pt-2 border-t border-border/30">
-                  <span className="text-sm font-bold">Total</span>
-                  <span className="text-2xl font-black text-primary">{grandTotal.toLocaleString()} ETB</span>
-                </div>
-                <Button className="w-full btn-glow font-bold h-12 mt-2 gap-2" onClick={handleCheckout} disabled={submitting || !pendingOrderId || !paymentDetails || !paymentMethod || (!paymentProof && !transactionId)}>
+                <Button className="w-full btn-glow font-bold h-12 mt-2 gap-2" onClick={handleCheckout} disabled={submitting || !paymentMethod || (!paymentProof && !transactionId)}>
                   <ShieldCheck className="h-4 w-4" /> {pt(verifyError ? 'retry' : 'verify')}
                 </Button>
               </div>
+              </>}
             </div>
           </div>
         )}
