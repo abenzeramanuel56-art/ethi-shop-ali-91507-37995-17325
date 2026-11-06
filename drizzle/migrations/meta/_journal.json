@@ -22,6 +22,13 @@
       "when": 1792814928798,
       "tag": "0002_service_digital_payment_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794004911533,
+      "tag": "0003_grant_orders_access",
+      "breakpoints": true
     }
   ]
 }

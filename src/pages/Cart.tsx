@@ -167,7 +167,19 @@ const Cart = () => {
     busy.current = true;
     setSubmitting(true);
     try {
-      const sellerId = cartItems.find(i => i.seller_id)?.seller_id || null;
+      // Drop stale cart items whose product no longer exists, and use the live seller.
+      const ids = cartItems.map(i => i.product_id).filter(Boolean) as string[];
+      const { data: live } = ids.length
+        ? await supabase.from('products').select('id,seller_id').in('id', ids)
+        : { data: [] as { id: string; seller_id: string | null }[] };
+      const liveMap = new Map((live || []).map(p => [p.id, p.seller_id]));
+      const valid = cartItems.filter(i => i.product_id && liveMap.has(i.product_id));
+      if (valid.length !== cartItems.length) {
+        updateCart(valid);
+        toast.error("Some items are no longer available and were removed from your cart.");
+        return null;
+      }
+      const sellerId = (valid.map(i => liveMap.get(i.product_id!)).find(Boolean) as string | undefined) || null;
       const { data: order, error } = await supabase.from("orders").insert({
         customer_id: user.id, shipping_address: shippingAddress, city, phone,
         total_etb: grandTotal, delivery_fee_etb: previewDeliveryFee,
@@ -184,7 +196,8 @@ const Cart = () => {
       setPendingOrderId(order.id);
       setSavedTotal(Number(order.total_etb));
       return order.id;
-    } catch {
+    } catch (err: any) {
+      console.error("Save order failed:", err);
       toast.error(pt('prepare_error')); return null;
     } finally { busy.current = false; setSubmitting(false); }
   };
