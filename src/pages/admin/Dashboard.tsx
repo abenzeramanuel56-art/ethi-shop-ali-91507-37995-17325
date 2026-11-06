@@ -616,13 +616,6 @@ const AdminDashboard = () => {
                               >
                                 Payment Proof
                               </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleUpdateOrder(order.id, 'payment_verified')}
-                                disabled={order.status === 'payment_verified'}
-                              >
-                                Verify Payment & Credit
-                              </Button>
                             </div>
                           </div>
                         </CardContent>
