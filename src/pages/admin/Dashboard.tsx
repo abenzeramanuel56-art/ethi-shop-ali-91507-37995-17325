@@ -400,6 +400,7 @@ const AdminDashboard = () => {
     }
   };
 
+  const [orderGroup, setOrderGroup] = useState("awaiting");
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       pending_payment: "bg-warning text-warning-foreground",
@@ -760,7 +761,16 @@ const AdminDashboard = () => {
                   <p className="text-center text-muted-foreground">No orders yet</p>
                 ) : (
                   <div className="space-y-4">
-                    {orders.map((order) => (
+                    <div className="flex flex-wrap gap-2">
+                      {ORDER_GROUPS.map(g => {
+                        const n = orders.filter(o => g.statuses.includes(o.status)).length;
+                        return <Button key={g.key} size="sm" variant={orderGroup === g.key ? "default" : "outline"} onClick={() => setOrderGroup(g.key)}>{g.label} ({n})</Button>;
+                      })}
+                    </div>
+                    {orders.filter(o => ORDER_GROUPS.find(g => g.key === orderGroup)!.statuses.includes(o.status)).length === 0 && (
+                      <p className="text-center text-sm text-muted-foreground">No orders in this group</p>
+                    )}
+                    {orders.filter(o => ORDER_GROUPS.find(g => g.key === orderGroup)!.statuses.includes(o.status)).map((order) => (
                       <Card key={order.id}>
                         <CardContent className="pt-6">
                           <div className="space-y-4">
@@ -847,28 +857,7 @@ const AdminDashboard = () => {
                               )}
                             </div>
 
-                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 p-3">
-                              <p className="text-xs text-muted-foreground">
-                                Order status updates automatically through the driver workflow (pickup → delivery). Admin only confirms payment.
-                              </p>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => openSignedUrl(order.payment_proof_url)}
-                                  disabled={!order.payment_proof_url}
-                                >
-                                  View Payment Proof
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleUpdateOrder(order.id, 'payment_verified')}
-                                  disabled={order.status === 'payment_verified' || order.status === 'delivered' || order.status === 'shipped' || order.status === 'out_for_delivery'}
-                                >
-                                  Approve Payment
-                                </Button>
-                              </div>
-                            </div>
+                            <p className="rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">Payments are verified in the Payment review tab. Status updates automatically after that.</p>
                           </div>
                         </CardContent>
                       </Card>
@@ -999,5 +988,12 @@ const AdminDashboard = () => {
 </div>
   );
 };
+
+const ORDER_GROUPS = [
+  { key: "awaiting", label: "Awaiting payment", statuses: ["pending_payment"] },
+  { key: "active", label: "In progress", statuses: ["payment_verified", "ready_to_order", "ordered_on_aliexpress", "shipped", "awaiting_customer_confirmation"] },
+  { key: "delivered", label: "Delivered", statuses: ["delivered"] },
+  { key: "cancelled", label: "Cancelled", statuses: ["cancelled"] },
+];
 
 export default AdminDashboard;
