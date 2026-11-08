@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TermsAgreementDialog } from "@/components/TermsAgreementDialog";
+import EmailCodeLogin from "@/components/EmailCodeLogin";
 
 import { z } from "zod";
 import { Send } from "lucide-react";
@@ -321,27 +322,12 @@ const Auth = () => {
               <CardTitle className="text-2xl">{t('auth.forgotPassword')}</CardTitle>
               <CardDescription>{t('auth.forgotPasswordDesc')}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">{t('auth.email')}</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? t('auth.sending') : t('auth.sendResetLink')}
-                </Button>
-                <Button type="button" variant="outline" className="w-full"
-                  onClick={() => setShowForgotPassword(false)}>
-                  {t('auth.backToLogin')}
-                </Button>
-              </form>
+            <CardContent className="space-y-3">
+              <EmailCodeLogin purpose="reset" initialEmail={resetEmail || email} />
+              <Button type="button" variant="outline" className="w-full"
+                onClick={() => setShowForgotPassword(false)}>
+                {t('auth.backToLogin')}
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -410,10 +396,15 @@ const Auth = () => {
             </div>
 
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="signin">{t('auth.signIn')}</TabsTrigger>
+                <TabsTrigger value="code">{language === "am" ? "የኢሜይል ኮድ" : language === "om" ? "Koodii" : language === "ti" ? "ኮድ" : "Email code"}</TabsTrigger>
                 <TabsTrigger value="signup">{t('auth.signUp')}</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="code">
+                <EmailCodeLogin purpose="login" />
+              </TabsContent>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
