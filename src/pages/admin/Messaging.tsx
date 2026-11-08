@@ -95,7 +95,12 @@ export default function AdminMessaging() {
           : { user_id: selectedUserId, title, body: message, type: messageType, image_url },
       });
       if (error) throw error;
-      toast.success(sendToAll ? `Message sent to ${(data as any)?.sent ?? "all"} users!` : "Message sent!");
+      const emailed = (data as any)?.emailed ?? 0;
+      toast.success(
+        sendToAll
+          ? `Sent to ${(data as any)?.sent ?? "all"} users (app + Telegram), ${emailed} emails delivered`
+          : `Message sent (app + Telegram${emailed ? " + email" : ""})`
+      );
 
       // Reset form
       setTitle("");

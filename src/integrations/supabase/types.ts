@@ -784,6 +784,39 @@ export type Database = {
         }
         Relationships: []
       }
+      email_login_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          purpose: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          purpose: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          purpose?: string
+        }
+        Relationships: []
+      }
       email_verification_codes: {
         Row: {
           code: string
@@ -2255,6 +2288,7 @@ export type Database = {
         Args: { p_product_id: string }
         Returns: undefined
       }
+      auth_user_id_by_email: { Args: { p_email: string }; Returns: string }
       commerce_payment_begin: {
         Args: {
           p_ip_hash: string

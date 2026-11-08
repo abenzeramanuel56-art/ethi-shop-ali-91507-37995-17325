@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     await admin.from("email_verification_codes").insert({ email: email.toLowerCase(), code });
 
     await resend.emails.send({
-      from: "Abeni Express <onboarding@resend.dev>",
+      from: "Abeni Express Security <security@abeniexpress.online>",
       to: [email],
       subject: `Your Abeni Express verification code: ${code}`,
       html: `

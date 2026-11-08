@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       </tr>`).join("");
 
     await resend.emails.send({
-      from: "Abeni Express <onboarding@resend.dev>",
+      from: "Abeni Express Support <support@abeniexpress.online>",
       to: [user.email],
       subject: `Receipt: Order #${orderNumber} confirmed — Abeni Express`,
       html: `

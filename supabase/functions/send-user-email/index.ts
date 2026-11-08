@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const name = profile?.full_name || "Customer";
 
     await resend.emails.send({
-      from: "Abeni Express <onboarding@resend.dev>",
+      from: "Abeni Express Support <support@abeniexpress.online>",
       to: [u.user.email],
       subject,
       html: `

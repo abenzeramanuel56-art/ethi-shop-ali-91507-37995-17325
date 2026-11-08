@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
-        from: "Abeni Express <onboarding@resend.dev>",
+        from: "Abeni Express Security <security@abeniexpress.online>",
         to: [email],
         subject: "Confirm your email for Abeni Express",
         html: `
