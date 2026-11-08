@@ -67,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Sending tracking notification email to:", user.email);
 
     const emailResponse = await resend.emails.send({
-      from: "Get It <onboarding@resend.dev>",
+      from: "Abeni Express Support <support@abeniexpress.online>",
       to: [user.email],
       subject: `Your Order #${orderNumber} is on its way! 📦`,
       html: `

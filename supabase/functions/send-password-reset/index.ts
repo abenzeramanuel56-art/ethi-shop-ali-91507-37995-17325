@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Abeni Express <onboarding@resend.dev>",
+        from: "Abeni Express Security <security@abeniexpress.online>",
         to: [email],
         subject: "Reset your Abeni Express password",
         html: `
