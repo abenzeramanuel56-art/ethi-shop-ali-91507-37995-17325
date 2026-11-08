@@ -36,6 +36,13 @@
       "when": 1794009152919,
       "tag": "0004_notify_payment_decisions",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794166239298,
+      "tag": "0005_email_login_codes",
+      "breakpoints": true
     }
   ]
 }
