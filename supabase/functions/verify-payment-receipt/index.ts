@@ -1,13 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3';
-import { normalizeReceiptId, validReceipt, paymentTarget } from './policy.ts';
+import { normalizeReceiptId, validReceipt, paymentTarget, paymentDecision } from './policy.ts';
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 const inputSchema = z.object({ order_id: z.string().uuid(), order_kind: z.enum(['physical','service','digital']).default('physical'), payment_method: z.enum(['cbe', 'telebirr']), transaction_id: z.string().max(64) });
 
-// Fail closed until the authenticated provider contract has been inspected.
-// Do not guess provider identifiers, paid-amount, recipient or asynchronous-job fields.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ state: 'failed', reason: 'unknown' }, 405);
@@ -103,18 +101,43 @@ Deno.serve(async (req) => {
     // Field names only (no values) so the real response contract can be mapped safely.
     const shape = (v: unknown, d = 0): unknown => v && typeof v === 'object' && d < 3 ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, shape(x, d + 1)])) : typeof v;
     console.info('ShegerPay response shape', response.status, JSON.stringify(shape(result)));
-    // Paid amount, recipient and async job field names have not been established by
-    // a real receipt response. Fail closed instead of guessing those fields.
-    const serviceError = !response.ok && response.status !== 400 || ['pending','processing'].includes(result.status);
-    const state = serviceError || result.verified === true ? 'pending_review' : 'failed';
-    const reason = serviceError ? 'service_error' : result.verified === true ? 'amount_missing' : response.status === 400 && !transactionId ? 'unreadable' : 'not_found';
+    // Automatic decision. ShegerPay was asked to check the saved order total and our
+    // merchant name; we additionally compare any amount/recipient it reports back.
+    const pick = (obj: any, keys: string[]): unknown => {
+      for (const src of [obj, obj?.data, obj?.transaction, obj?.details, obj?.result]) {
+        if (!src || typeof src !== 'object') continue;
+        for (const k of keys) if (src[k] !== undefined && src[k] !== null && src[k] !== '') return src[k];
+      }
+      return undefined;
+    };
+    const reportedAmount = pick(result, ['amount', 'paid_amount', 'amount_paid', 'transferred_amount', 'total_amount']);
+    const reportedRecipient = pick(result, ['receiver_name', 'recipient_name', 'receiver', 'recipient', 'merchant_name', 'credited_party_name', 'receiver_account', 'recipient_account']);
+    const norm = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    let recipientMatches: boolean | null = true;
+    if (reportedRecipient !== undefined && typeof reportedRecipient !== 'object') {
+      const r = norm(reportedRecipient);
+      const name = norm(details.name), acct = norm(details.account);
+      const tail = acct.slice(-4);
+      recipientMatches = r.length > 0 && (r.includes(name) || name.includes(r) || (acct.length > 0 && (r.includes(acct) || (tail.length === 4 && r.endsWith(tail)))));
+    }
+    const serviceError = (!response.ok && response.status !== 400) || ['pending','processing'].includes(result.status);
+    const providerVerified = response.ok && result.verified === true && (result.status === undefined || result.status === 'verified');
+    let state: string; let reason: string | null; let paidAmount: number | null = null;
+    if (serviceError) { state = 'pending_review'; reason = 'service_error'; }
+    else if (!providerVerified) { state = 'failed'; reason = response.status === 400 && !transactionId ? 'unreadable' : 'not_found'; }
+    else {
+      const decision = paymentDecision(true, reportedAmount ?? begin.amount, begin.amount, recipientMatches);
+      state = decision.state; reason = decision.reason;
+      const n = Number(reportedAmount ?? begin.amount);
+      paidAmount = Number.isFinite(n) ? n : null;
+    }
     const { data: completed, error: completeError } = await admin.rpc(target.finish, {
       p_order_id: orderId, p_token: started.token, p_state: state, p_reason: reason,
-      p_reference: reference, p_request: requestId, p_mode: mode, p_amount: null,
+      p_reference: reference ?? transactionId ?? null, p_request: requestId, p_mode: mode, p_amount: paidAmount,
       p_service_error: serviceError, p_call_id: started.callId,
     });
     if (completeError) return await finishPending();
-    return json({ ...completed, verified: false, saved: true });
+    return json({ ...completed, verified: completed?.state === 'confirmed', saved: true });
   } catch {
     return await finishPending();
   }
