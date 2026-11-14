@@ -4,6 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { z } from "npm:zod@3";
 import { RECEIPT, pickLang } from "../_shared/i18n.ts";
+import { sendEmail, isRealEmail, escapeHtml } from "../_shared/mailer.ts";
 
 const Body = z.object({ orderId: z.string().uuid(), kind: z.enum(['physical','affiliate','service','digital']).optional() });
 
@@ -119,7 +120,22 @@ Deno.serve(async (req) => {
     });
     if (insErr) return json({ error: insErr.message }, 500);
 
-    return json({ ok: true, lang });
+    // Email copy of the receipt from the support address.
+    let emailed = false;
+    try {
+      const { data: u } = await supabase.auth.admin.getUserById(buyerId);
+      const email = u?.user?.email;
+      if (isRealEmail(email)) {
+        await sendEmail({
+          from: "support", to: email,
+          subject: `${t.title} — #${shortId}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#0f172a"><h2 style="color:#1e40af">${escapeHtml(t.title)}</h2><pre style="white-space:pre-wrap;font-family:inherit;font-size:15px;line-height:1.6">${escapeHtml(message)}${(order as any).payment_method ? `\nPayment: ${escapeHtml(String((order as any).payment_method).toUpperCase())}` : ""}</pre><p style="color:#64748b;font-size:12px">Abeni Express Support</p></div>`,
+        });
+        emailed = true;
+      }
+    } catch (e) { console.error("receipt email failed", e); }
+
+    return json({ ok: true, lang, emailed });
   } catch (e: any) {
     console.error("send-receipt error", e);
     return json({ error: e?.message ?? "unknown" }, 500);

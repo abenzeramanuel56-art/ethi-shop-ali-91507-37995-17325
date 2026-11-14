@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { userId, subject, heading, message } = await req.json();
+    const { userId, subject, heading, message, channel } = await req.json();
     if (!userId || !subject || !message) throw new Error("userId, subject, message required");
 
     const admin = createClient(
@@ -21,6 +21,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    const isSecurity = channel === "security";
+    if (isSecurity) {
+      const { data: { user: caller } } = await admin.auth.getUser((req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, ""));
+      if (!caller || caller.id !== userId) throw new Error("not permitted");
+    }
     const { data: u, error } = await admin.auth.admin.getUserById(userId);
     if (error || !u?.user?.email) throw new Error("user email not found");
 
@@ -33,7 +38,7 @@ Deno.serve(async (req) => {
     const name = profile?.full_name || "Customer";
 
     await resend.emails.send({
-      from: "Abeni Express Support <support@abeniexpress.online>",
+      from: isSecurity ? "Abeni Express Security <security@abeniexpress.online>" : "Abeni Express Support <support@abeniexpress.online>",
       to: [u.user.email],
       subject,
       html: `

@@ -67,6 +67,7 @@ export function DeviceTrust() {
             .invoke("send-user-email", {
               body: {
                 userId,
+                channel: "security",
                 subject: "New sign-in on your Abeni Express account",
                 heading: "New device sign-in",
                 message: `Your account was just opened on a new ${describeDevice()}. If this was you, no action is needed. If it was not you, change your password immediately from the Account page.`,
