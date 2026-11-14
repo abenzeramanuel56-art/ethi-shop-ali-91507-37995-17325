@@ -137,6 +137,21 @@ Deno.serve(async (req) => {
       p_service_error: serviceError, p_call_id: started.callId,
     });
     if (completeError) return await finishPending();
+    // Notify the buyer about the outcome on every channel (in-app, Telegram, push, email).
+    try {
+      if (completed?.state === 'confirmed') {
+        await fetch(`${url}/functions/v1/send-receipt`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: authorization }, body: JSON.stringify({ orderId, kind }), signal: AbortSignal.timeout(15000) });
+      } else {
+        const short = orderId.slice(0, 8).toUpperCase();
+        const msg = completed?.state === 'failed'
+          ? `We could not confirm the ${method.toUpperCase()} payment for order #${short}${transactionId ? ` (transaction ${transactionId})` : ''}. Please check the details and try again.`
+          : `Your ${method.toUpperCase()} payment for order #${short}${transactionId ? ` (transaction ${transactionId})` : ''} of ${begin.amount} ETB was received and is being reviewed. We will notify you once it is approved.`;
+        const title = completed?.state === 'failed' ? 'Payment not confirmed' : 'Payment under review';
+        await admin.from('notifications').insert({ user_id: user.id, title, message: msg, type: completed?.state === 'failed' ? 'error' : 'info', link: '/account' });
+        const { sendEmail, isRealEmail, escapeHtml } = await import('../_shared/mailer.ts');
+        if (isRealEmail(user.email)) await sendEmail({ from: 'support', to: user.email, subject: `${title} — #${short}`, html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px"><h2 style="color:#1e40af">${escapeHtml(title)}</h2><p>${escapeHtml(msg)}</p><p style="color:#64748b;font-size:12px">Abeni Express Support</p></div>` });
+      }
+    } catch (e) { console.error('payment notification failed', e); }
     return json({ ...completed, verified: completed?.state === 'confirmed', saved: true });
   } catch {
     return await finishPending();
