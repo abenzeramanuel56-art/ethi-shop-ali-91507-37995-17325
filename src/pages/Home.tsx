@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { ArrowRight, Package, Shield, TrendingUp, Truck, Wrench, Zap, Star, Globe, ChevronRight, Smartphone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ThreeDHero } from "@/components/ThreeDHero";
+import { HeroSection } from "@/components/home/HeroSection";
 
 
 const Home = () => {
@@ -13,75 +13,7 @@ const Home = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="relative overflow-hidden grid-3d-bg scene-3d">
-        {/* Gradient orbs */}
-        <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full opacity-10 blur-3xl" style={{ background: 'hsl(var(--primary))' }} />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full opacity-8 blur-3xl" style={{ background: 'hsl(var(--accent))' }} />
-
-        {/* WebGL delivery-network globe */}
-        <ThreeDHero className="absolute right-[-10%] top-1/2 hidden h-[560px] w-[560px] -translate-y-1/2 opacity-80 lg:block" />
-
-        <div className="container relative mx-auto px-4 py-24 md:py-32">
-          <div className="max-w-4xl">
-            {/* Eyebrow */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary float-3d">
-              <Zap className="h-3.5 w-3.5" />
-              <span>Ethiopia's Premier Marketplace</span>
-            </div>
-
-            <h1 className="mb-6 text-5xl font-black leading-tight text-foreground md:text-6xl lg:text-7xl tracking-tight text-3d">
-              <span className="sr-only">Abeni Express — </span>
-              {t('home.hero.title').split(' ').slice(0, 2).join(' ')}
-              <span className="block gradient-text">{t('home.hero.title').split(' ').slice(2).join(' ')}</span>
-            </h1>
-
-            <p className="mb-10 text-lg text-muted-foreground max-w-2xl leading-relaxed">
-              {t('home.hero.subtitle')}
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Link to="/products">
-                <Button size="lg" className="gap-2 btn-glow font-semibold text-base px-8 h-12">
-                  {t('home.hero.browse')}
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Link to="/services">
-                <Button size="lg" variant="outline" className="gap-2 font-semibold text-base px-8 h-12 border-accent/40 text-accent hover:bg-accent/10 hover:border-accent">
-                  <Wrench className="h-5 w-5" />
-                  {t('home.services.browse')}
-                </Button>
-              </Link>
-              <Link to="/digital-market">
-                <Button size="lg" variant="outline" className="gap-2 font-semibold text-base px-8 h-12 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary">
-                  <Smartphone className="h-5 w-5" />
-                  Browse Digital
-                </Button>
-              </Link>
-              <Link to="/download">
-                <Button size="lg" variant="ghost" className="gap-2 font-semibold text-base px-8 h-12 text-muted-foreground hover:text-foreground">
-                  Get us on Android &amp; iOS
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            {/* Stats row */}
-            <div className="mt-16 flex flex-wrap gap-8">
-              {[
-                { value: "100%", label: "Ethiopian Owned" },
-                { value: "25 ETB/km", label: "Driver Earnings" },
-                { value: "24/7", label: "Driver Network" },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <div className="text-3xl font-black gradient-text">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Features Section */}
       <section className="border-t border-border/50 py-20" style={{ background: 'hsl(var(--card))' }}>
