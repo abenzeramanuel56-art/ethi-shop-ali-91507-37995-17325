@@ -1,6 +1,12 @@
 # Roadmap
 
-## Current scope: ShegerPay
+## Current scope: live hero and seller catalog
+- [ ] Rotate real database products in the home showcase
+- [ ] Add 1,000 products and 1,000 services for abenitheman6@gmail.com without duplicates on retry
+- [ ] Keep product and service browsing fast with the larger catalog
+- [ ] Verify the live hero, catalog counts, and browsing flow
+
+## Previous scope: ShegerPay
 - [x] Connect service and digital checkout to private receipt verification and audited admin review
 - [ ] Verify service/digital payment end to end (requires test key/receipts; digital is currently admin-locked)
 - [ ] Extend existing checkout with ID/screenshot verification and localized result states
