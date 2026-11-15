@@ -14,6 +14,17 @@ export default {
     },
     extend: {
       colors: {
+        hero: {
+          bg: "hsl(var(--hero-bg) / <alpha-value>)",
+          card: "hsl(var(--hero-card) / <alpha-value>)",
+          ink: "hsl(var(--hero-ink) / <alpha-value>)",
+          muted: "hsl(var(--hero-muted) / <alpha-value>)",
+          orange: "hsl(var(--hero-orange) / <alpha-value>)",
+          live: "hsl(var(--hero-live) / <alpha-value>)",
+          gold: "hsl(var(--hero-gold) / <alpha-value>)",
+          line: "hsl(var(--hero-line))",
+          glass: "hsl(var(--hero-glass))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
