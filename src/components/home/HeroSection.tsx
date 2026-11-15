@@ -25,9 +25,9 @@ export const HeroSection = () => {
       <div className="hero-dots pointer-events-none absolute inset-0" />
       <div className="hero-spot pointer-events-none absolute right-[-10%] top-1/2 h-[640px] w-[640px] -translate-y-1/2 rounded-full" />
 
-      <div className="container relative mx-auto grid items-center gap-14 px-4 py-20 md:py-28 lg:grid-cols-[1.1fr_1fr]">
+      <div className="container relative mx-auto grid items-center gap-14 px-4 py-20 md:py-28 grid-cols-1 lg:grid-cols-[1.1fr_1fr]">
         {/* Left */}
-        <div className="hero-fade">
+        <div className="hero-fade min-w-0">
           <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-hero-line bg-hero-glass px-4 py-1.5 text-sm text-hero-ink backdrop-blur-md">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-hero-live opacity-70" />
@@ -67,7 +67,7 @@ export const HeroSection = () => {
               placeholder="Search phones, local services, or digital goods..."
               className="h-11 min-w-0 flex-1 bg-transparent px-2 text-sm text-hero-ink outline-none placeholder:text-hero-muted"
             />
-            <button type="submit" className="hero-cta h-11 shrink-0 rounded-xl px-5 text-sm font-semibold">
+            <button type="submit" className="hero-cta h-11 shrink-0 rounded-xl px-4 text-sm font-semibold sm:px-5">
               Search
             </button>
           </form>
@@ -98,7 +98,7 @@ export const HeroSection = () => {
         </div>
 
         {/* Right showcase */}
-        <div className="hero-fade hero-delay relative mx-auto w-full max-w-md py-10">
+        <div className="hero-fade hero-delay relative mx-auto w-full max-w-md min-w-0 py-10">
           <div className="hero-card hero-tilt relative rounded-2xl p-5">
             <div className="mb-4 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-hero-glass to-transparent">
               <div className="hero-phone" />
@@ -114,7 +114,7 @@ export const HeroSection = () => {
             </div>
           </div>
 
-          <div className="hero-card hero-float absolute -right-2 top-0 w-60 rounded-2xl p-3.5 sm:-right-8">
+          <div className="hero-card hero-float absolute -right-2 top-0 w-56 rounded-2xl p-3.5 sm:-right-8">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-hero-orange/15 text-hero-orange"><Bike className="h-4 w-4" /></div>
               <div>
