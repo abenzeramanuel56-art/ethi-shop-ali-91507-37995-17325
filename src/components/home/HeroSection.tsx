@@ -1,9 +1,9 @@
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, BadgeCheck, Bike, CreditCard, Search, ChevronDown } from "lucide-react";
 
 const CATEGORIES = [
-  { label: "All", to: "/products" },
   { label: "Products", to: "/products" },
   { label: "Services", to: "/services" },
   { label: "Digital", to: "/digital-market" },
@@ -11,8 +11,23 @@ const CATEGORIES = [
 
 export const HeroSection = () => {
   const navigate = useNavigate();
-  const [cat, setCat] = useState("All");
+  const [cat, setCat] = useState("Products");
   const [q, setQ] = useState("");
+  type P = { id: string; name: string; price_etb: number; image_url: string | null; seller_stores: { store_name: string } | null };
+  const [items, setItems] = useState<P[]>([]);
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    supabase.from("products").select("id,name,price_etb,image_url,seller_stores!products_seller_id_fkey(store_name)")
+      .eq("stock_status", true).not("image_url", "is", null).order("created_at", { ascending: false }).limit(8)
+      .then(({ data }) => setItems(((data ?? []) as unknown as P[]).filter((p) => p.image_url)));
+  }, []);
+  useEffect(() => {
+    if (items.length < 2) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 4000);
+    return () => clearInterval(t);
+  }, [items.length]);
+  const p = items[idx];
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -38,7 +53,7 @@ export const HeroSection = () => {
 
           <h1 className="mb-6 text-4xl font-extrabold leading-[1.05] tracking-tighter text-hero-ink sm:text-5xl lg:text-6xl">
             <span className="sr-only">Abeni Express — </span>
-            Ethiopia's Independent Marketplace
+            Ethiopia's <span className="hero-gold-text">Independent</span> Marketplace
           </h1>
 
           <p className="mb-9 max-w-xl text-lg leading-relaxed text-hero-muted">
@@ -73,7 +88,7 @@ export const HeroSection = () => {
           </form>
 
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
-            {CATEGORIES.slice(1).map((c) => (
+            {CATEGORIES.map((c) => (
               <Link key={c.label} to={c.to} className="rounded-full border border-hero-line bg-hero-glass px-4 py-1.5 text-sm text-hero-muted transition-all hover:-translate-y-0.5 hover:border-hero-orange/50 hover:text-hero-ink">
                 {c.label}
               </Link>
@@ -90,7 +105,7 @@ export const HeroSection = () => {
               { v: "24/7", l: "Live Dispatch Support" },
             ].map((s, i) => (
               <div key={s.l} className={i === 0 ? "pr-5 sm:pr-8" : "px-5 sm:px-8"}>
-                <div className="text-xl font-bold tracking-tight text-hero-orange sm:text-2xl">{s.v}</div>
+                <div className="hero-gold-text text-xl font-bold tracking-tight sm:text-2xl">{s.v}</div>
                 <div className="mt-1 text-xs text-hero-muted sm:text-sm">{s.l}</div>
               </div>
             ))}
@@ -100,17 +115,21 @@ export const HeroSection = () => {
         {/* Right showcase */}
         <div className="hero-fade hero-delay relative mx-auto w-full max-w-md min-w-0 py-10">
           <div className="hero-card hero-tilt relative rounded-2xl p-5">
-            <div className="mb-4 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-hero-glass to-transparent">
-              <div className="hero-phone" />
+            <div className="mb-4 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl bg-hero-glass">
+              {p?.image_url ? (
+                <img key={p.id} src={p.image_url} alt={p.name} className="hero-fade h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full animate-pulse bg-hero-glass" />
+              )}
             </div>
             <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-hero-live/15 px-2.5 py-0.5 text-xs font-semibold text-hero-live">
               <BadgeCheck className="h-3.5 w-3.5" /> Verified Seller
             </span>
-            <h3 className="text-lg font-semibold text-hero-ink">Smartphone Pro Max · 256GB</h3>
-            <p className="text-sm text-hero-muted">Bole Electronics · Addis Ababa</p>
+            <h3 className="line-clamp-1 text-lg font-semibold text-hero-ink">{p?.name ?? "Loading products…"}</h3>
+            <p className="text-sm text-hero-muted">{p?.seller_stores?.store_name ?? "Abeni Express"}</p>
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-2xl font-bold tracking-tight text-hero-ink">ETB 89,500</span>
-              <Link to="/products" className="hero-cta rounded-lg px-4 py-2 text-sm font-semibold">Order Now</Link>
+              <span className="hero-gold-text text-2xl font-bold tracking-tight">{p ? `ETB ${Number(p.price_etb).toLocaleString()}` : ""}</span>
+              <Link to={p ? `/products?q=${encodeURIComponent(p.name)}` : "/products"} className="hero-cta rounded-lg px-4 py-2 text-sm font-semibold">Order Now</Link>
             </div>
           </div>
 

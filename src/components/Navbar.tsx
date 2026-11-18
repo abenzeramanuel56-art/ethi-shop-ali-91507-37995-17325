@@ -7,6 +7,7 @@ import { User as SupabaseUser } from "@supabase/supabase-js";
 import NotificationBell from "./NotificationBell";
 
 import { LanguageSelector } from "./LanguageSelector";
+import { ThemeToggle } from "./ThemeToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export const Navbar = () => {
@@ -107,6 +108,7 @@ export const Navbar = () => {
           {/* Right side */}
           <div className="flex items-center gap-1">
             <LanguageSelector />
+            <ThemeToggle />
             <Link to="/support">
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
                 <MessageCircle className="h-4 w-4" />
