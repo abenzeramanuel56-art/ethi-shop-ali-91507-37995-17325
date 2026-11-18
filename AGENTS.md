@@ -5,3 +5,5 @@
 - Resolve payment provider identifiers from ShegerPay providers and fail to manual review when the response contract cannot establish amount or recipient; never infer success from screenshots in the browser.
 - Keep payment review in a dedicated admin tab and use the atomic review RPC for verification-backed orders, preserving legacy fulfillment screens.
 - Service and digital verification use typed commerce records and a global receipt identifier registry shared with physical claims; update only the actual order so fulfilment triggers cannot dispatch phantom deliveries or pay twice.
+- Keep perspective on scoped scene containers, never body or app-root ancestors, so fixed navigation and assistant controls remain anchored to the viewport.
+- Override decorative gradients and shadows alongside surface tokens in light mode so shared cards never inherit dark surfaces.

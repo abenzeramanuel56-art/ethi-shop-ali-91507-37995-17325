@@ -106,6 +106,14 @@
     --sidebar-accent-foreground: 220 20% 25%;
     --sidebar-border: 220 13% 88%;
     --sidebar-ring: 16 100% 50%;
+
+    /* Light surfaces must not inherit the dark decorative treatments. */
+    --gradient-dark: linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)));
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(var(--background)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent) / 0.06), hsl(var(--primary) / 0.03));
+    --glow-primary: 0 4px 14px hsl(var(--primary) / 0.12);
+    --glow-accent: 0 4px 14px hsl(var(--accent) / 0.1);
+    --glow-success: 0 2px 8px hsl(var(--success) / 0.1);
   }
 }
 
@@ -120,9 +128,7 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    /* Global 3D stage so .card-3d / .float-3d get real depth everywhere */
-    perspective: 1600px;
-    perspective-origin: 50% 40%;
+    /* Keep perspective on .scene-3d only: body perspective traps fixed controls. */
   }
 
 
@@ -327,22 +333,29 @@
   --hero-orange-2: 29 100% 50%;
   --hero-live: 152 76% 50%;
   --hero-gold: 43 90% 60%;
+  --hero-gold-highlight: 38 95% 72%;
+  --hero-shadow: 0 0% 0% / 0.7;
+  --hero-search-shadow: 0 0% 0% / 0.35;
   --hero-line: 0 0% 100% / 0.1;
   --hero-glass: 0 0% 100% / 0.05;
   --hero-dot: 0 0% 100% / 0.07;
 }
 .light {
-  --hero-bg: 40 40% 97%;
+  --hero-bg: 220 20% 98%;
   --hero-card: 0 0% 100%;
   --hero-ink: 225 20% 10%;
   --hero-muted: 220 9% 40%;
   --hero-gold: 40 85% 38%;
+  --hero-gold-highlight: 38 90% 32%;
+  --hero-live: 152 76% 28%;
+  --hero-shadow: 220 20% 30% / 0.12;
+  --hero-search-shadow: 220 20% 30% / 0.08;
   --hero-line: 225 20% 10% / 0.12;
   --hero-glass: 225 20% 10% / 0.04;
   --hero-dot: 225 20% 10% / 0.08;
 }
 .hero-gold-text {
-  background: linear-gradient(90deg, hsl(var(--hero-gold)), hsl(38 95% 72%), hsl(var(--hero-gold)));
+  background: linear-gradient(90deg, hsl(var(--hero-gold)), hsl(var(--hero-gold-highlight)), hsl(var(--hero-gold)));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .hero-lux { background: hsl(var(--hero-bg)); }
@@ -355,7 +368,7 @@
 .hero-search {
   background: hsl(var(--hero-card));
   border: 1px solid hsl(var(--hero-line));
-  box-shadow: 0 25px 50px -12px hsl(0 0% 0% / 0.35);
+  box-shadow: 0 25px 50px -12px hsl(var(--hero-search-shadow));
 }
 .hero-search:focus-within { border-color: hsl(var(--hero-orange) / 0.6); }
 .hero-cta {
@@ -372,7 +385,7 @@
   background: hsl(var(--hero-card) / 0.9);
   border: 1px solid hsl(var(--hero-line));
   backdrop-filter: blur(24px);
-  box-shadow: 0 30px 60px -20px hsl(0 0% 0% / 0.7);
+  box-shadow: 0 30px 60px -20px hsl(var(--hero-shadow));
 }
 .hero-tilt { transition: transform .5s cubic-bezier(.2,.8,.2,1); transform: perspective(1000px) rotateY(-6deg) rotateX(3deg); }
 .hero-tilt:hover { transform: perspective(1000px) rotateY(0) rotateX(0) translateY(-4px); }
@@ -394,6 +407,16 @@
 .hero-delay { animation-delay: .15s; }
 .hero-float { animation: hero-floaty 6s ease-in-out infinite; }
 .hero-float-alt { animation: hero-floaty 7s ease-in-out infinite 1s; }
+.light .card-3d,
+.light .panel-3d {
+  box-shadow: 0 8px 24px -12px hsl(var(--hero-shadow));
+}
+.light .card-3d:hover {
+  box-shadow: 0 16px 36px -16px hsl(var(--hero-shadow));
+}
+.light .text-3d { text-shadow: none; }
+.light .btn-glow:hover { box-shadow: var(--glow-primary); }
+.light .animate-pulse-glow { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .hero-fade, .hero-float, .hero-float-alt, .hero-progress { animation: none; }
 }

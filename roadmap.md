@@ -1,5 +1,10 @@
 # Roadmap
 
+## Current scope: consistent light mode and visible assistant
+- [ ] Remove inherited dark surfaces and shadows in light mode
+- [ ] Keep the assistant visible at the top of the page and while scrolling
+- [ ] Verify theme switching and assistant opening on desktop and mobile
+
 ## Current scope: live hero and seller catalog
 - [ ] Rotate real database products in the home showcase
 - [ ] Add 1,000 products and 1,000 services for abenitheman6@gmail.com without duplicates on retry

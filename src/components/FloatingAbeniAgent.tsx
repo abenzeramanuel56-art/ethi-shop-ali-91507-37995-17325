@@ -194,14 +194,16 @@ export function FloatingAbeniAgent() {
   return (
     <>
       {!open && (
-        <button
+        <Button
+          size="icon"
           onClick={() => setOpen(true)}
           aria-label="Open Abeni Express Agent"
-          className="fixed bottom-4 right-4 z-[60] h-14 w-14 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-110 transition-transform animate-pulse-glow"
+          title="Abeni Express Agent"
+          className="fixed bottom-4 right-4 z-[60] h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
         >
           <MessageCircle className="h-6 w-6" />
           <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-background" />
-        </button>
+        </Button>
       )}
 
       {open && (
