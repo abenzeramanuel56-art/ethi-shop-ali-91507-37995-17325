@@ -64,9 +64,9 @@ export const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
       <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group" aria-label="Abeni Express Logo">
+          <Link to="/" className="flex shrink-0 items-center gap-2.5 group" aria-label="Abeni Express Logo">
             <div
               role="img"
               aria-label="Abeni Express Logo"
@@ -76,7 +76,7 @@ export const Navbar = () => {
               <Zap className="h-5 w-5 text-white" aria-hidden="true" />
               <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ boxShadow: 'var(--glow-primary)' }} />
             </div>
-            <span className="text-xl font-black tracking-tight text-foreground">
+            <span className="hidden sm:inline text-xl font-black tracking-tight text-foreground">
               Abeni<span className="text-primary">Express</span>
             </span>
           </Link>
@@ -106,7 +106,7 @@ export const Navbar = () => {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 items-center gap-1.5">
             <LanguageSelector />
             <ThemeToggle />
             <Link to="/support">

@@ -83,56 +83,26 @@ export default function AffiliateCheckout() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fullName || !phone || !address || !city) { toast.error("Please fill in all delivery fields"); return; }
-    if (!paymentMethod) { toast.error("Please choose a payment method"); return; }
-    if (!proofFile) { toast.error("Please upload your payment screenshot"); return; }
-
-    setSubmitting(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setSubmitting(false);
-        toast.error("Please sign in to complete your purchase.");
-        navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`);
-        return;
-      }
-      const safeName = proofFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const filename = `${user.id}/affiliate-${Date.now()}-${safeName}`;
-      const { error: upErr } = await supabase.storage.from("payment-proofs").upload(filename, proofFile);
-      if (upErr) throw new Error(`Could not upload your payment screenshot: ${upErr.message}`);
-
-      const base = Number(item.products.price_etb);
-      const sold = Number(item.custom_price_etb);
-      const profit = sold - base;
-      const platform = base * 0.10;
-
-      const { error } = await (supabase as any).from("affiliate_orders").insert({
-        buyer_id: user.id,
-        affiliate_store_id: store.id,
-        affiliate_product_id: item.id,
-        original_product_id: item.original_product_id,
-        quantity: 1,
-        sold_price_etb: sold,
-        base_price_etb: base,
-        affiliate_profit_etb: profit,
-        platform_earning_etb: platform,
-        total_etb: sold,
-        phone, shipping_address: address, city,
-        customer_latitude: lat,
-        customer_longitude: lng,
-        payment_proof_url: filename,
-        status: "pending",
-      });
-      if (error) throw error;
-
-      setSuccess(true);
-      toast.success("Order submitted! Abeni Express will verify and deliver.");
-      setTimeout(() => navigate("/"), 3500);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to submit order");
-    } finally { setSubmitting(false); }
+  const handleBuy = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { navigate(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`); return; }
+    const base = Number(item.products.price_etb);
+    const sold = Number(item.custom_price_etb);
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    cart.push({
+      id: `${item.original_product_id}-aff-${Date.now()}`,
+      product_id: item.original_product_id,
+      product_name: item.custom_title || item.products.name,
+      price_etb: sold,
+      quantity: 1,
+      image_url: item.products.image_url,
+      store_type: "seller",
+      reseller_profit_etb: Math.max(0, sold - base),
+      affiliate_product_id: item.id,
+      affiliate_store_id: store.id,
+    });
+    localStorage.setItem("cart", JSON.stringify(cart));
+    navigate("/cart");
   };
 
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="p-10 text-center text-muted-foreground">Loading...</div></div>;
@@ -164,96 +134,11 @@ export default function AffiliateCheckout() {
           </div>
         </Card>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Delivery Details */}
-          <Card className="p-5 tech-card space-y-3">
-            <h2 className="font-bold flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" /> Delivery Details</h2>
-
-            <div>
-              <Label>Full Name *</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Phone *</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2519..." required />
-            </div>
-
-            {/* Location choice */}
-            <div className="rounded-lg border p-3 bg-muted/30">
-              <Label className="mb-2 block">How do you want to give your address?</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={locationMode === "share" ? "default" : "outline"}
-                  className="w-full"
-                  onClick={handleShareLocation}
-                  disabled={locLoading}
-                >
-                  {locLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Navigation className="h-4 w-4 mr-1" />}
-                  Share Current Location
-                </Button>
-                <Button
-                  type="button"
-                  variant={locationMode === "type" ? "default" : "outline"}
-                  className="w-full"
-                  onClick={() => { setLocationMode("type"); setLat(null); setLng(null); }}
-                >
-                  <Pencil className="h-4 w-4 mr-1" /> Type Address
-                </Button>
-              </div>
-              {locationError && <p className="text-xs text-destructive mt-2">{locationError}</p>}
-              {lat && lng && (
-                <p className="text-xs text-primary mt-2">📍 GPS captured ({lat.toFixed(4)}, {lng.toFixed(4)})</p>
-              )}
-            </div>
-
-            <div>
-              <Label>City *</Label>
-              <Input value={city} onChange={(e) => setCity(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Delivery Address *</Label>
-              <Textarea value={address} onChange={(e) => setAddress(e.target.value)} required rows={2} placeholder="Neighborhood, street, landmarks..." />
-            </div>
-          </Card>
-
-          {/* Payment */}
-          <Card className="p-5 tech-card space-y-3">
-            <h2 className="font-bold">Payment</h2>
-            <p className="text-sm text-muted-foreground">
-              Send <b className="text-primary">{item.custom_price_etb} ETB</b> to Abeni Express, then upload your screenshot below.
-            </p>
-
-            <div>
-              <Label>Payment Method *</Label>
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <Button type="button" variant={paymentMethod === "cbe" ? "default" : "outline"} onClick={() => setPaymentMethod("cbe")}>CBE</Button>
-                <Button type="button" variant={paymentMethod === "telebirr" ? "default" : "outline"} onClick={() => setPaymentMethod("telebirr")}>TeleBirr</Button>
-              </div>
-              {paymentMethod === "cbe" && (
-                <p className="text-xs mt-2 p-2 rounded bg-muted/50">CBE Account: <b>1000123456789</b> — Abeni Express</p>
-              )}
-              {paymentMethod === "telebirr" && (
-                <p className="text-xs mt-2 p-2 rounded bg-muted/50">TeleBirr: <b>+251900000000</b> — Abeni Express</p>
-              )}
-            </div>
-
-            <div>
-              <Label>Payment Proof (screenshot) *</Label>
-              <Input type="file" accept="image/*" onChange={(e) => setProofFile(e.target.files?.[0] || null)} required />
-            </div>
-          </Card>
-
-          {/* Total */}
-          <Card className="p-4 tech-card flex justify-between items-center">
-            <span className="font-bold">Total</span>
-            <span className="text-2xl font-black text-primary">{item.custom_price_etb} ETB</span>
-          </Card>
-
-          <Button type="submit" disabled={submitting} className="w-full btn-glow h-12 text-base">
-            {submitting ? "Submitting..." : `Place Order — ${item.custom_price_etb} ETB`}
-          </Button>
-        </form>
+        <Card className="p-5 tech-card space-y-2 mb-4">
+          <h2 className="font-bold">Secure Abeni Express checkout</h2>
+          <p className="text-sm text-muted-foreground">Pay with Telebirr or CBE. Your payment is checked automatically, then Abeni Express delivers your order.</p>
+        </Card>
+        <Button onClick={handleBuy} className="w-full btn-glow h-12 text-base">Continue to checkout — {item.custom_price_etb} ETB</Button>
       </div>
     </div>
   );

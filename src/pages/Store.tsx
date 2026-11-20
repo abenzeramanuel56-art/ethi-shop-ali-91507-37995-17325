@@ -1,350 +1,170 @@
-import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { Search, ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
+import { Search, ShoppingCart, Package, Wrench, Sparkles, BadgeCheck, Phone, Mail, Store as StoreIcon } from "lucide-react";
 import ReportStoreDialog from "@/components/ReportStoreDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-interface StoreInfo {
-  id: string;
-  store_name: string;
-  store_slug: string;
-  contact_email: string;
-  contact_phone: string;
-}
-
-interface ResellerProduct {
-  id: string;
-  reseller_price_etb: number;
-  products: any;
-}
+interface StoreInfo { id: string; store_name: string; store_slug: string; contact_email: string; contact_phone: string; }
+type Tab = "products" | "services" | "digital";
 
 export default function Store() {
   const { storeSlug } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { t } = useLanguage();
   const [store, setStore] = useState<StoreInfo | null>(null);
-  const [products, setProducts] = useState<ResellerProduct[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<ResellerProduct[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [products, setProducts] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [digital, setDigital] = useState<any[]>([]);
+  const [tab, setTab] = useState<Tab>("products");
+  const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
-  const [uploadingProductId, setUploadingProductId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchStore();
+    (async () => {
+      setLoading(true);
+      const slug = (storeSlug || "").toLowerCase();
+      const { data: s } = await supabase.rpc("get_store_by_slug", { p_slug: slug }).maybeSingle();
+      if (!s) { toast.error(t("store.notFound")); navigate("/"); return; }
+      const info = s as StoreInfo;
+      setStore(info);
+      const [own, linked, svc, dig] = await Promise.all([
+        supabase.from("products").select("*").eq("seller_id", info.id).eq("stock_status", true).order("created_at", { ascending: false }).limit(200),
+        (supabase as any).from("seller_products").select("seller_price_etb, products(*)").eq("store_id", info.id).eq("is_active", true).limit(200),
+        supabase.from("services").select("*").eq("seller_id", info.id).eq("is_active", true).order("created_at", { ascending: false }).limit(200),
+        (supabase as any).from("digital_products").select("id,title,description,price_etb,preview_url,category,product_type").eq("store_id", info.id).eq("is_active", true).eq("ai_verification_status", "approved").limit(200),
+      ]);
+      const map = new Map<string, any>();
+      (own.data || []).forEach((p: any) => map.set(p.id, p));
+      (linked.data || []).forEach((r: any) => { const p = Array.isArray(r.products) ? r.products[0] : r.products; if (p && !map.has(p.id)) map.set(p.id, { ...p, price_etb: r.seller_price_etb ?? p.price_etb }); });
+      const list = [...map.values()];
+      setProducts(list); setServices(svc.data || []); setDigital(dig.data || []);
+      setTab(list.length ? "products" : (svc.data?.length ? "services" : (dig.data?.length ? "digital" : "products")));
+      setLoading(false);
+    })();
   }, [storeSlug]);
 
-  const STORAGE_BUCKET = "product-images";
+  const match = (txt: string) => txt.toLowerCase().includes(q.trim().toLowerCase());
+  const shown = useMemo(() => {
+    if (tab === "products") return products.filter(p => match(p.name || ""));
+    if (tab === "services") return services.filter(s => match(s.title || ""));
+    return digital.filter(d => match(d.title || ""));
+  }, [tab, q, products, services, digital]);
 
-  async function resolveImageUrl(path?: string | null) {
-    if (!path) return "/placeholder.svg";
-    if (path.startsWith("http")) return path;
-
-    try {
-      const pubRes: any = await supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-      const publicUrl = pubRes?.data?.publicUrl || pubRes?.public_url || pubRes?.publicURL || pubRes?.publicURI;
-      if (publicUrl) return publicUrl;
-
-      const signedRes: any = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 60);
-      const signedUrl = signedRes?.data?.signedUrl || signedRes?.data?.signedURL;
-      if (signedUrl) return signedUrl;
-    } catch (e) {
-      // ignore
-    }
-
-    return "/placeholder.svg";
-  }
-
-  const getProduct = (rp: ResellerProduct) => {
-    if (!rp || !rp.products) return null;
-    return Array.isArray(rp.products) ? rp.products[0] : rp.products;
-  };
-
-  const handleImageSelect = async (e: ChangeEvent<HTMLInputElement>, rp: ResellerProduct) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const prod = getProduct(rp);
-    if (!prod) {
-      toast({ title: t('common.error'), description: "Product data missing", variant: "destructive" });
-      return;
-    }
-
-    const bucket = "product-images";
-    const path = `products/${prod.id}/${Date.now()}_${file.name}`;
-
-    try {
-      setUploadingProductId(rp.id);
-
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
-      if (uploadError) throw uploadError;
-
-      const { data: publicData } = supabase.storage.from(bucket).getPublicUrl(path) as any;
-      const publicUrl = publicData?.publicUrl || publicData?.public_url || publicData?.publicURL;
-      if (!publicUrl) throw new Error("Unable to get public URL for uploaded image");
-
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({ image_url: publicUrl })
-        .eq("id", prod.id);
-
-      if (updateError) throw updateError;
-
-      setProducts((prev) =>
-        prev.map((p) => {
-          if (p.id !== rp.id) return p;
-          if (Array.isArray(p.products)) {
-            const cloned = [...p.products];
-            cloned[0] = { ...cloned[0], image_url: publicUrl };
-            return { ...p, products: cloned };
-          } else {
-            return { ...p, products: { ...(p.products || {}), image_url: publicUrl } };
-          }
-        })
-      );
-
-      toast({ title: t('common.success'), description: `${prod.name} image updated` });
-    } catch (err: any) {
-      toast({ title: t('common.error'), description: err?.message || "Something went wrong", variant: "destructive" });
-    } finally {
-      setUploadingProductId(null);
-      if (e.target) e.target.value = "";
-    }
-  };
-
-  useEffect(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (term) {
-      setFilteredProducts(
-        products.filter((p) => {
-          const prod = getProduct(p);
-          if (!prod) return false;
-          return (
-            (prod.name || "").toLowerCase().includes(term) ||
-            (prod.unique_product_code || "").toLowerCase().includes(term)
-          );
-        })
-      );
-    } else {
-      setFilteredProducts(products);
-    }
-  }, [searchTerm, products]);
-
-  const fetchStore = async () => {
-    setLoading(true);
-    try {
-      const slug = (storeSlug || "").toLowerCase();
-      if (!slug) throw new Error("Missing store slug");
-
-      const { data: storeData, error: storeError } = await supabase
-        .rpc("get_store_by_slug", { p_slug: slug })
-        .single();
-
-      if (storeError) throw storeError;
-      if (!storeData) throw new Error("Store not found");
-
-      setStore(storeData as StoreInfo);
-
-      const { data: productsData, error: productsError } = await (supabase as any)
-        .from("seller_products")
-        .select(`
-          *,
-          products (*)
-        `)
-        .eq("store_id", storeData.id)
-        .eq("is_active", true);
-
-      if (productsError) throw productsError;
-
-      const normalized = await Promise.all(
-        (productsData || []).map(async (rp: any) => {
-          const prod = Array.isArray(rp.products) ? rp.products[0] : rp.products;
-          if (prod) {
-            prod.image_url = await resolveImageUrl(prod.image_url);
-          }
-          return { ...rp, products: prod };
-        })
-      );
-
-      setProducts(normalized);
-      setFilteredProducts(normalized);
-    } catch (err) {
-      toast({
-        title: t('store.notFound'),
-        description: t('store.notFoundDesc'),
-        variant: "destructive",
-      });
-      navigate("/");
-      return;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddToCart = (product: ResellerProduct) => {
+  const addToCart = (p: any, go = false) => {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const prod = getProduct(product);
-    if (!prod) return;
-    
-    const existingItem = cart.find((item: any) => item.id === prod.id && item.store_type === "reseller");
-    if (existingItem) {
-      existingItem.quantity += 1;
-    } else {
-      cart.push({
-        id: `${prod.id}-reseller-${Date.now()}`,
-        product_id: prod.id,
-        product_name: prod.name,
-        price_etb: product.reseller_price_etb,
-        image_url: prod.image_url,
-        quantity: 1,
-        reseller_id: store?.id,
-        store_type: "reseller",
-        reseller_profit_etb: Math.max(0, product.reseller_price_etb - (prod.price_etb || 0))
-      });
-    }
-
+    const ex = cart.find((i: any) => i.product_id === p.id);
+    if (ex) ex.quantity += 1;
+    else cart.push({ id: `${p.id}-${Date.now()}`, product_id: p.id, product_name: p.name, price_etb: Number(p.price_etb), quantity: 1, image_url: p.image_url, store_type: "seller", seller_id: store?.id });
     localStorage.setItem("cart", JSON.stringify(cart));
-    
-    toast({
-      title: t('store.addedToCart'),
-      description: `${prod.name} ${t('store.addedToCartDesc')}`
-    });
+    if (go) navigate("/cart"); else toast.success(`${p.name} ${t("store.addedToCartDesc")}`);
   };
 
-  const handleBuyNow = (product: ResellerProduct) => {
-    handleAddToCart(product);
-    navigate("/cart");
-  };
+  if (loading || !store) return <div className="min-h-screen bg-background"><Navbar /><p className="py-20 text-center text-muted-foreground">{t("store.loading")}</p></div>;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="flex items-center justify-center py-20">
-          <p className="text-muted-foreground">{t('store.loading')}</p>
-        </div>
-      </div>
-    );
-  }
+  const tabs: { key: Tab; label: string; icon: any; count: number }[] = [
+    { key: "products", label: "Products", icon: Package, count: products.length },
+    { key: "services", label: "Services", icon: Wrench, count: services.length },
+    { key: "digital", label: "Digital", icon: Sparkles, count: digital.length },
+  ];
+  const initials = store.store_name.split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">{store?.store_name}</h1>
-            {store?.contact_email && (
-              <p className="text-sm text-muted-foreground">{t('store.contact')}: {store.contact_email}</p>
-            )}
+      <header className="relative overflow-hidden border-b border-border/50">
+        <div className="absolute inset-0 opacity-60" style={{ background: "radial-gradient(ellipse at top, hsl(var(--primary) / 0.25), transparent 65%)" }} />
+        <div className="container relative mx-auto px-4 py-12 md:py-16 text-center">
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-3xl font-black text-primary-foreground shadow-lg" style={{ boxShadow: "var(--glow-primary)" }}>
+            {initials || <StoreIcon />}
           </div>
-          {store && (
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-foreground">{store.store_name}</h1>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Badge variant="outline" className="gap-1 border-primary/40 text-primary"><BadgeCheck className="h-3.5 w-3.5" /> Verified Abeni Express seller</Badge>
+            {store.contact_phone && <span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{store.contact_phone}</span>}
+            {store.contact_email && <span className="inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{store.contact_email}</span>}
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">Secure checkout by Abeni Express · Telebirr & CBE</p>
+          <div className="mt-6 flex justify-center gap-6 md:gap-10">
+            {tabs.map(x => <div key={x.key}><div className="text-2xl font-black text-primary">{x.count}</div><div className="text-xs text-muted-foreground">{x.label}</div></div>)}
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex gap-2 overflow-x-auto">
+            {tabs.map(x => (
+              <Button key={x.key} variant={tab === x.key ? "default" : "outline"} size="sm" className="gap-1.5 shrink-0" onClick={() => setTab(x.key)}>
+                <x.icon className="h-4 w-4" />{x.label} <span className="opacity-70">({x.count})</span>
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Search this store..." value={q} onChange={e => setQ(e.target.value)} className="pl-10" />
+            </div>
             <ReportStoreDialog storeId={store.id} storeName={store.store_name} />
-          )}
-        </div>
-
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder={t('store.searchProducts')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="mt-2 text-sm text-muted-foreground">
-            {t('products.showing')} {filteredProducts.length} {t('products.products')}
           </div>
         </div>
 
-        {filteredProducts.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                {searchTerm ? t('store.noProductsFound') : t('store.noProducts')}
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {filteredProducts.map((rp) => {
-              const prod = getProduct(rp);
-              if (!prod) return null;
-              
-              return (
-                <Card key={rp.id} className="group flex flex-col overflow-hidden border-0 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
-                  <div className="relative aspect-square overflow-hidden bg-accent/30">
-                    {prod.image_url ? (
-                      <img
-                        src={prod.image_url}
-                        alt={`${prod.name} product image`}
-                        loading="lazy"
-                        onError={(e) => {
-                          const img = e.currentTarget as HTMLImageElement;
-                          if (img.src.endsWith('/placeholder.svg')) return;
-                          img.src = '/placeholder.svg';
-                        }}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-muted-foreground">
-                        No image
-                      </div>
-                    )}
-                    <Badge className="absolute left-2 top-2 bg-sale-red text-white border-0 shadow-md">
-                      {t('products.hotDeal')}
-                    </Badge>
+        {shown.length === 0 ? (
+          <Card className="p-10 text-center text-muted-foreground">Nothing here yet.</Card>
+        ) : tab === "products" ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {shown.map(p => (
+              <Card key={p.id} className="group flex flex-col overflow-hidden tech-card transition-all hover:-translate-y-1">
+                <div className="aspect-square overflow-hidden bg-muted">
+                  <img src={p.image_url || "/placeholder.svg"} alt={p.name} loading="lazy" onError={e => { e.currentTarget.src = "/placeholder.svg"; }} className="h-full w-full object-cover transition-transform group-hover:scale-110" />
+                </div>
+                <div className="flex flex-1 flex-col p-3">
+                  <h3 className="line-clamp-2 text-sm font-medium">{p.name}</h3>
+                  <div className="mt-auto pt-2 text-lg font-black text-primary">{Number(p.price_etb).toLocaleString()} <span className="text-xs text-muted-foreground">ETB</span></div>
+                  <div className="mt-2 flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 h-8" onClick={() => addToCart(p)} aria-label="Add to cart"><ShoppingCart className="h-3.5 w-3.5" /></Button>
+                    <Button size="sm" className="flex-[2] h-8 text-xs font-bold" onClick={() => addToCart(p, true)}>{t("products.buyNow")}</Button>
                   </div>
-                  
-                  <CardContent className="flex-grow p-3">
-                    <h3 className="line-clamp-2 text-sm font-medium mb-1">{prod.name}</h3>
-                    {prod.unique_product_code && (
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {t('store.code')}: {prod.unique_product_code}
-                      </p>
-                    )}
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <div className="text-xl font-bold text-primary">
-                        {(Number(rp.reseller_price_etb ?? 0)).toLocaleString()}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{t('common.etb')}</div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-success">
-                      <span className="font-medium">{t('products.freeShipping')}</span>
-                    </div>
-                  </CardContent>
-                  
-                  <CardFooter className="flex gap-2 p-3 pt-0">
-                    <Button
-                      onClick={() => handleAddToCart(rp)}
-                      className="flex-1 h-9 text-xs gap-1"
-                      variant="outline"
-                    >
-                      <ShoppingCart className="h-3 w-3" />
-                      {t('products.cart')}
-                    </Button>
-                    <Button 
-                      className="flex-1 h-9 text-xs font-bold" 
-                      onClick={() => handleBuyNow(rp)}
-                    >
-                      {t('products.buyNow')}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              );
-            })}
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : tab === "services" ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {shown.map(s => (
+              <Card key={s.id} className="flex flex-col p-5 tech-card">
+                <Badge variant="outline" className="mb-2 w-fit">{s.custom_category || s.category}</Badge>
+                <h3 className="font-bold">{s.title}</h3>
+                <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{s.description}</p>
+                <div className="mt-auto flex items-center justify-between pt-4">
+                  <span className="text-lg font-black text-primary">{Number(s.price_etb).toLocaleString()} ETB<span className="text-xs text-muted-foreground"> / {s.price_type}</span></span>
+                  <Button size="sm" asChild><Link to={`/order-service/${s.id}`}>Order</Link></Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {shown.map(d => (
+              <Card key={d.id} className="flex flex-col p-5 tech-card">
+                <Badge variant="outline" className="mb-2 w-fit gap-1"><Sparkles className="h-3 w-3" />{d.category}</Badge>
+                <h3 className="font-bold">{d.title}</h3>
+                <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{d.description}</p>
+                <div className="mt-auto flex items-center justify-between pt-4">
+                  <span className="text-lg font-black text-primary">{Number(d.price_etb).toLocaleString()} ETB</span>
+                  <Button size="sm" asChild><Link to={`/digital-market?q=${encodeURIComponent(d.title)}`}>Buy</Link></Button>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -9,7 +9,6 @@ import { DeviceTrust } from "@/components/DeviceTrust";
 import { AdvertisementPlayer } from "@/components/AdvertisementPlayer";
 import { MaintenanceWrapper } from "@/components/MaintenanceWrapper";
 import { FloatingAbeniAgent } from "@/components/FloatingAbeniAgent";
-import { FloatingLanguageSelector } from "@/components/FloatingLanguageSelector";
 import { SiteFooter } from "@/components/SiteFooter";
 import { InstallAppPrompt } from "@/components/InstallAppPrompt";
 
@@ -63,7 +62,6 @@ const App = () => (
       <BrowserRouter>
         <DeviceTrust />
         <FloatingAbeniAgent />
-        <FloatingLanguageSelector />
         <BannedUserCheck>
           <MaintenanceWrapper>
             <AdvertisementPlayer />
